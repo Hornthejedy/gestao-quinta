@@ -1,0 +1,1067 @@
+﻿<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stocks da Quinta — módulo v41</title>
+  <style>
+    :root {
+      --bg: #f6f5f1;
+      --paper: #ffffff;
+      --ink: #233027;
+      --muted: #657269;
+      --line: #d8ded7;
+      --green: #2f6f4e;
+      --green-dark: #1e5138;
+      --red: #a83b32;
+      --amber: #a96815;
+      --blue: #225a70;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 15px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: end;
+      padding: 22px 28px 18px;
+      background: #e1eadf;
+      border-bottom: 1px solid var(--line);
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 0; font-size: 30px; line-height: 1.15; }
+    h2 { margin-bottom: 8px; font-size: 21px; }
+    h3 { margin: 0; font-size: 17px; }
+    .eyebrow {
+      margin-bottom: 5px;
+      color: var(--green-dark);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .meta, .toolbar, .filters, .actions, .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+    }
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    input, select, textarea, button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+    textarea { min-height: 74px; resize: vertical; }
+    button {
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--green); }
+    .primary { background: var(--green); border-color: var(--green); color: #fff; }
+    .danger { background: var(--red); border-color: var(--red); color: #fff; }
+    .small { min-height: 30px; padding: 5px 8px; font-size: 12px; }
+    main { padding: 18px 28px 30px; }
+    .toolbar {
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 0 10px 24px rgba(35, 48, 39, .08);
+    }
+    .search { min-width: min(360px, 100%); flex: 1; }
+    .search input { width: 100%; }
+    .status-filter {
+      min-width: 520px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .status-filter legend {
+      padding: 0 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .status-filter label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin: 4px 10px 2px 0;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .status-filter input { min-height: auto; }
+    .filter-actions {
+      display: inline-flex;
+      gap: 6px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+    .filter-actions button { min-height: 30px; padding: 5px 8px; font-size: 12px; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(145px, 1fr));
+      margin-bottom: 16px;
+    }
+    .summary article {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+    .summary span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .summary strong { display: block; margin-top: 5px; font-size: 24px; }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin: 16px 0 10px;
+    }
+    .hint { margin: 0; color: var(--muted); }
+    .table-block {
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      overflow: hidden;
+    }
+    .table-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
+      background: #edf4ea;
+      border-bottom: 1px solid var(--line);
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; min-width: 1180px; border-collapse: collapse; table-layout: fixed; }
+    .product-col { width: 260px; }
+    .unit-col { width: 82px; }
+    .status-col { width: 690px; }
+    .forecast-col { width: 150px; }
+    .notes-col { width: auto; }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      background: #f5f7f4;
+      color: #435148;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    tr:last-child td { border-bottom: 0; }
+    .status-buttons {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .status {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      min-height: 28px;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      opacity: .45;
+      white-space: nowrap;
+    }
+    .status.is-active { opacity: 1; box-shadow: inset 0 0 0 2px rgba(35, 48, 39, .16); }
+    .baixo { background: #fde8e4; color: #862d25; }
+    .alto { background: #e1f2e7; color: #215d3b; }
+    .em-desenvolvimento { background: #e3eff5; color: var(--blue); }
+    .nao-cultivado, .fora-de-epoca { background: #f2ede5; color: #65533d; }
+    .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .inline-input {
+      width: 100%;
+      min-height: 32px;
+      padding: 5px 7px;
+    }
+    .inline-input.needs-value {
+      border-color: var(--red);
+      background: #fff6f5;
+      box-shadow: 0 0 0 2px rgba(168, 59, 50, .12);
+    }
+    .inline-notes {
+      width: 100%;
+      min-height: 34px;
+      padding: 5px 7px;
+      resize: vertical;
+    }
+    .notes {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+    .notes textarea { width: 100%; }
+    .export-warning {
+      display: none;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 1px solid #e2c17c;
+      border-radius: 8px;
+      background: #fff8e8;
+      color: #725013;
+      font-weight: 700;
+    }
+    .export-warning.show { display: block; }
+    dialog {
+      width: min(640px, calc(100vw - 24px));
+      border: 0;
+      border-radius: 8px;
+      padding: 0;
+      box-shadow: 0 24px 70px rgba(0,0,0,.24);
+    }
+    dialog::backdrop { background: rgba(20, 30, 24, .45); }
+    form { padding: 18px; }
+    .modal-head, .modal-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+    .modal-head { margin-bottom: 14px; }
+    .modal-head h2 { margin: 0; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .modal-actions { justify-content: end; margin-top: 18px; }
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      max-width: 360px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: var(--green-dark);
+      color: #fff;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .2s ease, transform .2s ease;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 880px) {
+      header, .section-head { flex-direction: column; align-items: stretch; }
+      .summary { grid-template-columns: repeat(2, minmax(135px, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      header, main { padding-left: 14px; padding-right: 14px; }
+      .summary, .form-grid { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; }
+      .toolbar, .actions, .row-actions, dialog, .toast { display: none !important; }
+      main { padding: 0; }
+      .table-block, .summary article, .notes { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">Controlo de produção e disponibilidade de culturas</p>
+      <h1>Registo de Stocks da Quinta</h1>
+    </div>
+    <div class="meta">
+      <label>Data
+        <input id="workDate" type="date">
+      </label>
+      <label>Previsao de
+        <input id="forecastStart" type="date">
+      </label>
+      <label>Previsao ate
+        <input id="forecastEnd" type="date">
+      </label>
+      <label>Colaborador
+        <input id="collaborator" type="text" placeholder="Nome">
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <section class="toolbar" aria-label="Ferramentas do registo">
+      <label class="search">Pesquisa
+        <input id="search" type="search" placeholder="Pesquisar produto, categoria, estado ou observações">
+      </label>
+      <div class="filters">
+        <label>Categoria
+          <select id="categoryFilter">
+            <option value="">Todas</option>
+            <option value="Hortícolas">Hortícolas</option>
+            <option value="Aromáticas">Aromáticas</option>
+          </select>
+        </label>
+        <fieldset class="status-filter">
+          <legend>Estado</legend>
+          <label><input class="status-filter-check" type="checkbox" value="Baixo"> Baixo</label>
+          <label><input class="status-filter-check" type="checkbox" value="Alto"> Alto</label>
+          <label><input class="status-filter-check" type="checkbox" value="Em desenvolvimento"> Em desenvolvimento</label>
+          <label><input class="status-filter-check" type="checkbox" value="Não cultivado"> Não cultivado</label>
+          <label><input class="status-filter-check" type="checkbox" value="Fora de época"> Fora de época</label>
+          <span class="filter-actions">
+            <button id="allStatusesBtn" type="button">Todos</button>
+            <button id="clearStatusesBtn" type="button">Limpar</button>
+          </span>
+        </fieldset>
+      </div>
+      <div class="actions">
+        <button id="addBtn" class="primary">Adicionar produto</button>
+        <button id="removeBtn" class="danger">Remover produto</button>
+        <button id="csvBtn">Exportar CSV</button>
+        <button id="jsonBtn">Exportar JSON</button>
+        <button id="sheetsBtn">Google Sheets</button>
+        <button id="pdfBtn">Gerar PDF</button>
+      </div>
+    </section>
+
+    <section class="summary" aria-label="Resumo dos stocks">
+      <article><span>Total de produtos</span><strong id="totalCount">0</strong></article>
+      <article><span>Stock baixo</span><strong id="lowCount">0</strong></article>
+      <article><span>Fora de época</span><strong id="seasonCount">0</strong></article>
+      <article><span>Previsão visível</span><strong id="forecastTotal">0</strong></article>
+    </section>
+
+    <p id="exportWarning" class="export-warning">Selecione pelo menos um estado antes de exportar ou gerar PDF. Use o botão Todos para incluir todos os estados.</p>
+
+    <section class="section-head">
+      <div>
+        <p class="eyebrow">Estrutura do ficheiro original</p>
+        <h2>Stocks de hortícolas e aromáticas</h2>
+      </div>
+      <p class="hint">Altere o estado nos botões da própria linha. A previsão da semana pode ser escrita diretamente.</p>
+    </section>
+
+    <div id="tables"></div>
+
+    <section class="notes">
+      <label>Notas / Observações
+        <textarea id="generalNotes" placeholder="Escreva aqui observações gerais do dia"></textarea>
+      </label>
+    </section>
+  </main>
+
+  <dialog id="modal">
+    <form id="recordForm" method="dialog">
+      <div class="modal-head">
+        <h2 id="modalTitle">Adicionar produto</h2>
+        <button type="button" id="closeBtn" aria-label="Fechar">×</button>
+      </div>
+      <input id="recordId" type="hidden">
+      <div class="form-grid">
+        <label>Categoria
+          <select name="category" required>
+            <option>Hortícolas</option>
+            <option>Aromáticas</option>
+          </select>
+        </label>
+        <label>Nova categoria opcional
+          <input name="newCategory" type="text" placeholder="Ex.: Frutícolas, Fruta">
+        </label>
+        <label>Produto
+          <input name="product" type="text" required>
+        </label>
+        <label>Unidade
+          <input name="unit" type="text" placeholder="kg, uni, 50 g/uni" required>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="cancelBtn">Cancelar</button>
+        <button class="primary" type="submit">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="removeModal">
+    <form id="removeForm" method="dialog">
+      <div class="modal-head">
+        <h2>Remover produto</h2>
+        <button type="button" id="closeRemoveBtn" aria-label="Fechar">×</button>
+      </div>
+      <div class="form-grid">
+        <label>Categoria
+          <select id="removeCategory" required></select>
+        </label>
+        <label>Produto
+          <select id="removeProduct" required></select>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="cancelRemoveBtn">Cancelar</button>
+        <button class="danger" type="submit">Remover</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORE_KEY = "registoStocksQuinta.somenteStocks.v1";
+    const statuses = ["Baixo", "Alto", "Em desenvolvimento", "Não cultivado", "Fora de época"];
+    const originalProducts = [
+      ["Hortícolas", "Abóbora", "uni"],
+      ["Hortícolas", "Abóbora Atlântico", "uni"],
+      ["Hortícolas", "Abóbora Esparguete", "uni"],
+      ["Hortícolas", "Alcachofra", "kg"],
+      ["Hortícolas", "Acelga", "kg"],
+      ["Hortícolas", "Alface Americana", "uni"],
+      ["Hortícolas", "Alface Crespa", "uni"],
+      ["Hortícolas", "Alface Lisa", "uni"],
+      ["Hortícolas", "Alface Roxa", "uni"],
+      ["Hortícolas", "Alho", "kg"],
+      ["Hortícolas", "Alho-francês", "uni"],
+      ["Hortícolas", "Batata-doce Amarela", "kg"],
+      ["Hortícolas", "Batata-doce Roxa", "kg"],
+      ["Hortícolas", "Beringela", "kg"],
+      ["Hortícolas", "Couve-galega", "kg"],
+      ["Hortícolas", "Couve Portuguesa", "uni"],
+      ["Hortícolas", "Couve Penca", "uni"],
+      ["Hortícolas", "Couve Tronchuda / Portuguesa", "uni"],
+      ["Hortícolas", "Curgete", "kg"],
+      ["Hortícolas", "Ervilha", "kg"],
+      ["Hortícolas", "Ervilha-torta", "kg"],
+      ["Hortícolas", "Fava", "kg"],
+      ["Hortícolas", "Feijão-verde", "kg"],
+      ["Hortícolas", "Melancia Comprida", "uni"],
+      ["Hortícolas", "Melancia Riscada", "uni"],
+      ["Hortícolas", "Melancia Verde", "uni"],
+      ["Hortícolas", "Melão Amarelo", "uni"],
+      ["Hortícolas", "Melão Branco", "uni"],
+      ["Hortícolas", "Melão Pele de Sapo", "uni"],
+      ["Hortícolas", "Meloa Gália", "uni"],
+      ["Hortícolas", "Pepino", "kg"],
+      ["Hortícolas", "Pimento Amarelo", "uni"],
+      ["Hortícolas", "Pimento Verde", "uni"],
+      ["Hortícolas", "Pimento Vermelho", "uni"],
+      ["Hortícolas", "Tomate Cherry", "kg"],
+      ["Hortícolas", "Tomate Coração-de-boi", "kg"],
+      ["Aromáticas", "Coentros", "50 g/uni"],
+      ["Aromáticas", "Manjericão", "50 g/uni"],
+      ["Aromáticas", "Orégão", "50 g/uni"],
+      ["Aromáticas", "Salsa", "50 g/uni"],
+      ["Aromáticas", "Sálvia Comum", "50 g/uni"],
+      ["Aromáticas", "Sálvia Tricolor", "50 g/uni"],
+      ["Aromáticas", "Sálvia Vermelha", "50 g/uni"],
+      ["Aromáticas", "Tomilho", "50 g/uni"],
+      ["Aromáticas", "Tomilho-limão", "50 g/uni"]
+    ];
+
+    const $ = selector => document.querySelector(selector);
+    const today = () => new Date().toISOString().slice(0, 10);
+    const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+
+    let state = load();
+
+    function initialState() {
+      return {
+        date: today(),
+        forecastStart: "",
+        forecastEnd: "",
+        collaborator: "",
+        notes: "",
+        categories: ["Hortícolas", "Aromáticas"],
+        rows: originalProducts.map(([category, product, unit], index) => ({
+          id: uid(),
+          category,
+          product,
+          unit,
+          status: "Em desenvolvimento",
+          forecast: "",
+          date: today(),
+          notes: "",
+          order: index + 1
+        }))
+      };
+    }
+
+    function load() {
+      try {
+        const stored = localStorage.getItem(STORE_KEY);
+        return migrate(stored ? JSON.parse(stored) : initialState());
+      } catch {
+        return initialState();
+      }
+    }
+
+    function migrate(data) {
+      const categories = [...new Set([...(data.categories || []), ...originalProducts.map(row => row[0]), ...(data.rows || []).map(row => row.category)].filter(Boolean))];
+      return { ...data, forecastStart: data.forecastStart || "", forecastEnd: data.forecastEnd || "", categories, rows: data.rows || [] };
+    }
+
+    function save() {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      // Sincronizar com a app principal via postMessage
+      try {
+        window.parent.postMessage({ type: 'stocksQuintaUpdate', state: JSON.parse(JSON.stringify(state)) }, '*');
+      } catch(e) {}
+    }
+
+    function normalise(text) {
+      return String(text ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[char]));
+    }
+
+    function slug(value) {
+      return normalise(value).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    function selectedStatuses() {
+      return [...document.querySelectorAll(".status-filter-check:checked")].map(input => input.value);
+    }
+
+    function setAllStatuses(checked) {
+      document.querySelectorAll(".status-filter-check").forEach(input => { input.checked = checked; });
+      $("#exportWarning").classList.toggle("show", !checked);
+      render();
+    }
+
+    function allCategories() {
+      return [...new Set([...(state.categories || []), ...state.rows.map(row => row.category)].filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-PT"));
+    }
+
+    function renderCategoryControls() {
+      const categories = allCategories();
+      const currentFilter = $("#categoryFilter").value;
+      $("#categoryFilter").innerHTML = `<option value="">Todas</option>${categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("")}`;
+      $("#categoryFilter").value = categories.includes(currentFilter) ? currentFilter : "";
+
+      const formCategory = $("#recordForm").category;
+      const currentForm = formCategory.value || categories[0] || "";
+      formCategory.innerHTML = categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+      formCategory.value = categories.includes(currentForm) ? currentForm : categories[0] || "";
+
+      const removeCategory = $("#removeCategory");
+      const currentRemove = removeCategory.value || categories[0] || "";
+      removeCategory.innerHTML = categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+      removeCategory.value = categories.includes(currentRemove) ? currentRemove : categories[0] || "";
+    }
+
+    function requireStatusSelection() {
+      const ok = selectedStatuses().length > 0;
+      $("#exportWarning").classList.toggle("show", !ok);
+      if (!ok) toast("Selecione pelo menos um estado antes de exportar ou gerar PDF.");
+      return ok;
+    }
+
+    function filteredRows() {
+      const query = normalise($("#search").value);
+      const category = $("#categoryFilter").value;
+      const selected = selectedStatuses();
+      return state.rows
+        .filter(row => !category || row.category === category)
+        .filter(row => !selected.length || selected.includes(row.status))
+        .filter(row => !query || normalise(Object.values(row).join(" ")).includes(query))
+        .sort((a, b) => a.category.localeCompare(b.category, "pt-PT") || a.product.localeCompare(b.product, "pt-PT"));
+    }
+
+    function render() {
+      $("#workDate").value = state.date || today();
+      $("#forecastStart").value = state.forecastStart || "";
+      $("#forecastEnd").value = state.forecastEnd || "";
+      $("#collaborator").value = state.collaborator || "";
+      $("#generalNotes").value = state.notes || "";
+      renderCategoryControls();
+      renderTables();
+      renderSummary();
+    }
+
+    function renderTables() {
+      const rows = filteredRows();
+      const grouped = rows.reduce((acc, row) => {
+        (acc[row.category] ||= []).push(row);
+        return acc;
+      }, {});
+
+      $("#tables").innerHTML = allCategories().map(category => {
+        const categoryRows = grouped[category] || [];
+        return `
+          <section class="table-block">
+            <div class="table-title">
+              <h3>Stock de ${category.toLowerCase()}</h3>
+              <span>${categoryRows.length} produtos visíveis</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <colgroup>
+                  <col class="product-col">
+                  <col class="unit-col">
+                  <col class="forecast-col">
+                  <col class="status-col">
+                  <col class="notes-col">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Unidade</th>
+                    <th>Previsão da semana</th>
+                    <th>Estado</th>
+                    <th>Observações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${categoryRows.map(rowHtml).join("") || `<tr><td colspan="5">Sem produtos visíveis nesta categoria.</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        `;
+      }).join("");
+    }
+
+    function rowHtml(row) {
+      return `
+        <tr>
+          <td>${escapeHtml(row.product)}</td>
+          <td>${escapeHtml(row.unit)}</td>
+          <td><input class="inline-input row-forecast ${needsForecast(row) ? "needs-value" : ""}" data-id="${row.id}" type="text" inputmode="decimal" value="${escapeHtml(row.forecast || "")}" placeholder="Escrever"></td>
+          <td>
+            <div class="status-buttons">
+              ${statuses.map(status => `<button class="small status ${slug(status)} ${row.status === status ? "is-active" : ""}" data-action="status" data-id="${row.id}" data-status="${escapeHtml(status)}">${escapeHtml(status)}</button>`).join("")}
+            </div>
+          </td>
+          <td><textarea class="inline-notes row-notes" data-id="${row.id}" placeholder="Observações">${escapeHtml(row.notes || "")}</textarea></td>
+        </tr>
+      `;
+    }
+
+    function needsForecast(row) {
+      return ["Baixo", "Alto"].includes(row.status) && !String(row.forecast || "").trim();
+    }
+
+    function renderSummary() {
+      const rows = filteredRows();
+      const totalForecast = rows.reduce((sum, row) => sum + (parseFloat(String(row.forecast).replace(",", ".")) || 0), 0);
+      $("#totalCount").textContent = rows.length;
+      $("#lowCount").textContent = rows.filter(row => row.status === "Baixo").length;
+      $("#seasonCount").textContent = rows.filter(row => row.status === "Fora de época").length;
+      $("#forecastTotal").textContent = totalForecast.toLocaleString("pt-PT");
+    }
+
+    function openModal() {
+      const row = {
+        id: "",
+        category: allCategories()[0] || "Hortícolas",
+        product: "",
+        unit: "kg",
+        status: "Em desenvolvimento",
+        forecast: "",
+        date: state.date || today(),
+        notes: ""
+      };
+      $("#modalTitle").textContent = "Adicionar produto";
+      $("#recordId").value = "";
+      const form = $("#recordForm");
+      renderCategoryControls();
+      form.category.value = row.category;
+      form.product.value = row.product;
+      form.unit.value = row.unit;
+      form.newCategory.value = "";
+      $("#modal").showModal();
+    }
+
+    function saveRecord(event) {
+      event.preventDefault();
+      const form = $("#recordForm");
+      const data = Object.fromEntries(new FormData(form).entries());
+      const newCategory = String(data.newCategory || "").trim();
+      const category = newCategory || data.category;
+      delete data.newCategory;
+      if (newCategory && !state.categories.includes(newCategory)) state.categories.push(newCategory);
+      state.rows.push({
+        id: uid(),
+        order: state.rows.length + 1,
+        status: "Em desenvolvimento",
+        forecast: "",
+        date: state.date || today(),
+        notes: "",
+        ...data,
+        category
+      });
+      save();
+      $("#modal").close();
+      render();
+      toast("Produto guardado.");
+    }
+
+    function openRemoveModal() {
+      populateRemoveProducts();
+      $("#removeModal").showModal();
+    }
+
+    function populateRemoveProducts() {
+      const category = $("#removeCategory").value;
+      const rows = state.rows
+        .filter(row => row.category === category)
+        .sort((a, b) => a.product.localeCompare(b.product, "pt-PT"));
+      $("#removeProduct").innerHTML = rows.map(row => `<option value="${row.id}">${escapeHtml(row.product)} (${escapeHtml(row.unit)})</option>`).join("");
+    }
+
+    function removeProduct(event) {
+      event.preventDefault();
+      const id = $("#removeProduct").value;
+      const row = state.rows.find(item => item.id === id);
+      if (!row || !confirm(`Remover "${row.product}"?`)) return;
+      state.rows = state.rows.filter(item => item.id !== id);
+      save();
+      $("#removeModal").close();
+      render();
+      toast("Produto removido.");
+    }
+
+    function updateRow(id, fields, shouldRender = false) {
+      const row = state.rows.find(item => item.id === id);
+      if (!row) return;
+      Object.assign(row, fields, { date: state.date || today() });
+      save();
+      renderSummary();
+      if (shouldRender) render();
+    }
+
+    function validateForecast(rows = state.rows) {
+      const missing = rows.filter(needsForecast);
+      if (!missing.length) return true;
+      render();
+      const first = missing[0];
+      setTimeout(() => {
+        const input = document.querySelector(`.row-forecast[data-id="${first.id}"]`);
+        if (input) {
+          input.focus();
+          input.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 50);
+      toast("Preencha a previsão da semana nos produtos com estado Baixo ou Alto.");
+      return false;
+    }
+
+    function exportRows(rows = filteredRows()) {
+      return rows.map(row => ({
+        data_registo: state.date || "",
+        previsao_de: state.forecastStart || "",
+        previsao_ate: state.forecastEnd || "",
+        colaborador: state.collaborator || "",
+        categoria: row.category,
+        produto: row.product,
+        unidade: row.unit,
+        estado: row.status,
+        previsao_semana: row.forecast,
+        observacoes: row.notes,
+        notas_gerais: state.notes || ""
+      }));
+    }
+
+    function csvCell(value) {
+      const text = String(value ?? "");
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+
+    function toCsv(rows) {
+      const headers = Object.keys(rows[0] || {});
+      return [headers.join(","), ...rows.map(row => headers.map(header => csvCell(row[header])).join(","))].join("\n");
+    }
+
+    function downloadCsv() {
+      if (!requireStatusSelection()) return;
+      const rows = filteredRows();
+      if (!validateForecast(rows)) return;
+      download("registo-stocks-quinta.csv", toCsv(exportRows(rows)), "text/csv");
+    }
+
+    function downloadJson() {
+      if (!requireStatusSelection()) return;
+      const rows = filteredRows();
+      if (!validateForecast(rows)) return;
+      download("registo-stocks-quinta.json", JSON.stringify({
+        data_registo: state.date || "",
+        previsao_de: state.forecastStart || "",
+        previsao_ate: state.forecastEnd || "",
+        colaborador: state.collaborator || "",
+        filtros: {
+          categoria: $("#categoryFilter").value || "Todas",
+          estados: selectedStatuses(),
+          pesquisa: $("#search").value || ""
+        },
+        notas_gerais: state.notes || "",
+        rows
+      }, null, 2), "application/json");
+    }
+
+    function download(filename, content, mime) {
+      const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function exportSheets() {
+      if (!requireStatusSelection()) return;
+      const visibleRows = filteredRows();
+      if (!validateForecast(visibleRows)) return;
+      const rows = exportRows(visibleRows);
+      const headers = Object.keys(rows[0] || {});
+      const tsv = [headers.join("\t"), ...rows.map(row => headers.map(header => row[header] ?? "").join("\t"))].join("\n");
+      try {
+        await navigator.clipboard.writeText(tsv);
+        toast("Dados copiados para colar no Google Sheets.");
+      } catch {
+        download("registo-stocks-google-sheets.csv", toCsv(rows), "text/csv");
+        toast("Ficheiro compatível com Google Sheets gerado.");
+      }
+    }
+
+    function reportTable(title, rows) {
+      if (!rows.length) return "";
+      const grouped = rows.reduce((acc, row) => {
+        (acc[row.category] ||= []).push(row);
+        return acc;
+      }, {});
+      const categories = Object.keys(grouped).sort((a, b) => a.localeCompare(b, "pt-PT"));
+      return `
+        <section class="report-section">
+          <h2>${escapeHtml(title)}</h2>
+          ${categories.map(category => {
+            const categoryRows = grouped[category].sort((a, b) => a.product.localeCompare(b.product, "pt-PT"));
+            const hasNotes = categoryRows.some(row => String(row.notes || "").trim());
+            return `
+              <div class="category-title">Stock de ${escapeHtml(category.toLowerCase())}<span>${categoryRows.length} produtos</span></div>
+              <table>
+                <colgroup>
+                  <col class="product">
+                  <col class="unit">
+                  <col class="forecast">
+                  <col class="state">
+                  ${hasNotes ? `<col class="obs">` : ""}
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Unidade</th>
+                    <th>Previsão da semana</th>
+                    <th>Estado</th>
+                    ${hasNotes ? `<th>Observações</th>` : ""}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${categoryRows.map(row => `
+                    <tr>
+                      <td>${escapeHtml(row.product)}</td>
+                      <td>${escapeHtml(row.unit)}</td>
+                      <td>${escapeHtml(row.forecast || "")}</td>
+                      <td><span class="state-pill ${slug(row.status)}">${escapeHtml(row.status)}</span></td>
+                      ${hasNotes ? `<td>${escapeHtml(row.notes || "")}</td>` : ""}
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            `;
+          }).join("")}
+        </section>
+      `;
+    }
+
+    function printReport() {
+      if (!requireStatusSelection()) return;
+      const rows = filteredRows();
+      if (!validateForecast(rows)) return;
+      const stockRows = rows.filter(row => ["Baixo", "Alto"].includes(row.status));
+      const developmentRows = rows.filter(row => row.status === "Em desenvolvimento");
+      const otherRows = rows.filter(row => !["Baixo", "Alto", "Em desenvolvimento"].includes(row.status));
+      const lowRows = rows.filter(row => row.status === "Baixo");
+      const outOfSeasonRows = rows.filter(row => row.status === "Fora de época");
+      const period = [state.forecastStart, state.forecastEnd].filter(Boolean).join(" a ") || "Sem período definido";
+      const reportHtml = `
+        <!doctype html>
+        <html lang="pt-PT">
+        <head>
+          <meta charset="utf-8">
+          <title>Registo de Stock da Quinta</title>
+          <style>
+            @page { size: A4 portrait; margin: 10mm; }
+            * { box-sizing: border-box; }
+            body { font-family: Arial, Helvetica, sans-serif; color: #1f2f27; margin: 0; font-size: 10.4px; line-height: 1.28; background: #ffffff; }
+            header { display: flex; justify-content: space-between; align-items: stretch; gap: 18px; padding: 12px 14px; border: 1px solid #b9d1bf; border-radius: 10px; background: linear-gradient(135deg, #e7f1e7 0%, #f6faf4 100%); }
+            h1 { margin: 0; font-size: 20px; line-height: 1.08; color: #173b28; }
+            .subtitle { margin-top: 5px; color: #52655a; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+            .meta { min-width: 190px; text-align: right; font-size: 9.5px; color: #52655a; }
+            .meta div { margin-bottom: 4px; }
+            .meta strong { display: block; margin-top: 1px; font-size: 12px; color: #173b28; }
+            .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0 12px; }
+            .metric { border: 1px solid #d7e4d8; border-radius: 8px; padding: 7px 8px; background: #fbfdfb; }
+            .metric span { display: block; color: #64736a; font-size: 8.8px; font-weight: 700; text-transform: uppercase; }
+            .metric strong { display: block; margin-top: 3px; color: #183d29; font-size: 15px; }
+            .report-section { margin-top: 10px; page-break-inside: auto; }
+            h2 { margin: 12px 0 6px; padding: 6px 8px; border-left: 5px solid #2f6f4e; border-radius: 6px; background: #eef6ef; color: #173b28; font-size: 12.2px; text-transform: uppercase; letter-spacing: .04em; }
+            .category-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 8px 0 0; padding: 6px 8px; border: 1px solid #dbe7db; border-bottom: 0; border-radius: 7px 7px 0 0; background: #f6faf4; color: #244734; font-size: 11.2px; font-weight: 800; }
+            .category-title span { color: #68786e; font-size: 9px; font-weight: 700; }
+            table { width: 100%; border-collapse: collapse; page-break-inside: auto; margin-bottom: 7px; border: 1px solid #d7dfd8; }
+            th, td { border-bottom: 1px solid #e3e9e3; padding: 4px 5px; text-align: left; vertical-align: top; }
+            th { background: #dfece1; color: #244734; font-size: 8.5px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid #c7d8c9; }
+            tbody tr:nth-child(even) { background: #fbfcfb; }
+            tr { page-break-inside: avoid; }
+            .product { width: 37%; }
+            .unit { width: 12%; }
+            .forecast { width: 16%; }
+            .state { width: 20%; }
+            .obs { width: 15%; }
+            .state-pill { display: inline-block; min-width: 86px; padding: 3px 7px; border-radius: 999px; text-align: center; font-size: 8.8px; font-weight: 800; border: 1px solid transparent; }
+            .state-pill.baixo { color: #8b2f25; background: #fde8e4; border-color: #f4c5be; }
+            .state-pill.alto { color: #215d3b; background: #e2f3e8; border-color: #bfe2ca; }
+            .state-pill.em-desenvolvimento { color: #225a70; background: #e3eff5; border-color: #bdd8e4; }
+            .state-pill.nao-cultivado { color: #615b52; background: #f1ede6; border-color: #ded6c8; }
+            .state-pill.fora-de-epoca { color: #745213; background: #fff4d8; border-color: #efd38a; }
+            .empty { margin-top: 14px; padding: 8px; border: 1px dashed #ccd9ce; border-radius: 7px; color: #64736a; font-style: italic; }
+            .notes { margin-top: 12px; padding: 9px 10px; border: 1px solid #d7e4d8; border-radius: 8px; background: #fbfdfb; }
+            .footer { margin-top: 12px; padding-top: 6px; border-top: 1px solid #d7dfd8; color: #78877e; font-size: 8.8px; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <header>
+            <div>
+              <h1>Registo de Stock da Quinta</h1>
+              <div class="subtitle">Previsão semanal de disponibilidade</div>
+            </div>
+            <div class="meta">
+              <div>Data do documento<strong>${escapeHtml(state.date || "")}</strong></div>
+              <div>Período de previsão<strong>${escapeHtml(period)}</strong></div>
+              ${state.collaborator ? `<div>Colaborador<strong>${escapeHtml(state.collaborator)}</strong></div>` : ""}
+            </div>
+          </header>
+          <section class="summary">
+            <div class="metric"><span>Produtos em stock</span><strong>${stockRows.length}</strong></div>
+            <div class="metric"><span>Total visível</span><strong>${rows.length}</strong></div>
+            <div class="metric"><span>Stock baixo</span><strong>${lowRows.length}</strong></div>
+            <div class="metric"><span>Em desenvolvimento</span><strong>${developmentRows.length}</strong></div>
+            <div class="metric"><span>Fora de época</span><strong>${outOfSeasonRows.length}</strong></div>
+          </section>
+          ${rows.length ? "" : `<p class="empty">Não existem produtos para os filtros selecionados.</p>`}
+          ${reportTable("Produtos em stock", stockRows)}
+          ${reportTable("Produtos em desenvolvimento", developmentRows)}
+          ${reportTable("Outros estados", otherRows)}
+          ${state.notes ? `<div class="notes"><strong>Notas / Observações gerais</strong><br>${escapeHtml(state.notes).replace(/\n/g, "<br>")}</div>` : ""}
+          <div class="footer">Gestão da Quinta | Registo de Stocks</div>
+        </body>
+        </html>
+      `;
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        toast("O navegador bloqueou a janela de PDF. Permita pop-ups para gerar o relatório.");
+        return;
+      }
+      printWindow.document.open();
+      printWindow.document.write(reportHtml);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => printWindow.print(), 250);
+    }
+
+    function toast(message) {
+      const el = $("#toast");
+      el.textContent = message;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2400);
+    }
+
+    document.addEventListener("click", event => {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+      if (button.dataset.action === "status") {
+        updateRow(button.dataset.id, { status: button.dataset.status }, true);
+        const row = state.rows.find(item => item.id === button.dataset.id);
+        if (row && needsForecast(row)) validateForecast([row]);
+      }
+    });
+
+    document.addEventListener("input", event => {
+      if (event.target.classList.contains("row-forecast")) {
+        updateRow(event.target.dataset.id, { forecast: event.target.value });
+        const row = state.rows.find(item => item.id === event.target.dataset.id);
+        event.target.classList.toggle("needs-value", row ? needsForecast(row) : false);
+      }
+      if (event.target.classList.contains("row-notes")) {
+        updateRow(event.target.dataset.id, { notes: event.target.value });
+      }
+    });
+
+    $("#recordForm").addEventListener("submit", saveRecord);
+    $("#removeForm").addEventListener("submit", removeProduct);
+    $("#addBtn").addEventListener("click", () => openModal());
+    $("#removeBtn").addEventListener("click", openRemoveModal);
+    $("#allStatusesBtn").addEventListener("click", () => setAllStatuses(true));
+    $("#clearStatusesBtn").addEventListener("click", () => setAllStatuses(false));
+    $("#closeBtn").addEventListener("click", () => $("#modal").close());
+    $("#cancelBtn").addEventListener("click", () => $("#modal").close());
+    $("#closeRemoveBtn").addEventListener("click", () => $("#removeModal").close());
+    $("#cancelRemoveBtn").addEventListener("click", () => $("#removeModal").close());
+    $("#removeCategory").addEventListener("change", populateRemoveProducts);
+    $("#search").addEventListener("input", render);
+    $("#categoryFilter").addEventListener("change", render);
+    document.querySelectorAll(".status-filter-check").forEach(input => input.addEventListener("change", () => {
+      $("#exportWarning").classList.remove("show");
+      render();
+    }));
+    $("#workDate").addEventListener("change", event => { state.date = event.target.value; save(); });
+    $("#forecastStart").addEventListener("change", event => { state.forecastStart = event.target.value; save(); });
+    $("#forecastEnd").addEventListener("change", event => { state.forecastEnd = event.target.value; save(); });
+    $("#collaborator").addEventListener("input", event => { state.collaborator = event.target.value; save(); });
+    $("#generalNotes").addEventListener("input", event => { state.notes = event.target.value; save(); });
+    $("#csvBtn").addEventListener("click", downloadCsv);
+    $("#jsonBtn").addEventListener("click", downloadJson);
+    $("#sheetsBtn").addEventListener("click", exportSheets);
+    $("#pdfBtn").addEventListener("click", printReport);
+
+    // Receber dados da app principal (pull da cloud)
+    window.addEventListener('message', function(ev) {
+      if (!ev.data || ev.data.type !== 'stocksQuintaLoad') return;
+      var incoming = ev.data.state;
+      if (!incoming || typeof incoming !== 'object') return;
+      // Guardar no localStorage local do iframe e actualizar estado
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(incoming)); } catch(e) {}
+      state = migrate(incoming);
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão da Quinta — Versão 42 Modular</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>🌾 Gestão da Quinta</h1>
+        <small>Versão 42 — arquitectura modular por botão, com distribuição versionada</small>
+      </div>
+      <div class="toolbar">
+        <input class="global-search" id="pesquisaGlobalInput" placeholder="Pesquisa global..." onkeydown="if(event.key==='Enter') abrirPesquisaGlobal()" oninput="executarPesquisaGlobalShell(this.value)">
+        <button class="btn-secondary" onclick="abrirPesquisaGlobal()">Pesquisar</button>
+        <button class="btn-secondary" onclick="exportarDadosShell()">Exportar JSON</button>
+        <button class="btn-secondary" onclick="document.getElementById('importFile').click()">Importar JSON</button>
+        <input id="importFile" type="file" accept=".json,application/json" hidden onchange="importarDadosShell(event)">
+        <button class="btn-secondary" onclick="abrirBackupsShell()">Backups</button>
+        <button class="btn-secondary" onclick="abrirRelatoriosShell()">Relatórios</button>
+        <button class="btn-secondary" onclick="abrirSincronizacaoShell()">Sincronização</button>
+      </div>
+    </div>
+    <div class="nav-principal">
+      <button class="nav-btn" data-modulo="alertas" onclick="abrirModulo('alertas', event)">🔔 Alertas</button>
+<button class="nav-btn" data-modulo="dashboard" onclick="abrirModulo('dashboard', event)">📊 Dashboard</button>
+<button class="nav-btn" data-modulo="culturas" onclick="abrirModulo('culturas', event)">🌱 Culturas</button>
+<button class="nav-btn" data-modulo="stocks" onclick="abrirModulo('stocks', event)">📦 Stocks</button>
+<button class="nav-btn" data-modulo="stocksQuinta" onclick="abrirModulo('stocksQuinta', event)">📋 Stocks da Quinta</button>
+<button class="nav-btn" data-modulo="caixa" onclick="abrirModulo('caixa', event)">💳 Caixa</button>
+<button class="nav-btn" data-modulo="produtosAutorizados" onclick="abrirModulo('produtosAutorizados', event)">📚 Produtos Autorizados</button>
+<button class="nav-btn" data-modulo="fitossanidade" onclick="abrirModulo('fitossanidade', event)">🦗 Fitossanidade</button>
+<button class="nav-btn" data-modulo="operacoes" onclick="abrirModulo('operacoes', event)">🚜 Operações</button>
+<button class="nav-btn" data-modulo="maquinas" onclick="abrirModulo('maquinas', event)">⚙️ Tratores/Máquinas</button>
+<button class="nav-btn" data-modulo="viaturas" onclick="abrirModulo('viaturas', event)">🚗 Viaturas</button>
+<button class="nav-btn" data-modulo="alfaias" onclick="abrirModulo('alfaias', event)">🔧 Alfaias</button>
+<button class="nav-btn" data-modulo="equipamentos" onclick="abrirModulo('equipamentos', event)">🧰 Equipamentos</button>
+<button class="nav-btn" data-modulo="animais" onclick="abrirModulo('animais', event)">🐑 Animais</button>
+<button class="nav-btn" data-modulo="relatorios" onclick="abrirModulo('relatorios', event)">Relatórios</button>
+    </div>
+    <div id="estadoModulo" class="status">A carregar módulo...</div>
+    <iframe id="moduloFrame" class="modulo-frame" title="Módulo activo"></iframe>
+  </div>
+  <script src="js/storage.js"></script>
+  <script src="js/dados.js"></script>
+  <script src="js/pesquisa.js"></script>
+  <script src="js/exportacao.js"></script>
+  <script src="js/backups.js"></script>
+  <script src="js/sincronizacao.js"></script>
+  <script src="js/relatorios.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

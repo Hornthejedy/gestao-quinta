@@ -1,0 +1,1993 @@
+﻿<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão de Caixa — módulo v41</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #1a2e4a;
+  --navy2: #0f1e30;
+  --green: #2d5a3d;
+  --green2: #1e3d28;
+  --gold: #c9a84c;
+  --ivory: #f7f4ee;
+  --ivory2: #f0ece3;
+  --white: #ffffff;
+  --gray: #6b7280;
+  --gray2: #9ca3af;
+  --border: #e2ddd5;
+  --border2: #d1cdc4;
+  --red: #c0392b;
+  --red-bg: #fef2f2;
+  --green-bg: #f0f7f3;
+  --text: #1a1a1a;
+  --sidebar-w: 240px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(26,46,74,0.08);
+  --shadow-lg: 0 8px 32px rgba(26,46,74,0.14);
+}
+ 
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body { font-family:'DM Sans',sans-serif; background:var(--ivory); color:var(--text); display:flex; flex-direction:column; }
+ 
+/* ── SCREENS ── */
+.screen { display:none; }
+.screen.active { display:flex; }
+ 
+/* ══════════════════════════════════════════
+   SCREEN 1 — COMPANY SELECTOR
+═══════════════════════════════════════════ */
+#screen-selector {
+  min-height:100vh; align-items:center; justify-content:center;
+  flex-direction:column; padding:40px 24px;
+  background: radial-gradient(ellipse at 30% 20%, #e8f0f7 0%, var(--ivory) 60%);
+}
+ 
+.selector-logo { margin-bottom:48px; text-align:center; }
+.selector-logo h1 { font-family:'Playfair Display',serif; font-size:42px; color:var(--navy); line-height:1; }
+.selector-logo h1 span { color:var(--green); }
+.selector-logo p { color:var(--gray); font-size:15px; margin-top:8px; font-weight:300; }
+ 
+.company-cards { display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:620px; width:100%; }
+ 
+.co-card {
+  background:var(--white); border:2px solid var(--border); border-radius:20px;
+  padding:32px 24px; cursor:pointer; transition:all .22s;
+  text-align:left; position:relative;
+}
+.co-card:hover { border-color:var(--green); box-shadow:var(--shadow-lg); transform:translateY(-3px); }
+.co-card.selected { border-color:var(--green); background:var(--green-bg); }
+ 
+.co-icon {
+  width:56px; height:56px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px; margin-bottom:16px;
+}
+.co-card.ftg .co-icon { background:#dff0ea; }
+.co-card.ps  .co-icon { background:#dce8f5; }
+ 
+.co-name { font-family:'Playfair Display',serif; font-size:18px; color:var(--navy); margin-bottom:4px; }
+.co-nif  { font-size:11px; color:var(--gray2); letter-spacing:.5px; margin-bottom:6px; }
+.co-desc { font-size:13px; color:var(--gray); font-weight:300; line-height:1.4; }
+.co-months { margin-top:12px; font-size:12px; color:var(--green); font-weight:500; }
+ 
+.selector-actions { margin-top:36px; display:flex; gap:12px; align-items:center; }
+ 
+.btn-enter {
+  padding:14px 40px; background:var(--green); color:var(--white);
+  border:none; border-radius:12px; font-family:'Playfair Display',serif;
+  font-size:17px; cursor:pointer; transition:all .2s;
+  opacity:.35; pointer-events:none;
+}
+.btn-enter.ready { opacity:1; pointer-events:all; }
+.btn-enter.ready:hover { background:var(--navy); transform:translateY(-1px); box-shadow:var(--shadow); }
+ 
+/* ══════════════════════════════════════════
+   SCREEN 2 — MAIN APP
+═══════════════════════════════════════════ */
+#screen-app { flex-direction:row; height:100vh; overflow:hidden; }
+ 
+/* SIDEBAR */
+.sidebar {
+  width:var(--sidebar-w); min-width:var(--sidebar-w);
+  background:var(--navy); display:flex; flex-direction:column;
+  overflow:hidden;
+}
+ 
+.sidebar-header {
+  padding:24px 20px 20px; border-bottom:1px solid rgba(255,255,255,.08);
+}
+.sidebar-co-name { font-family:'Playfair Display',serif; font-size:15px; color:var(--white); line-height:1.2; }
+.sidebar-co-nif  { font-size:10px; color:rgba(255,255,255,.4); margin-top:2px; letter-spacing:.5px; }
+.sidebar-change  {
+  margin-top:10px; font-size:11px; color:rgba(255,255,255,.5);
+  cursor:pointer; display:flex; align-items:center; gap:4px; transition:color .15s;
+}
+.sidebar-change:hover { color:rgba(255,255,255,.85); }
+ 
+.sidebar-saldo {
+  margin:16px 20px; background:rgba(255,255,255,.06);
+  border-radius:10px; padding:12px 14px;
+  border:1px solid rgba(255,255,255,.08);
+}
+.sidebar-saldo .sl { font-size:10px; color:rgba(255,255,255,.45); text-transform:uppercase; letter-spacing:.8px; }
+.sidebar-saldo .sv { font-family:'Playfair Display',serif; font-size:22px; color:var(--white); margin-top:2px; }
+.sidebar-saldo .sv.neg { color:#f87171; }
+ 
+.sidebar-section-label {
+  padding:10px 20px 4px; font-size:10px; color:rgba(255,255,255,.3);
+  text-transform:uppercase; letter-spacing:1px; font-weight:500;
+}
+ 
+.month-list { overflow-y:auto; flex:1; padding-bottom:16px; }
+.month-list::-webkit-scrollbar { width:4px; }
+.month-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:2px; }
+ 
+.month-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 20px; cursor:pointer; transition:background .12s;
+  border-left:3px solid transparent;
+}
+.month-item:hover { background:rgba(255,255,255,.05); }
+.month-item.active { background:rgba(255,255,255,.1); border-left-color:var(--gold); }
+.month-item .mi-name { font-size:13px; color:rgba(255,255,255,.8); }
+.month-item .mi-year { font-size:10px; color:rgba(255,255,255,.35); margin-top:1px; }
+.month-item .mi-bal  { font-size:12px; font-weight:500; }
+.month-item .mi-bal.pos { color:#4ade80; }
+.month-item .mi-bal.neg { color:#f87171; }
+ 
+/* collapsed months */
+.month-item.collapsed { opacity:.55; }
+.month-item.collapsed .mi-name { font-size:12px; }
+.month-item.collapsed .mi-bal  { font-size:11px; }
+.month-group-header {
+  padding:8px 20px 3px; font-size:9px; color:rgba(255,255,255,.25);
+  text-transform:uppercase; letter-spacing:1.2px; font-weight:600;
+  display:flex; align-items:center; justify-content:space-between; cursor:pointer;
+  user-select:none;
+}
+.month-group-header:hover { color:rgba(255,255,255,.5); }
+.month-group-body.hidden .month-item { display:none; }
+ 
+/* sortable th */
+thead th.sortable { cursor:pointer; user-select:none; position:relative; }
+thead th.sortable:hover { background:rgba(255,255,255,.08); }
+thead th.sortable::after { content:''; margin-left:4px; opacity:.4; font-size:9px; }
+thead th.sort-asc::after  { content:'↑'; opacity:1; }
+thead th.sort-desc::after { content:'↓'; opacity:1; }
+ 
+/* editable cells */
+td.editable { cursor:text; position:relative; }
+td.editable:hover::before {
+  content:''; position:absolute; inset:0;
+  border:1.5px solid rgba(45,90,61,.35); border-radius:4px; pointer-events:none;
+}
+td.editable input, td.editable textarea {
+  width:100%; background:var(--white); border:1.5px solid var(--green);
+  border-radius:4px; padding:3px 6px; font-family:'DM Sans',sans-serif;
+  font-size:13px; color:var(--text); outline:none;
+}
+td.editable input.num-input { text-align:right; }
+ 
+.sidebar-footer {
+  padding:14px 20px; border-top:1px solid rgba(255,255,255,.08);
+  display:flex; flex-direction:column; gap:8px;
+}
+.btn-sidebar {
+  display:flex; align-items:center; gap:8px; padding:9px 12px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1);
+  border-radius:8px; cursor:pointer; color:rgba(255,255,255,.75);
+  font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500;
+  transition:all .15s; text-align:left; width:100%;
+}
+.btn-sidebar:hover { background:rgba(255,255,255,.14); color:var(--white); }
+.btn-sidebar svg { opacity:.6; flex-shrink:0; }
+ 
+/* MAIN CONTENT */
+.main-content { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+ 
+.main-topbar {
+  background:var(--white); border-bottom:1px solid var(--border);
+  padding:0 28px; height:60px; display:flex; align-items:center;
+  justify-content:space-between; flex-shrink:0;
+}
+.topbar-title { font-family:'Playfair Display',serif; font-size:20px; color:var(--navy); }
+.topbar-actions { display:flex; gap:10px; align-items:center; }
+ 
+.btn {
+  padding:8px 16px; border-radius:8px; font-family:'DM Sans',sans-serif;
+  font-size:13px; font-weight:500; cursor:pointer; transition:all .15s;
+  display:inline-flex; align-items:center; gap:6px; border:1.5px solid transparent;
+}
+.btn-primary { background:var(--green); color:var(--white); border-color:var(--green); }
+.btn-primary:hover { background:var(--green2); }
+.btn-outline { background:var(--white); color:var(--navy); border-color:var(--border2); }
+.btn-outline:hover { border-color:var(--navy); background:var(--ivory); }
+.btn-danger { background:var(--red-bg); color:var(--red); border-color:#fca5a5; }
+.btn-danger:hover { background:#fee2e2; }
+ 
+/* SUMMARY CARDS */
+.summary-bar {
+  background:var(--white); border-bottom:1px solid var(--border);
+  padding:16px 28px; display:flex; gap:16px; flex-shrink:0;
+}
+.sum-card {
+  flex:1; background:var(--ivory); border-radius:10px;
+  padding:14px 16px; border:1px solid var(--border);
+}
+.sum-card .sc-label { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--gray2); font-weight:600; }
+.sum-card .sc-val { font-family:'Playfair Display',serif; font-size:22px; margin-top:4px; }
+.sum-card.rec .sc-val { color:var(--green); }
+.sum-card.pag .sc-val { color:var(--red); }
+.sum-card.saldo .sc-val { color:var(--navy); }
+.sum-card.saldo .sc-val.neg { color:var(--red); }
+.sum-card .sc-sub { font-size:11px; color:var(--gray2); margin-top:2px; }
+ 
+/* ENTRIES TABLE */
+.entries-area { flex:1; overflow-y:auto; padding:20px 28px; }
+ 
+.table-wrap {
+  background:var(--white); border-radius:var(--radius);
+  border:1px solid var(--border); overflow:hidden;
+  box-shadow:var(--shadow);
+}
+ 
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead { background:var(--navy); }
+thead th {
+  padding:11px 12px; text-align:left; color:rgba(255,255,255,.85);
+  font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;
+  white-space:nowrap;
+}
+thead th.num { text-align:right; }
+tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
+tbody tr:last-child { border-bottom:none; }
+tbody tr:hover { background:var(--ivory); }
+tbody tr.new-entry { background:#f0fdf4 !important; }
+tbody td { padding:10px 12px; color:var(--text); vertical-align:middle; }
+tbody td.num { text-align:right; font-variant-numeric:tabular-nums; }
+tbody td.rec-val { color:var(--green); font-weight:600; text-align:right; }
+tbody td.pag-val { color:var(--red); text-align:right; }
+tbody td.saldo-pos { color:var(--navy); font-weight:500; text-align:right; }
+tbody td.saldo-neg { color:var(--red); font-weight:500; text-align:right; }
+tbody td.doc-col { color:var(--gray); font-size:11px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+tbody td.nome-col { font-weight:500; max-width:160px; }
+tbody td.obs-col { color:var(--gray); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+tbody td.act-col { text-align:right; }
+ 
+.del-btn {
+  width:28px; height:28px; border-radius:6px; border:none;
+  background:var(--red-bg); color:var(--red); cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .15s;
+  font-size:14px; line-height:1;
+}
+tbody tr:hover .del-btn { opacity:1; }
+.del-btn:hover { background:#fee2e2; }
+ 
+.empty-state {
+  padding:60px 28px; text-align:center; color:var(--gray);
+}
+.empty-state svg { opacity:.3; margin-bottom:12px; }
+.empty-state h3 { font-size:15px; color:var(--navy); margin-bottom:6px; }
+.empty-state p { font-size:13px; }
+ 
+/* ── MODAL ── */
+.overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.45);
+  display:flex; align-items:center; justify-content:center;
+  z-index:100; opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.overlay.open { opacity:1; pointer-events:all; }
+ 
+.modal {
+  background:var(--white); border-radius:16px; width:520px; max-width:95vw;
+  box-shadow:var(--shadow-lg); transform:translateY(12px); transition:transform .2s;
+  max-height:90vh; overflow-y:auto;
+}
+.overlay.open .modal { transform:translateY(0); }
+ 
+.modal-header {
+  padding:24px 28px 0; display:flex; align-items:center; justify-content:space-between;
+}
+.modal-title { font-family:'Playfair Display',serif; font-size:20px; color:var(--navy); }
+.modal-close {
+  width:32px; height:32px; border-radius:8px; border:none;
+  background:var(--ivory); color:var(--gray); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+}
+.modal-close:hover { background:var(--ivory2); }
+ 
+.modal-body { padding:20px 28px; }
+ 
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-full { grid-column:1/-1; }
+ 
+.form-group { display:flex; flex-direction:column; gap:5px; }
+.form-group label { font-size:12px; font-weight:600; color:var(--navy); text-transform:uppercase; letter-spacing:.5px; }
+.form-group input, .form-group select, .form-group textarea {
+  padding:10px 12px; border:1.5px solid var(--border2); border-radius:8px;
+  font-family:'DM Sans',sans-serif; font-size:14px; background:var(--ivory);
+  color:var(--text); outline:none; transition:border-color .15s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color:var(--green); background:var(--white);
+}
+.form-group textarea { resize:vertical; min-height:72px; }
+ 
+.tipo-toggle { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1.5px solid var(--border2); }
+.tipo-btn {
+  flex:1; padding:10px; border:none; font-family:'DM Sans',sans-serif;
+  font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; background:var(--ivory);
+}
+.tipo-btn.pag.active { background:var(--red); color:var(--white); }
+.tipo-btn.rec.active { background:var(--green); color:var(--white); }
+.tipo-btn:not(.active) { color:var(--gray); }
+ 
+.modal-footer { padding:0 28px 24px; display:flex; gap:10px; justify-content:flex-end; }
+ 
+/* ── MONTH MODAL ── */
+.new-month-grid { display:flex; gap:12px; flex-wrap:wrap; }
+.nm-chip {
+  padding:8px 14px; border:1.5px solid var(--border2); border-radius:8px;
+  font-size:13px; cursor:pointer; transition:all .15s; background:var(--ivory);
+}
+.nm-chip:hover { border-color:var(--green); }
+.nm-chip.selected { border-color:var(--green); background:var(--green-bg); color:var(--green); font-weight:500; }
+ 
+/* ── SUPPLIER AUTOCOMPLETE ── */
+.autocomplete-wrap { position:relative; }
+.autocomplete-wrap input { width:100%; }
+.ac-dropdown {
+  position:absolute; top:100%; left:0; right:0; z-index:200;
+  background:var(--white); border:1.5px solid var(--green); border-top:none;
+  border-radius:0 0 8px 8px; max-height:180px; overflow-y:auto;
+  box-shadow:var(--shadow);
+}
+.ac-item {
+  padding:8px 12px; cursor:pointer; font-size:13px; color:var(--text);
+  border-bottom:1px solid var(--border);
+}
+.ac-item:last-child { border-bottom:none; }
+.ac-item:hover { background:var(--ivory); }
+.ac-item.ac-new { color:var(--green); font-style:italic; }
+ 
+/* ── SIDEBAR TABS ── */
+.sidebar-tabs {
+  display:flex; border-bottom:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+.sb-tab {
+  flex:1; padding:10px 6px; text-align:center; font-size:11px; font-weight:600;
+  color:rgba(255,255,255,.4); cursor:pointer; transition:all .15s;
+  letter-spacing:.3px; text-transform:uppercase; border-bottom:2px solid transparent;
+}
+.sb-tab.active { color:var(--white); border-bottom-color:var(--gold); }
+.sb-tab:hover:not(.active) { color:rgba(255,255,255,.7); }
+ 
+.sb-panel { display:none; flex:1; flex-direction:column; overflow:hidden; }
+.sb-panel.active { display:flex; }
+ 
+/* ── SEARCH PANEL ── */
+.search-panel { padding:12px 16px; overflow-y:auto; flex:1; }
+.search-panel::-webkit-scrollbar { width:4px; }
+.search-panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:2px; }
+ 
+.sp-label { font-size:10px; color:rgba(255,255,255,.35); text-transform:uppercase; letter-spacing:.8px; font-weight:600; margin-bottom:6px; display:block; margin-top:12px; }
+.sp-label:first-child { margin-top:0; }
+ 
+.sp-input {
+  width:100%; padding:8px 10px; background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.12); border-radius:7px;
+  color:var(--white); font-family:'DM Sans',sans-serif; font-size:12px; outline:none;
+}
+.sp-input::placeholder { color:rgba(255,255,255,.3); }
+.sp-input:focus { border-color:rgba(255,255,255,.3); }
+.sp-input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(1) opacity(.4); }
+ 
+.supplier-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+.sup-tag {
+  display:flex; align-items:center; gap:4px; background:rgba(255,255,255,.12);
+  border-radius:20px; padding:3px 8px 3px 10px; font-size:11px; color:var(--white);
+}
+.sup-tag button {
+  background:none; border:none; color:rgba(255,255,255,.5); cursor:pointer;
+  font-size:13px; line-height:1; padding:0; margin:0;
+}
+.sup-tag button:hover { color:var(--white); }
+ 
+.sup-suggest {
+  max-height:130px; overflow-y:auto; margin-top:4px;
+  background:rgba(255,255,255,.05); border-radius:7px;
+}
+.sup-suggest-item {
+  padding:6px 10px; font-size:12px; color:rgba(255,255,255,.75);
+  cursor:pointer; transition:background .1s;
+}
+.sup-suggest-item:hover { background:rgba(255,255,255,.1); color:var(--white); }
+ 
+.btn-search {
+  width:100%; padding:10px; margin-top:12px; background:var(--green);
+  color:var(--white); border:none; border-radius:8px; font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:600; cursor:pointer; transition:background .15s;
+}
+.btn-search:hover { background:var(--green2); }
+ 
+/* ── SEARCH RESULTS (main area) ── */
+.search-results-area { flex:1; overflow-y:auto; padding:20px 28px; }
+.sr-header { margin-bottom:16px; }
+.sr-header h2 { font-family:'Playfair Display',serif; font-size:20px; color:var(--navy); }
+.sr-header p { font-size:13px; color:var(--gray); margin-top:2px; }
+.sr-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.sr-kpi { background:var(--white); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+.sr-kpi .sk-label { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--gray2); font-weight:600; }
+.sr-kpi .sk-val { font-family:'Playfair Display',serif; font-size:20px; margin-top:4px; }
+.sr-kpi.k-rec .sk-val { color:var(--green); }
+.sr-kpi.k-pag .sk-val { color:var(--red); }
+.sr-kpi.k-fat .sk-val { color:var(--navy); }
+.sr-kpi.k-liq .sk-val { color:var(--navy); }
+.sr-kpi.k-liq .sk-val.neg { color:var(--red); }
+ 
+/* ── SUPPLIERS MANAGER ── */
+.sup-manager { padding:12px 16px; overflow-y:auto; flex:1; }
+.sup-manager::-webkit-scrollbar { width:4px; }
+.sup-manager::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:2px; }
+.sup-list-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:7px 10px; background:rgba(255,255,255,.06); border-radius:6px;
+  margin-bottom:4px; font-size:12px; color:rgba(255,255,255,.8);
+}
+.sup-list-item button {
+  background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer;
+  font-size:15px; line-height:1; transition:color .15s;
+}
+.sup-list-item button:hover { color:#f87171; }
+.sup-add-row { display:flex; gap:6px; margin-top:8px; }
+.sup-add-row input {
+  flex:1; padding:7px 10px; background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.12); border-radius:7px;
+  color:var(--white); font-family:'DM Sans',sans-serif; font-size:12px; outline:none;
+}
+.sup-add-row input::placeholder { color:rgba(255,255,255,.3); }
+.sup-add-row button {
+  padding:7px 12px; background:var(--green); color:var(--white); border:none;
+  border-radius:7px; font-size:12px; cursor:pointer; font-weight:600; white-space:nowrap;
+}
+.sup-add-row button:hover { background:var(--green2); }
+ 
+/* ── PRINT ── */
+@media print {
+  body > * { display:none !important; }
+  #print-doc { display:block !important; }
+  @page { size:A4 portrait; margin:12mm 10mm; }
+}
+#print-doc { display:none; }
+.pdf-page { width:190mm; margin:0 auto; padding:0; background:white; font-family:'DM Sans',sans-serif; color:#1a1a1a; font-size:8.5pt; }
+.pdf-header { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:8px; border-bottom:2.5pt solid #1a2e4a; margin-bottom:8px; }
+.pdf-logo-block .pc { font-family:'Playfair Display',serif; font-size:18pt; color:#1a2e4a; font-weight:700; line-height:1; }
+.pdf-logo-block .pt { font-size:7pt; color:#6b7280; letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+.pdf-meta { text-align:right; min-width:140px; }
+.pdf-meta .pm-title { font-family:'Playfair Display',serif; font-size:13pt; color:#2d5a3d; font-weight:700; }
+.pdf-meta table { margin-left:auto; margin-top:4px; }
+.pdf-meta table td { font-size:7.5pt; color:#555; padding:1px 4px; white-space:nowrap; }
+.pdf-meta table td:first-child { font-weight:600; color:#1a2e4a; }
+.pdf-saldo-inicial { background:#f0f7f3; border-left:3pt solid #2d5a3d; padding:5px 10px; margin:8px 0; display:flex; justify-content:space-between; align-items:center; border-radius:0 4px 4px 0; }
+.pdf-saldo-inicial span:first-child { font-size:7.5pt; font-weight:600; color:#2d5a3d; text-transform:uppercase; }
+.pdf-saldo-inicial span:last-child { font-family:'Playfair Display',serif; font-size:11pt; color:#1a2e4a; white-space:nowrap; }
+.pdf-table { width:190mm; border-collapse:collapse; margin-top:4px; font-size:7.5pt; table-layout:fixed; }
+.pdf-table col.c-doc  { width:22mm; }
+.pdf-table col.c-data { width:20mm; }
+.pdf-table col.c-nome { width:32mm; }
+.pdf-table col.c-obs  { width:66mm; }
+.pdf-table col.c-rec  { width:25mm; }
+.pdf-table col.c-pag  { width:25mm; }
+.pdf-table thead tr { background:#1a2e4a; color:white; }
+.pdf-table thead th { padding:5px 6px; text-align:left; font-weight:600; font-size:7pt; overflow:hidden; }
+.pdf-table thead th.num { text-align:right; }
+.pdf-table tbody tr:nth-child(even) { background:#f8f5ef; }
+.pdf-table tbody tr { border-bottom:.5pt solid #e5e0d8; }
+.pdf-table td { padding:4px 6px; vertical-align:middle; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pdf-table td.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pdf-table td.obs-cell { white-space:normal; word-break:break-word; line-height:1.25; }
+.pdf-table td.rec { color:#2d5a3d; font-weight:600; }
+.pdf-table td.pag { color:#c0392b; }
+.pdf-table tfoot tr { background:#1a2e4a; color:white; }
+.pdf-table tfoot td { padding:6px; font-weight:600; font-size:8pt; }
+.pdf-table tfoot td.num { text-align:right; }
+.pdf-totals { display:flex; margin-top:8px; border-radius:6px; overflow:hidden; border:1pt solid #ddd5c8; }
+.pdf-totals .ptc { flex:1; padding:8px 12px; text-align:center; }
+.pdf-totals .ptc:nth-child(1) { background:#f0f7f3; }
+.pdf-totals .ptc:nth-child(2) { background:#fef2f2; }
+.pdf-totals .ptc:nth-child(3) { background:#eef3fa; }
+.ptc .pl { font-size:6.5pt; text-transform:uppercase; letter-spacing:.8px; font-weight:600; color:#6b7280; }
+.ptc .pv { font-family:'Playfair Display',serif; font-size:13pt; margin-top:2px; }
+.ptc:nth-child(1) .pv { color:#2d5a3d; }
+.ptc:nth-child(2) .pv { color:#c0392b; }
+.ptc:nth-child(3) .pv { color:#1a2e4a; }
+.pdf-sigs { margin-top:16px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding-top:14px; border-top:1pt solid #ddd5c8; }
+.pdf-sigs .ps { text-align:center; }
+.pdf-sigs .ps .psl { border-top:1pt solid #1a2e4a; padding-top:5px; margin-top:24px; font-size:7pt; color:#6b7280; }
+.pdf-footer { margin-top:10px; padding-top:6px; border-top:1pt solid #ddd5c8; display:flex; justify-content:space-between; font-size:6.5pt; color:#9ca3af; }
+</style>
+<style id="caixa-responsive-only-v338">
+@media (max-width: 900px), (pointer: coarse) {
+  html, body { height:auto !important; min-height:100%; overflow-x:hidden !important; overflow-y:auto !important; }
+  body { display:block !important; }
+  .screen.active { display:flex; }
+  #screen-selector { min-height:100dvh; padding:24px 14px; }
+  .selector-logo { margin-bottom:24px; }
+  .selector-logo h1 { font-size:clamp(32px, 10vw, 48px); line-height:1.05; }
+  .company-cards { grid-template-columns:1fr; gap:14px; max-width:100%; }
+  .co-card { padding:22px 18px; border-radius:16px; }
+  .selector-actions { margin-top:22px; width:100%; justify-content:center; }
+  .btn-enter { width:min(280px, 100%); min-height:52px; }
+  #screen-app { flex-direction:column !important; height:auto !important; min-height:100dvh; overflow:visible !important; }
+  .sidebar { width:100% !important; min-width:0 !important; max-width:none !important; flex:none !important; overflow:visible !important; }
+  .sidebar-header { padding:18px 16px 14px; }
+  .sidebar-saldo { margin:12px 16px; }
+  .sidebar-tabs { overflow-x:auto; flex-wrap:nowrap; }
+  .sidebar-tabs .sb-tab { min-width:max-content; }
+  .month-list { max-height:none !important; overflow:visible !important; }
+  .sidebar-footer { padding:12px 16px; }
+  .main-content { width:100% !important; min-width:0 !important; flex:none !important; display:block !important; overflow:visible !important; }
+  .main-topbar { height:auto !important; min-height:0 !important; padding:14px 16px !important; display:grid !important; grid-template-columns:1fr !important; gap:12px !important; align-items:start !important; }
+  .topbar-title { font-size:clamp(26px, 9vw, 44px); line-height:1.05; }
+  .topbar-actions { display:grid !important; grid-template-columns:1fr !important; width:100%; gap:8px; }
+  .topbar-actions .btn, .btn { width:100%; justify-content:center; min-height:44px; white-space:normal; }
+  .summary-bar { display:grid !important; grid-template-columns:1fr 1fr; gap:10px; padding:12px 16px !important; }
+  .sum-card { min-width:0; padding:12px; }
+  .sum-card .sc-val { font-size:clamp(22px, 8vw, 34px); word-break:break-word; }
+  .entries-area { padding:14px 12px !important; overflow:visible !important; }
+  .table-wrap { width:100%; max-width:100%; overflow-x:auto !important; -webkit-overflow-scrolling:touch; }
+  table { min-width:720px; }
+  .overlay, .modal { max-width:100vw; }
+  .modal { width:calc(100vw - 20px) !important; max-height:92dvh; overflow:auto; }
+  .form-row, .form-row-3 { grid-template-columns:1fr !important; }
+}
+@media (max-width: 520px) {
+  .summary-bar { grid-template-columns:1fr !important; }
+  .topbar-title { font-size:34px; }
+  .co-name { font-size:22px; }
+}
+</style>
+
+<style id="caixa-pdf-print-fix-v343">
+/* Mantem os dados do cabecalho da folha de caixa dentro da pagina impressa/PDF. */
+#print-doc, #print-doc * { box-sizing: border-box; }
+#print-doc .pdf-page { width: 100% !important; max-width: 190mm !important; padding: 0 !important; overflow: visible !important; }
+#print-doc .pdf-header { display: grid !important; grid-template-columns: 1fr !important; gap: 5mm !important; align-items: start !important; }
+#print-doc .pdf-logo-block { text-align: left !important; min-width: 0 !important; }
+#print-doc .pdf-meta { width: 100% !important; min-width: 0 !important; text-align: left !important; }
+#print-doc .pdf-meta .pm-title { text-align: center !important; margin-bottom: 2mm !important; }
+#print-doc .pdf-meta table { width: 100% !important; margin: 0 !important; border-collapse: collapse !important; table-layout: fixed !important; }
+#print-doc .pdf-meta table td { color: #1a1a1a !important; border-bottom: .5pt solid #d1cdc4 !important; padding: 1.6mm 2mm !important; overflow: visible !important; text-overflow: clip !important; white-space: nowrap !important; }
+#print-doc .pdf-meta table td:first-child { width: 32mm !important; color: #1a2e4a !important; font-weight: 700 !important; text-align: right !important; }
+#print-doc .pdf-meta table td:last-child { text-align: left !important; font-weight: 500 !important; }
+@media print {
+  html, body { height: auto !important; overflow: visible !important; background: white !important; }
+  body > * { display: none !important; }
+  #print-doc { display: block !important; width: 100% !important; overflow: visible !important; }
+  #print-doc .pdf-page { margin: 0 auto !important; }
+}
+</style>
+
+<style id="caixa-pdf-screen-width-fix-v343b">
+@media screen {
+  #print-doc { width: 100vw !important; max-width: 100vw !important; overflow: hidden !important; padding: 0 6px !important; }
+  #print-doc .pdf-page { width: calc(100vw - 12px) !important; max-width: calc(100vw - 12px) !important; margin: 0 !important; }
+  #print-doc .pdf-header, #print-doc .pdf-meta, #print-doc .pdf-meta table { width: 100% !important; max-width: 100% !important; min-width: 0 !important; }
+  #print-doc .pdf-meta table td:first-child { width: 88px !important; padding-left: 0 !important; padding-right: 8px !important; }
+  #print-doc .pdf-meta table td:last-child { width: auto !important; white-space: normal !important; word-break: break-word !important; }
+  #print-doc .pdf-table { width: 100% !important; max-width: 100% !important; }
+}
+</style>
+
+<style id="caixa-pdf-final-layout-v344">
+@media screen {
+  #print-doc { position: fixed !important; left: -100000px !important; top: 0 !important; width: 210mm !important; height: auto !important; display: block !important; overflow: hidden !important; pointer-events: none !important; opacity: 0 !important; }
+}
+@media print {
+  html, body { height: auto !important; overflow: visible !important; background: white !important; }
+  body > * { display: none !important; }
+  #print-doc { position: static !important; left: auto !important; top: auto !important; display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; opacity: 1 !important; pointer-events: auto !important; }
+  #print-doc, #print-doc * { visibility: visible !important; }
+  #print-doc .pdf-page { width: 190mm !important; max-width: 190mm !important; margin: 0 auto !important; overflow: visible !important; }
+}
+#print-doc .pdf-meta table td:last-child { color: #1a1a1a !important; font-weight: 500 !important; }
+</style>
+</head>
+<body>
+ 
+<!-- ═══ SCREEN 1: SELECTOR ═══ -->
+<div id="screen-selector" class="screen active">
+  <div class="selector-logo">
+    <h1>Gestão de <span>Caixa</span></h1>
+    <p>Seleciona a empresa para começar</p>
+  </div>
+ 
+  <div class="company-cards">
+    <div class="co-card ftg" onclick="selectCo('ftg',this)">
+      <div class="co-icon">🌿</div>
+      <div class="co-name">Fourtimesgreen</div>
+      <div class="co-nif">NIF 515 663 182</div>
+      <div class="co-desc">Agricultura · Sustentabilidade · Inovação</div>
+      <div class="co-months" id="co-months-ftg">— meses guardados</div>
+    </div>
+    <div class="co-card ps" onclick="selectCo('ps',this)">
+      <div class="co-icon">🌱</div>
+      <div class="co-name">Paisagem Silvestre</div>
+      <div class="co-nif">NIF 515 691 690</div>
+      <div class="co-desc">Produção Biológica Certificada</div>
+      <div class="co-months" id="co-months-ps">— meses guardados</div>
+    </div>
+  </div>
+ 
+  <div class="selector-actions">
+    <button class="btn-enter" id="btnEnter" onclick="enterApp()">Entrar →</button>
+  </div>
+</div>
+ 
+<!-- ═══ SCREEN 2: APP ═══ -->
+<div id="screen-app" class="screen">
+ 
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-co-name" id="sb-co-name">—</div>
+      <div class="sidebar-co-nif"  id="sb-co-nif">—</div>
+      <div class="sidebar-change" onclick="backToSelector()">← Trocar empresa</div>
+    </div>
+ 
+    <div class="sidebar-saldo">
+      <div class="sl">Saldo disponível</div>
+      <div class="sv" id="sb-saldo-total">—</div>
+    </div>
+ 
+    <!-- Tabs -->
+    <div class="sidebar-tabs">
+      <div class="sb-tab active" onclick="switchSbTab('meses',this)">Meses</div>
+      <div class="sb-tab" onclick="switchSbTab('pesquisa',this)">Pesquisa</div>
+      <div class="sb-tab" onclick="switchSbTab('fornecedores',this)">Fornec.</div>
+    </div>
+ 
+    <!-- TAB: Meses -->
+    <div class="sb-panel active" id="sbp-meses">
+      <div class="sidebar-section-label">Meses</div>
+      <div class="month-list" id="monthList"></div>
+      <div class="sidebar-footer">
+        <button class="btn-sidebar" onclick="openNewMonthModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .89-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+          Novo mês
+        </button>
+        <button class="btn-sidebar" onclick="exportPDF()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          Exportar PDF
+        </button>
+      </div>
+    </div>
+ 
+    <!-- TAB: Pesquisa -->
+    <div class="sb-panel" id="sbp-pesquisa">
+      <div class="search-panel">
+        <span class="sp-label">Fornecedor(es)</span>
+        <input class="sp-input" id="spSupInput" placeholder="Pesquisar fornecedor..." oninput="spFilterSuppliers()" onfocus="spShowAll()" onblur="setTimeout(spHideSug,200)" autocomplete="off">
+        <div class="sup-suggest" id="spSupSuggest" style="display:none"></div>
+        <div class="supplier-tags" id="spSupTags"></div>
+ 
+        <span class="sp-label">Data de início</span>
+        <input class="sp-input" type="date" id="spDateFrom">
+ 
+        <span class="sp-label">Data de fim</span>
+        <input class="sp-input" type="date" id="spDateTo">
+ 
+        <span class="sp-label">Tipo</span>
+        <select class="sp-input" id="spTipo">
+          <option value="all">Todos</option>
+          <option value="pag">Pagamentos</option>
+          <option value="rec">Recebimentos</option>
+        </select>
+ 
+        <button class="btn-search" onclick="runSearch()">🔍 Pesquisar</button>
+        <button class="btn-search" style="margin-top:4px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);" onclick="clearSearch()">Limpar pesquisa</button>
+      </div>
+    </div>
+ 
+    <!-- TAB: Fornecedores -->
+    <div class="sb-panel" id="sbp-fornecedores">
+      <div class="sup-manager" id="supManager"></div>
+    </div>
+  </div>
+ 
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="main-topbar">
+      <div class="topbar-title" id="topbarTitle">Seleciona um mês</div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          Adicionar movimento
+        </button>
+      </div>
+    </div>
+ 
+    <div class="summary-bar">
+      <div class="sum-card saldo">
+        <div class="sc-label">Saldo Inicial</div>
+        <div class="sc-val" id="sum-inicial">—</div>
+      </div>
+      <div class="sum-card rec">
+        <div class="sc-label">Recebimentos</div>
+        <div class="sc-val" id="sum-rec">—</div>
+      </div>
+      <div class="sum-card pag">
+        <div class="sc-label">Pagamentos</div>
+        <div class="sc-val" id="sum-pag">—</div>
+      </div>
+      <div class="sum-card saldo">
+        <div class="sc-label">Saldo Final</div>
+        <div class="sc-val" id="sum-final">—</div>
+        <div class="sc-sub" id="sum-entries">—</div>
+      </div>
+    </div>
+ 
+    <div class="entries-area" id="entriesArea">
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="var(--gray)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+        <h3>Seleciona um mês na barra lateral</h3>
+        <p>Ou cria um novo mês para começar a registar movimentos.</p>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ═══ MODAL: Adicionar Movimento ═══ -->
+<div class="overlay" id="modalAdd">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalAddTitle">Novo movimento</div>
+      <button class="modal-close" onclick="closeModal('modalAdd')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label>Tipo de movimento</label>
+          <div class="tipo-toggle">
+            <button class="tipo-btn pag active" id="tipoPag" onclick="setTipo('pag')">💸 Pagamento</button>
+            <button class="tipo-btn rec"         id="tipoRec" onclick="setTipo('rec')">💰 Recebimento</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="fData">
+        </div>
+        <div class="form-group">
+          <label>Valor (€)</label>
+          <input type="number" step="0.01" min="0" id="fValor" placeholder="0,00">
+        </div>
+        <div class="form-group">
+          <label>Doc. Nº</label>
+          <input type="text" id="fDoc" placeholder="FR 2024A20/00000">
+        </div>
+        <div class="form-group">
+          <label>Fornecedor / Nome</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="fNome" placeholder="Nome do fornecedor" oninput="acFilter()" onfocus="acShowAll()" autocomplete="off" onblur="setTimeout(acHide,200)">
+            <div class="ac-dropdown" id="acDropdown" style="display:none"></div>
+          </div>
+        </div>
+        <div class="form-group form-full">
+          <label>Descrição / Observações</label>
+          <textarea id="fObs" placeholder="Descrição do movimento..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalAdd')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Guardar movimento</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- ═══ MODAL: Novo Mês ═══ -->
+<div class="overlay" id="modalNewMonth">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Criar novo mês</div>
+      <button class="modal-close" onclick="closeModal('modalNewMonth')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label>Seleciona o mês</label>
+          <div class="new-month-grid" id="nmGrid"></div>
+        </div>
+        <div class="form-group">
+          <label>Ano</label>
+          <input type="number" id="nmAno" value="2026" min="2020" max="2035">
+        </div>
+        <div class="form-group">
+          <label>Saldo inicial (€)</label>
+          <input type="number" step="0.01" id="nmSaldo" placeholder="0,00">
+        </div>
+      </div>
+      <p style="margin-top:12px;font-size:12px;color:var(--gray2);">O saldo inicial é automaticamente o saldo final do mês anterior se já existir.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalNewMonth')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createMonth()">Criar mês</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- ═══ PRINT DOC ═══ -->
+<div id="print-doc">
+  <div class="pdf-page" id="pdfPage"></div>
+</div>
+ 
+<script>
+// ═══════════════════════════════════════════════════════
+// HISTORICAL SEED DATA
+// ═══════════════════════════════════════════════════════
+const SEED_FTG = {"Novembro":{"mes":"Novembro","ano":"2024","saldo_inicial":0.0,"entries":[{"doc":"","data":"07/11/2024","nome":"Caixa","obs":"Tranferência Ana","rec":1500.0},{"doc":"FS 268031003/183128","data":"12/11/2024","nome":"Bp","obs":"Combustível moto","pag":32.48},{"doc":"GKK005/158533","data":"13/11/2024","nome":"Continente","obs":"Lâmpada (Área de bombagem da casa)","pag":2.99},{"doc":"PR16/2608","data":"13/11/2024","nome":"Papelarias Arco-Íris","obs":"Prancheta P/papeis e etiquetas para caixas de mercadorias","pag":8.85},{"doc":"2020.260/10208","data":"14/11/2024","nome":"SOFRAPA","obs":"Bateria VW FOX e Lampada traseira Trator New Holland","pag":109.05},{"doc":"CC 2024.260/1505","data":"14/11/2024","nome":"SOFRAPA","obs":"NC da Retorno bateria antiga","rec":26.59},{"doc":"FS 24NORPT0614P54IS/0046622","data":"17/11/2024","nome":"Norauto","obs":"Óleo 10W40 para bio triturador","pag":9.99},{"doc":"FS 24NORPT0614P54IS/0046621","data":"17/11/2024","nome":"Norauto","obs":"Bateria para Biotriturador","pag":97.99},{"doc":"FT ADZ103/122899","data":"17/11/2024","nome":"Maxmat","obs":"Materias diversos de consumo diário","pag":42.33},{"doc":"FR 2024A20/32878","data":"18/11/2024","nome":"Sanipina","obs":"Velas de incancescência para biotriturador","pag":14.61},{"doc":"FR 2024A20/33117","data":"19/11/2024","nome":"Sanipina","obs":"Cavilhas trator e massa lubrificante","pag":13.94},{"doc":"FR 2024A20/33118","data":"19/11/2024","nome":"Sanipina","obs":"Queimador de ervas elétrico","pag":50.71},{"doc":"FR1 SIT2/37986","data":"20/11/2024","nome":"Ferramentas pro","obs":"Pistola de Massa Consistente","pag":33.85},{"doc":"V224/018081","data":"21/11/2024","nome":"Bricomania","obs":"Extensão electrica 30m","pag":24.9},{"doc":"FR80,A/52230","data":"23/11/2024","nome":"Tibi","obs":"Comida Cão (Royal Canin Maxi adulto 15 kg","pag":73.99},{"doc":"FR 2024A21/14675","data":"23/11/2024","nome":"Sanipina","obs":"Botas + Capa chuva + Luvas 2x","pag":30.86},{"doc":"FR 1139","data":"23/11/2024","nome":"HM Sobrado","obs":"Material para trator","pag":97.24},{"doc":"FT 20240045401/012622","data":"23/11/2024","nome":"Leroy","obs":"Chave de impacto + chave universal","pag":121.99},{"doc":"NC 35","data":"26/11/2024","nome":"HM Sobrado","obs":"Nota de crédito FR 1139","rec":32.85},{"doc":"FT 2024A1/490","data":"26/11/2024","nome":"HM Sobrado","obs":"Peças trator (utilizada NC 35)","pag":26.56},{"doc":"FS 261491004/125586","data":"27/11/2024","nome":"Bp","obs":"Combustível (95) para as máquinas","pag":36.08},{"doc":"FA0 PR15/7383","data":"27/11/2024","nome":"Papelarias Arco-Íris","obs":"Canetas para quadros","pag":2.92},{"doc":"FA0 PR15/7383","data":"27/11/2024","nome":"Papelarias Arco-Íris","obs":"Clips para papel","pag":0.96},{"doc":"0231012024110001/002121","data":"29/11/2024","nome":"Auchan","obs":"Agrafador + Clips + Etiquetas Fruta","pag":8.87}]},"Dezembro":{"mes":"Dezembro","ano":"2024","saldo_inicial":718.28,"entries":[{"doc":"FR 54/30965","data":"03/12/2024","nome":"Messinagro","obs":"Herbicida não biológico Roundup UltraMax","pag":37.64},{"doc":"FT FR80.A/52912","data":"03/12/2024","nome":"Tibi","obs":"Ração Sansão + Max","pag":75.98},{"doc":"FT 2/000000081579","data":"03/12/2024","nome":"Cidade Vontades","obs":"Caixote do Lixo para ValorFito","pag":23.95},{"doc":"FR V224/018813","data":"06/12/2024","nome":"Bricomania","obs":"Rolo bolha de ar + projector galinheiro","pag":38.8},{"doc":"FT 20240505101/011255","data":"06/12/2024","nome":"Leroy","obs":"Tubo isolante + Braçadeira","pag":4.56},{"doc":"FT 20240045801/011460","data":"07/12/2024","nome":"Leroy","obs":"Lixadora + Lixas","pag":41.97},{"doc":"FS 261491004/127463","data":"07/12/2024","nome":"BP","obs":"Gasolina (Buggy, 19,61 L)","pag":35.18},{"doc":"FS 24P5070/027002","data":"09/12/2024","nome":"Kiwoko","obs":"Hambúrguer Sansão (2x 2,5 kg)","pag":39.98},{"doc":"FR 421411005/005455","data":"09/12/2024","nome":"Prio","obs":"Gasóleo Kangoo (52 L)","pag":80.55},{"doc":"FT R103/00035807","data":"11/12/2024","nome":"Penisula Soalheira","obs":"Parafusos Fusível Fresa","pag":4.25},{"doc":"FR A20/35350","data":"12/12/2024","nome":"Sanipina","obs":"Charneira + Parafusos","pag":19.31},{"doc":"FR A20/35349","data":"12/12/2024","nome":"Sanipina","obs":"Botas Monique + Parafusos e Porcas","pag":13.76},{"doc":"FT ADZ101/095756","data":"13/12/2024","nome":"Maxmat","obs":"Extenção eléctrica + Chave caixa universal","pag":22.33},{"doc":"F 0231042024120001/000770","data":"16/12/2024","nome":"Auchan","obs":"Etiquetas + Papel Impressora","pag":9.97},{"doc":"FR 020351002/000618","data":"24/12/2024","nome":"Recheio Tavira","obs":"Gasóleo Berlingo (53 L)","pag":86.87},{"doc":"FT 20240045101/014416","data":"24/12/2024","nome":"Leroy","obs":"Máscara de Solda + Spay Verde","pag":68.08},{"doc":"FR 421411005/005697","data":"26/12/2024","nome":"Prio","obs":"Gasóleo Berlingo","pag":86.57},{"doc":"FT FR80.A/54498","data":"26/12/2024","nome":"Tibi","obs":"Ração Luna","pag":73.99},{"doc":"FT 6102610000/00040699","data":"27/12/2024","nome":"Cepsa","obs":"Gasóleo Dacia","pag":15.0},{"doc":"FS 268031003/194447","data":"27/12/2024","nome":"Bp","obs":"Adblue","pag":20.01}]},"Janeiro":{"mes":"Janeiro","ano":"2025","saldo_inicial":-80.47,"entries":[{"doc":"FR 2024/A50/3237","data":"17/12/2024","nome":"Ferrus","obs":"Parafuso fusível fresa","pag":4.18},{"doc":"FR 2024/A50/3238","data":"17/12/2024","nome":"Ferrus","obs":"Luvas Nitrilo","pag":6.59},{"doc":"FACPP 2453C22/33139","data":"03/01/2025","nome":"Adubopor","obs":"Sementes (não BIO)","pag":28.47},{"doc":"","data":"06/01/2025","nome":"","obs":"Transferência Ana","rec":1200.0},{"doc":"FR 418591002/014100","data":"06/01/2025","nome":"Prio","obs":"Combustível Berlingo (53 L)","pag":84.75},{"doc":"FACPP 2453C22/33255","data":"08/01/2025","nome":"Adubopor","obs":"Sementes (não BIO) + Armadilha lagarta","pag":70.86},{"doc":"FR 2025A50/212","data":"13/01/2025","nome":"Ferrus","obs":"Parafuso fusível fresa","pag":4.39},{"doc":"FS GKK005/165327","data":"13/01/2025","nome":"Continente","obs":"Etiquetas caixas","pag":2.78},{"doc":"FT V202,03/25210039","data":"13/01/2025","nome":"Aquamatic","obs":"Material rega + Programador","pag":272.35},{"doc":"FR WFN 4/39109","data":"23/01/2025","nome":"Sulcave","obs":"Material eléctrico","pag":25.73},{"doc":"FT 261491004/002169","data":"23/01/2025","nome":"BP","obs":"Gasóleo (11,12L) Dacia","pag":20.0},{"doc":"Doc n. 31210279","data":"23/01/2025","nome":"Carby","obs":"Revisão Carby Kangoo","pag":620.42},{"doc":"FT FR80.A/56651","data":"28/01/2025","nome":"Tibi","obs":"Ração Luna + Max + Sansão","pag":160.97},{"doc":"FT 268031003/003848","data":"30/01/2025","nome":"Bp","obs":"Combustível Berlingo (51 L)","pag":90.22}]},"Fevereiro":{"mes":"Fevereiro","ano":"2025","saldo_inicial":-272.18,"entries":[{"doc":"","data":"01/02/2025","nome":"","obs":"Transferência Ana","rec":1200.0},{"doc":"FR 2025A21/1717","data":"03/02/2025","nome":"Sanipina","obs":"Herbicidas não bio","pag":38.11},{"doc":"FT 032010015442/000001438","data":"10/02/2025","nome":"Galp","obs":"Cabos bateria (Avaria kangoo)","pag":25.0},{"doc":"FT 20250040701/001391","data":"11/02/2025","nome":"Leroy","obs":"Canalização para maq. lavar + rega","pag":35.62},{"doc":"FACPP 2453C22/34277","data":"11/02/2025","nome":"Adubopor","obs":"Tubo de água","pag":57.0},{"doc":"FR 2025A20/3827","data":"12/02/2025","nome":"Sanipina","obs":"Estica cabos aramadas e acessórios","pag":121.63},{"doc":"V V 2025.260/1354","data":"12/02/2025","nome":"Sofrapa","obs":"Bateria Vedação","pag":62.29},{"doc":"FR 2025A20/3750","data":"12/02/2025","nome":"Sanipina","obs":"Brocas de madeira 13 mm + 12 mm","pag":9.4},{"doc":"FT 20250045301/001874","data":"15/02/2025","nome":"Leroy","obs":"Material WC + Cabos elásticos","pag":23.53},{"doc":"FR 537AAW0CT/1998","data":"18/02/2025","nome":"Alves Bandeira","obs":"Gasolina 95 (20L)","pag":35.18},{"doc":"FR 537AAW0CT/1984","data":"18/02/2025","nome":"Alves Bandeira","obs":"Gasóleo Dacia (25L)","pag":41.48}]},"Março":{"mes":"Março","ano":"2025","saldo_inicial":478.58,"entries":[{"doc":"FR 2025A20/5349","data":"28/02/2025","nome":"Agiloja","obs":"Broca metal 12 + 13 mm","pag":7.72},{"doc":"FR 537AAW0CT/3174","data":"05/03/2025","nome":"Alves Bandeira","obs":"Gasóleo 55 L","pag":89.6},{"doc":"FT AQX003/001691","data":"06/03/2025","nome":"Hôma","obs":"Pá do lixo garagem","pag":8.0},{"doc":"FR 2025A20/5853","data":"06/03/2025","nome":"Agriloja","obs":"Material vedação","pag":72.9},{"doc":"FT AE B005/053755","data":"07/03/2025","nome":"Maxmat","obs":"Broca madeira + Cabo eléctrico","pag":14.03},{"doc":"FT FR80.A/59586","data":"08/03/2025","nome":"Tibi","obs":"Ração Luna + Max","pag":89.44},{"doc":"FR 2025A20/6585","data":"12/03/2025","nome":"Agriloja","obs":"Estrume cavalo (5X)","pag":23.77},{"doc":"VV 2025.260/2303","data":"12/03/2025","nome":"Sofrapa","obs":"Óleo Hidráulico","pag":57.77},{"doc":"FS 268031003/214879","data":"19/03/2025","nome":"BP","obs":"Renault Express (46 L)","pag":77.23},{"doc":"FS R03/81068","data":"21/03/2025","nome":"JardiPina","obs":"Plantas não BIO","pag":48.45},{"doc":"FS P21/49700","data":"23/03/2025","nome":"Caovivio","obs":"Shampoo Cães","pag":22.99},{"doc":"FT34/21588","data":"29/03/2025","nome":"Hospital Vet. Portimão","obs":"Consulta Luna + Coleiras anti-carraças","pag":80.0}]},"Abril":{"mes":"Abril","ano":"2025","saldo_inicial":-113.32,"entries":[{"doc":"13763.0","data":"02/04/2025","nome":"Pina Garden","obs":"Plantas não bio","pag":65.5},{"doc":"8516.0","data":"02/04/2025","nome":"Agriloja","obs":"Pilhas comando + Agulheta","pag":15.18},{"doc":"","data":"03/04/2025","nome":"Tranferência Ana","obs":"","rec":1500.0},{"doc":"43535.0","data":"03/04/2025","nome":"Sulcave","obs":"Consumíveis","pag":29.98},{"doc":"43802.0","data":"07/04/2025","nome":"Sulcave","obs":"Ponteira de mangueira","pag":14.75},{"doc":"220002.0","data":"08/04/2025","nome":"BP","obs":"Gasolina (25 L)","pag":46.1},{"doc":"220280.0","data":"09/04/2025","nome":"BP","obs":"Ad blue + Gásoleo + Gasolina","pag":118.44},{"doc":"9659.0","data":"10/04/2025","nome":"Agriloja","obs":"Luvas + Estrume","pag":28.44},{"doc":"24.0","data":"10/04/2025","nome":"Maria Cristina Almeida","obs":"Árvores não bio","pag":38.16},{"doc":"266.0","data":"17/04/2025","nome":"Hm Sobrado","obs":"Facas capinadeira + cavilha + jogo facas Y","pag":360.08},{"doc":"149668.0","data":"23/04/2025","nome":"BP","obs":"Gasolina 95 Buggy + Vasilha","pag":68.3},{"doc":"62867.0","data":"24/04/2025","nome":"Tibi","obs":"Ração Luna + Ração Sansão","pag":105.73}]},"Maio":{"mes":"Maio","ano":"2025","saldo_inicial":496.02,"entries":[{"doc":"332.0","data":"08/05/2025","nome":"Hm Sobrado","obs":"Reparação rolo do limpa bermas","pag":81.8},{"doc":"16936.0","data":"08/05/2025","nome":"Plantalgarve","obs":"Plantas não Bio","pag":37.8},{"doc":"8451.0","data":"12/05/2025","nome":"CMFIXAÇÃO","obs":"Fita reparação banco Buggy","pag":11.9},{"doc":"41206.0","data":"13/05/2025","nome":"SOHORTA","obs":"Sementes não BIO","pag":43.7},{"doc":"23275.0","data":"14/05/2025","nome":"Kiwoko","obs":"Hamburgers Sansão","pag":5.87},{"doc":"13361.0","data":"15/05/2025","nome":"Agriloja","obs":"RoundUp 5L","pag":47.93},{"doc":"8611.0","data":"22/05/2025","nome":"Agriloja","obs":"Estrume não Bio","pag":23.77},{"doc":"14656.0","data":"23/05/2025","nome":"Agriloja","obs":"Abraçadeira plásticas","pag":19.73},{"doc":"155694.0","data":"25/05/2025","nome":"BP","obs":"Gasolina 95 Buggy","pag":32.0},{"doc":"155962.0","data":"26/05/2025","nome":"BP","obs":"Gasolina 95 (20 L) Máquinas","pag":35.58},{"doc":"1082.0","data":"27/05/2025","nome":"Auchan","obs":"Detergente mãos Garagem","pag":1.99},{"doc":"43.0","data":"31/05/2025","nome":"Leroy","obs":"Fita pano","pag":5.79}]},"Junho":{"mes":"Junho","ano":"2025","saldo_inicial":148.16,"entries":[{"doc":"1083.0","data":"20/05/2025","nome":"Aqualab","obs":"Análises microbiológicas","pag":160.72},{"doc":"NC.2025/50","data":"22/05/2025","nome":"Aqualab","obs":"Nota de crédito","rec":77.11},{"doc":"16671.0","data":"07/06/2025","nome":"Agriloja","obs":"Sementes N/bio","pag":6.25},{"doc":"00054872","data":"12/06/2025","nome":"Propel","obs":"Gasolina 95 (20L)","pag":33.72},{"doc":"00054871","data":"12/06/2025","nome":"Propel","obs":"Gasoleo (51 L)","pag":78.85},{"doc":"4105.0","data":"18/06/2025","nome":"Casa das Plantas","obs":"Plantas Não Bio","pag":34.53},{"doc":"422786.0","data":"20/06/2025","nome":"MaxMat","obs":"Broca Metal","pag":7.99},{"doc":"243066.0","data":"24/06/2025","nome":"BP","obs":"Gasolina 95 (17L)","pag":31.01},{"doc":"132597.0","data":"26/06/2025","nome":"Tibi","obs":"Ração cachorro","pag":57.99},{"doc":"00055785","data":"26/06/2025","nome":"Propel","obs":"Gasoleo (47,66 L)","pag":77.97},{"doc":"49121.0","data":"26/06/2025","nome":"Sulcave","obs":"Fita amarela armadilhas","pag":3.69}]},"Julho":{"mes":"Julho","ano":"2025","saldo_inicial":-267.45,"entries":[{"doc":"6071.0","data":"03/07/2025","nome":"Sofrapa","obs":"Óleo de limpeza travões","pag":9.59},{"doc":"1430015.0","data":"07/07/2025","nome":"Messinagro","obs":"Produtos Fito (não bio)","pag":219.87},{"doc":"248154.0","data":"09/07/2025","nome":"BP","obs":"25L gasolina 95","pag":44.35},{"doc":"11673.0","data":"10/07/2025","nome":"Agriloja","obs":"Soda caustica","pag":10.85},{"doc":"1131.0","data":"17/07/2025","nome":"Transvista","obs":"Alimentação animais (Feno)","pag":300.0},{"doc":"50534.0","data":"17/07/2025","nome":"Sulcave","obs":"Material Desinfeção agua da casa","pag":117.54},{"doc":"14124.0","data":"18/07/2025","nome":"Nicolau & Rosa","obs":"Material Desinfeção agua da casa","pag":34.67},{"doc":"7251023096.0","data":"18/07/2025","nome":"Rolearmais","obs":"Material Desinfeção agua da casa","pag":36.73},{"doc":"50605.0","data":"18/07/2025","nome":"Sulcave","obs":"Material Desinfeção agua da casa","pag":91.67},{"doc":"429919.0","data":"23/07/2025","nome":"Maxmat","obs":"Material Desinfeção agua da casa","pag":12.38},{"doc":"21637.0","data":"23/07/2025","nome":"Agriloja","obs":"Válvula anti-retorno da casa","pag":7.29},{"doc":"001668","data":"23/07/2025","nome":"Leroy","obs":"Material Desinfeção agua da casa","pag":20.99},{"doc":"21604.0","data":"23/07/2025","nome":"Agriloja","obs":"Material Desinfeção agua da casa","pag":256.37},{"doc":"50926.0","data":"23/07/2025","nome":"Sulcave","obs":"Material Desinfeção agua da casa","pag":105.25},{"doc":"21775.0","data":"24/07/2025","nome":"Agriloja","obs":"Material Desinfeção agua da casa","pag":5.31},{"doc":"16282.0","data":"28/07/2025","nome":"EUROINSPECÇÕES","obs":"Inspeção Renault Express","pag":36.64},{"doc":"27778.0","data":"28/07/2025","nome":"HVP","obs":"Zion (consulta)","pag":137.05},{"doc":"27833.0","data":"29/07/2025","nome":"HVP","obs":"Zion (consulta)","pag":15.0},{"doc":"16359.0","data":"29/07/2025","nome":"EUROINSPECÇÕES","obs":"Inspeção Renault kangoo","pag":36.64},{"doc":"00064379","data":"30/07/2025","nome":"Hiper Algarve","obs":"Borrifadores","pag":4.35},{"doc":"005356","data":"31/07/2025","nome":"Tiendanimal","obs":"Rações cães","pag":119.47},{"doc":"1432.0","data":"31/07/2025","nome":"Universidade do Algarve","obs":"Análises realizadas no fim de maio","pag":162.36}]},"Agosto":{"mes":"Agosto","ano":"2025","saldo_inicial":-2051.82,"entries":[{"doc":"564.0","data":"01/08/2025","nome":"Quatorze&Ferreira","obs":"Plantas não Bio","pag":152.5},{"doc":"17738.0","data":"01/08/2025","nome":"PlantAlgarve","obs":"Plantas não Bio","pag":7.6},{"doc":"61665.0","data":"01/08/2025","nome":"MATDIVER","obs":"Planta não Bio","pag":3.29},{"doc":"194.0","data":"04/08/2025","nome":"FNAC","obs":"Cabo de rede impressora","pag":7.99},{"doc":"","data":"04/08/2025","nome":"","obs":"Transferência Ana","rec":3000.0},{"doc":"257766.0","data":"05/08/2025","nome":"BP","obs":"Gasolina Buggy","pag":24.75},{"doc":"257767.0","data":"05/08/2025","nome":"BP","obs":"Gasolina máquinas (25 L)","pag":45.23},{"doc":"23029.0","data":"06/08/2025","nome":"Agriloja","obs":"Junta cónica","pag":9.11},{"doc":"23164.0","data":"07/08/2025","nome":"Agriloja","obs":"Material substituição bomba","pag":28.98},{"doc":"13114.0","data":"08/08/2025","nome":"Agriloja","obs":"Dobradiças","pag":12.87},{"doc":"002310","data":"12/08/2025","nome":"Agriloja","obs":"Comando portão 2 uni","pag":55.97},{"doc":"4718.0","data":"20/08/2025","nome":"FERRUS","obs":"Parafusos","pag":2.09},{"doc":"13083.0","data":"20/08/2025","nome":"Bricomania","obs":"Torno Bancada","pag":59.95},{"doc":"24263.0","data":"21/08/2025","nome":"Agriloja","obs":"Bucha parede","pag":3.2},{"doc":"52713.0","data":"21/08/2025","nome":"Sulcave","obs":"Consumíveis","pag":7.53},{"doc":"264576.0","data":"22/08/2025","nome":"BP","obs":"Gasolina 95 (35,52 L)","pag":63.72}]},"Setembro":{"mes":"Setembro","ano":"2025","saldo_inicial":463.4,"entries":[{"doc":"435.0","data":"31/05/2025","nome":"Tienda animal","obs":"Ração cães","pag":41.94},{"doc":"14752.0","data":"10/09/2025","nome":"Agriloja","obs":"Comida Galinhas","pag":31.69},{"doc":"14753.0","data":"10/09/2025","nome":"Agriloja","obs":"Cadeado e olhais","pag":35.25},{"doc":"14755.0","data":"10/09/2025","nome":"Agriloja","obs":"Substituição torneira partida","pag":12.18},{"doc":"271426.0","data":"10/09/2025","nome":"BP","obs":"20L Gasolina 95","pag":36.18},{"doc":"271425.0","data":"10/09/2025","nome":"BP","obs":"44,68 L Gasóleo","pag":74.57},{"doc":"00069943","data":"11/09/2025","nome":"Penisula Soalheira","obs":"Caixa de Sugestões","pag":3.95},{"doc":"53883.0","data":"11/09/2025","nome":"Sulcave","obs":"Conjunto de bits aparafusadora","pag":36.76},{"doc":"18047.0","data":"19/09/2025","nome":"PlantaAlgarve","obs":"Plantas não bio","pag":54.61},{"doc":"3136.0","data":"22/09/2025","nome":"Tibi","obs":"Ração Luna + Zion + Sansão","pag":230.97},{"doc":"14638.0","data":"22/09/2025","nome":"BricoMania","obs":"Vassoura + Rodo garagem","pag":7.9},{"doc":"14426.0","data":"26/09/2025","nome":"ENGIDRAULICA","obs":"Reparação Máq. Alta pressão","pag":32.29},{"doc":"15536.0","data":"26/09/2025","nome":"PINA Garden Center","obs":"Plantas não bio","pag":57.05},{"doc":"314788.0","data":"26/09/2025","nome":"SOHORTA","obs":"Plantas não bio + Maçarico","pag":37.17},{"doc":"92355.0","data":"30/09/2025","nome":"Pão d'Avó Maria","obs":"Composto Vinha","pag":424.0}]},"Outubro 25":{"mes":"Outubro","ano":"2025","saldo_inicial":-653.11,"entries":[{"doc":"16812.0","data":"01/10/2025","nome":"Agriloja","obs":"Ponteira de mangueira","pag":12.82},{"doc":"92359.0","data":"03/10/2025","nome":"Pão d'Avó Maria","obs":"Composto Vinha segundo camião","pag":424.0},{"doc":"1387647.0","data":"06/10/2025","nome":"Messinagro","obs":"Fitomfarmacos (não bio)","pag":74.85},{"doc":"1252.0","data":"06/10/2025","nome":"Transvista","obs":"Feno animais","pag":100.0},{"doc":"","data":"07/10/2025","nome":"","obs":"Transferência Ana","rec":2000.0},{"doc":"185764.0","data":"09/10/2025","nome":"Bp","obs":"Gasolina 95 (43,43 L)","pag":78.13},{"doc":"17922.0","data":"13/10/2025","nome":"Agriloja","obs":"Alimentação (galinhas)","pag":44.74},{"doc":"1387899.0","data":"14/10/2025","nome":"Messinagro","obs":"Fitomfarmacos (não bio)","pag":137.52},{"doc":"692.0","data":"17/10/2025","nome":"Casa das Rações","obs":"Plantas não Bio","pag":22.5},{"doc":"111719.0","data":"20/10/2025","nome":"Maxmat","obs":"Cal (para calda Sulfocálcica)","pag":28.95},{"doc":"18549.0","data":"21/10/2025","nome":"Agriloja","obs":"Engate mangueira","pag":7.64},{"doc":"44062.0","data":"23/10/2025","nome":"Alves Bandeira","obs":"Gasóleo Renault Maxi (58 L)","pag":88.1},{"doc":"2970.0","data":"27/10/2025","nome":"Tibi","obs":"Ração Luna + Zion + Sansão","pag":195.03}]},"Novembro 25":{"mes":"Novembro","ano":"2025","saldo_inicial":132.61,"entries":[{"doc":"48060.0","data":"03/11/2025","nome":"Matdiver","obs":"Rede galinheiro + Aparas madeira","pag":64.92},{"doc":"000645","data":"06/11/2025","nome":"Auchan","obs":"Material Escritório","pag":20.26},{"doc":"26935.0","data":"08/11/2025","nome":"Arco-Íris","obs":"Material Escritório","pag":12.95},{"doc":"003194","data":"08/11/2025","nome":"Tienda animal","obs":"Comida congelada Sansão","pag":15.29},{"doc":"6286.0","data":"10/11/2025","nome":"Casa das Plantas","obs":"Plantas e sementes não bio","pag":26.0},{"doc":"20716.0","data":"10/11/2025","nome":"Agriloja","obs":"Consumíveis","pag":23.95},{"doc":"29856.0","data":"10/11/2025","nome":"Matdiver","obs":"Material reposição + rede galinheiro","pag":69.64},{"doc":"00060899","data":"12/11/2025","nome":"Moeve","obs":"Combustível 20L gasolina + 46 L gasóleo","pag":110.51},{"doc":"000000145567","data":"14/11/2025","nome":"Cidade de vontades","obs":"Material para GLOBAL GAP","pag":38.0},{"doc":"5590.0","data":"20/11/2025","nome":"Clínica dos tinteiros","obs":"Toner Xerox","pag":79.9},{"doc":"22200.0","data":"25/11/2025","nome":"Agriloja","obs":"Material ligação água potável","pag":22.5},{"doc":"58327.0","data":"25/11/2025","nome":"Sulcave","obs":"Material ligação água potável","pag":75.72},{"doc":"49774.0","data":"27/11/2025","nome":"Alves Bandeira","obs":"56 L Renault Maxi","pag":91.5},{"doc":"1434124.0","data":"27/11/2025","nome":"Messinagro","obs":"Sementes pastagem + fertilizante","pag":76.73},{"doc":"47777.0","data":"28/11/2025","nome":"Kiwoko","obs":"Hambúrger congelado Sansão","pag":36.88},{"doc":"006200","data":"28/11/2025","nome":"Tibi","obs":"Ração Zion","pag":29.45}]},"Dezembro 25":{"mes":"Dezembro","ano":"2025","saldo_inicial":-661.59,"entries":[{"doc":"50548.0","data":"02/12/2025","nome":"Alves Bandeira","obs":"Gasolina 95 (20 L)","pag":33.88},{"doc":"004244","data":"02/12/2025","nome":"Tibi","obs":"Ração Luna","pag":73.99},{"doc":"28399.0","data":"02/12/2025","nome":"Papelaria Arco-Íris","obs":"Material escritório","pag":11.28},{"doc":"58846.0","data":"03/12/2025","nome":"Sulcave","obs":"Broca e corda reposicão","pag":9.72},{"doc":"294833.0","data":"03/12/2025","nome":"BP","obs":"Gasolina 95 (20,01 L)","pag":36.3},{"doc":"014343","data":"04/12/2025","nome":"Leroy Merlin","obs":"Lâmpada substituicão casa da rega","pag":13.19},{"doc":"000383","data":"05/12/2025","nome":"Maxmat","obs":"Lona de protecão","pag":23.37},{"doc":"023756","data":"07/12/2025","nome":"Agriloja","obs":"Leite em pó para borregos + biberão","pag":20.94},{"doc":"0054303","data":"08/12/2025","nome":"Norauto","obs":"Carregador baterias","pag":7.99},{"doc":"0054304","data":"08/12/2025","nome":"Norauto","obs":"Bateria Vedacão","pag":55.08},{"doc":"51495.0","data":"08/12/2025","nome":"Alves Bandeira","obs":"Gasóleo 42 L","pag":66.11},{"doc":"7329.0","data":"10/12/2025","nome":"Ferrus","obs":"Porca fusível da fresa","pag":3.25},{"doc":"196214.0","data":"10/12/2025","nome":"BP","obs":"Gasolina 95 (21L)","pag":37.99},{"doc":"53089.0","data":"18/12/2025","nome":"Alves Bandeira","obs":"Gasóleo (50L)","pag":77.45},{"doc":"55919.0","data":"18/12/2025","nome":"Norauto","obs":"Capa de protecao de chuva da bicicleta eléctrica","pag":14.99},{"doc":"4769.0","data":"18/12/2025","nome":"Tibi","obs":"Racão Zion x2","pag":58.9},{"doc":"1389373.0","data":"18/12/2025","nome":"Messinagro","obs":"Fitofármacos (não bio)","pag":109.1},{"doc":"16323.0","data":"18/12/2025","nome":"Leroy Merlin","obs":"Estore de rolo janela escritório","pag":12.97},{"doc":"6887.0","data":"19/12/2025","nome":"Casa das plantas","obs":"Plantas não bio","pag":15.0},{"doc":"25137.0","data":"19/12/2025","nome":"Agriloja","obs":"Leite em pó para borregos","pag":24.99},{"doc":"53654.0","data":"22/12/2025","nome":"Alves Bandeira","obs":"Gasolina 95 (21,05L)","pag":34.4},{"doc":"10647.0","data":"23/12/2025","nome":"First Stop","obs":"Câmara de ar pneu tractor (furo)","pag":36.9},{"doc":"59990.0","data":"23/12/2025","nome":"Sulcave","obs":"Buchas 6x30 x2","pag":12.3}]},"Janeiro 26":{"mes":"Janeiro","ano":"2026","saldo_inicial":-1451.68,"entries":[{"doc":"24617.0","data":"24/12/2025","nome":"Agriloja","obs":"Consumíveis","pag":50.09},{"doc":"026743","data":"02/01/2026","nome":"Agriloja","obs":"Sementes + Ração galinhas","pag":41.92},{"doc":"1389605.0","data":"02/01/2026","nome":"Messinagro","obs":"Adubos (não bio)","pag":36.75},{"doc":"140.0","data":"06/01/2026","nome":"Firststop","obs":"Reparação pneu tractor","pag":24.6},{"doc":"","data":"07/01/2026","nome":"","obs":"Transferência Ana","rec":2000.0},{"doc":"401544.0","data":"08/01/2026","nome":"Continente","obs":"Produtos Casa Porches","pag":9.0},{"doc":"4557.0","data":"09/01/2026","nome":"Marreiros","obs":"Óleo parafinico (não bio)","pag":18.74},{"doc":"56093.0","data":"09/01/2026","nome":"Alves bandeira","obs":"Gasóleo (48,26L)","pag":73.79},{"doc":"001652","data":"12/01/2026","nome":"Maxmat","obs":"Material eléctrico + Extensão","pag":88.33},{"doc":"000319","data":"12/01/2026","nome":"Tibi","obs":"Ração cães 3x","pag":88.35},{"doc":"350405.0","data":"14/01/2026","nome":"Prio","obs":"Gasóleo (45L)","pag":67.46},{"doc":"028458","data":"17/01/2026","nome":"Agriloja","obs":"Material Vinha (reparação)","pag":42.97},{"doc":"1110.0","data":"17/01/2026","nome":"Agriloja","obs":"Arame p/ vinha + tutores","pag":108.92},{"doc":"052105","data":"19/01/2026","nome":"Prio","obs":"Gasóleo (56,61L)","pag":86.84},{"doc":"1741.0","data":"22/01/2026","nome":"Agriloja","obs":"Substituição material de água danificado","pag":15.44},{"doc":"005798","data":"22/01/2026","nome":"Agriloja","obs":"Material vinha + aparas madeira","pag":18.84},{"doc":"000246","data":"22/01/2026","nome":"Leroy Merlin","obs":"Material substituição madeira","pag":28.57},{"doc":"030768","data":"26/01/2026","nome":"Prio","obs":"Gasóleo (48,66L)","pag":75.86},{"doc":"00064323","data":"29/01/2026","nome":"MOEVE","obs":"Gasolina 95 30L","pag":50.79},{"doc":"2067.0","data":"30/01/2026","nome":"Agriloja","obs":"Consumíveis + Peça reparação","pag":24.18},{"doc":"0000133","data":"31/01/2026","nome":"Via verde","obs":"Portagens","pag":13.1}]},"Fevereiro 26":{"mes":"Fevereiro","ano":"2026","saldo_inicial":-416.22,"entries":[{"doc":"000010","data":"02/01/2026","nome":"Leroy","obs":"Serra circular P/corte","pag":176.27},{"doc":"2253.0","data":"02/02/2026","nome":"Agriloja","obs":"Válvula água torneira p/ charca","pag":14.34},{"doc":"1401.0","data":"02/02/2026","nome":"Transvista","obs":"Feno animais","pag":200.0},{"doc":"","data":"05/02/2026","nome":"","obs":"Tranferência Ana","rec":2000.0},{"doc":"053714","data":"06/02/2026","nome":"Prio","obs":"Gasóleo 43 L","pag":67.04},{"doc":"2387.0","data":"09/02/2026","nome":"Agriloja","obs":"Ferramentas p/madeiras + Sacos XL","pag":48.81},{"doc":"62296.0","data":"10/02/2026","nome":"SULCAVE","obs":"Bomba submersível","pag":98.08},{"doc":"62295.0","data":"10/02/2026","nome":"SULCAVE","obs":"Uniões tubagens p/bomba","pag":9.75},{"doc":"62318.0","data":"11/02/2026","nome":"SULCAVE","obs":"Tomada para reparação","pag":6.26},{"doc":"206013.0","data":"16/02/2026","nome":"BP","obs":"Gasolina 39,45 L","pag":70.58},{"doc":"031931","data":"17/02/2026","nome":"Agriloja","obs":"Ração animais (cães, galinhas, patos)","pag":138.6},{"doc":"3060.0","data":"20/02/2026","nome":"Agriloja","obs":"Spray curativo animais","pag":15.18},{"doc":"3061.0","data":"20/02/2026","nome":"Agriloja","obs":"Fitofármacos não bio","pag":102.78},{"doc":"3062.0","data":"20/02/2026","nome":"Agriloja","obs":"Fitofármacos não bio","pag":158.82},{"doc":"00069804","data":"26/02/2026","nome":"MOEVE","obs":"Gasóleo 32L","pag":51.81},{"doc":"1/1436040","data":"26/02/2026","nome":"Messinagro","obs":"Fertilizante não Bio","pag":168.35},{"doc":"1/1436039","data":"26/02/2026","nome":"Messinagro","obs":"Fertilizante não Bio","pag":333.15}]},"Março 26":{"mes":"Março","ano":"2026","saldo_inicial":-76.04,"entries":[{"doc":"18891.0","data":"02/03/2026","nome":"Engidraulica","obs":"Reparação tubo Hidráulico","pag":91.91},{"doc":"00037734","data":"02/03/2026","nome":"MOEVE","obs":"Gasóleo 50 L","pag":82.7},{"doc":"8/1390709","data":"03/03/2026","nome":"Messinagro","obs":"Fertilizante não Bio","pag":198.24},{"doc":"63776.0","data":"06/03/2026","nome":"Sulcave","obs":"Corda + Detergente mãos","pag":13.32},{"doc":"4864.0","data":"09/03/2026","nome":"Agriloja","obs":"Material Rega pomares e hortícolas","pag":184.71},{"doc":"1027.0","data":"09/03/2026","nome":"Casa das plantas Estoi","obs":"Plantas não Bio","pag":64.27},{"doc":"8/1390923","data":"10/03/2026","nome":"Messinagro","obs":"Fita Processionária Pinheiros","pag":73.75},{"doc":"4987.0","data":"10/03/2026","nome":"Agriloja","obs":"Consumíveis reparação gota-a-gota","pag":58.67},{"doc":"","data":"11/03/2026","nome":"","obs":"Tranferência Ana","rec":2500.0},{"doc":"5345.0","data":"12/03/2026","nome":"Agriloja","obs":"Material Rega reparação tubo","pag":29.09},{"doc":"5347.0","data":"12/03/2026","nome":"Agriloja","obs":"Acessórios bomba lubrificação","pag":56.04},{"doc":"002168","data":"16/03/2026","nome":"Leroy Merlin","obs":"Afiador correntes motosserra","pag":36.89},{"doc":"1304.0","data":"16/03/2026","nome":"Casa das plantas Estoi","obs":"Plantas não Bio","pag":54.0},{"doc":"1436606.0","data":"16/03/2026","nome":"Messinagro","obs":"Fertilizante não Bio","pag":291.2},{"doc":"5362.0","data":"16/03/2026","nome":"Agriloja","obs":"Acessórios bomba lubrificação (manual)","pag":56.04},{"doc":"5821.0","data":"19/03/2026","nome":"Agriloja","obs":"Aparas galinhas + material fertirrega","pag":52.36},{"doc":"1436897.0","data":"24/03/2026","nome":"Messinagro","obs":"Fertilizante não Bio","pag":280.2},{"doc":"002207","data":"","nome":"Leroy Merlin","obs":"Aspersores estufa + Acrílico giratória","pag":65.75}]},"Abril 26":{"mes":"Abril","ano":"2026","saldo_inicial":734.82,"entries":[{"doc":"00038852","data":"01/04/2026","nome":"MOEVE","obs":"Gasolina (20 L)","pag":38.46},{"doc":"1391715.0","data":"02/04/2026","nome":"Messinagro","obs":"","pag":85.94},{"doc":"1391716.0","data":"02/04/2026","nome":"Messinagro","obs":"Fertilizantes n/bio","pag":216.36},{"doc":"00038958","data":"03/04/2026","nome":"MOEVE","obs":"Gasolina (20 L)","pag":38.46},{"doc":"7758.0","data":"06/04/2026","nome":"Agriloja","obs":"Sementes n/bio","pag":4.99},{"doc":"1514.0","data":"07/04/2026","nome":"Transvista","obs":"Feno animais","pag":200.0},{"doc":"1437366.0","data":"07/04/2026","nome":"Messinagro","obs":"Fitossanitários + Fertilizantes n/bio","pag":338.31},{"doc":"3296.0","data":"08/04/2026","nome":"Sofrapa","obs":"Óleo hidráulico braço articulado","pag":94.96},{"doc":"26100619.0","data":"08/04/2026","nome":"Angel Pilot","obs":"Revisão Buggy","pag":1191.97},{"doc":"00072875","data":"10/04/2026","nome":"MOEVE","obs":"Gasolina (20 L)","pag":38.96},{"doc":"00072836","data":"10/04/2026","nome":"MOEVE","obs":"Gasolina (20 L) + Gasoleo","pag":119.38},{"doc":"000655","data":"11/04/2026","nome":"Auchan","obs":"Consumíveis","pag":15.27},{"doc":"005446","data":"29/04/2026","nome":"Tibi","obs":"Ração cães","pag":106.44}]}};
+ 
+const SEED_PS = {"Novembro":{"mes":"Novembro","ano":"2024","saldo_inicial":0.0,"entries":[{"doc":"","data":"15/11/2024","nome":"CAIXA","obs":"Tranferência Ana","rec":1500.0},{"doc":"FR.2024/9175","data":"12/11/2024","nome":"FirstStop","obs":"Reparação Pneu frente trator New Holland","pag":33.83},{"doc":"FR 2024A20/32879","data":"18/11/2024","nome":"Sanipina","obs":"Rolo de Filme para caixa de abacates","pag":7.11},{"doc":"FT 120012024/1389","data":"19/11/2024","nome":"Biosani","obs":"Turex (insecticida biológico)","pag":45.78},{"doc":"FR NFR241/3250","data":"20/11/2024","nome":"Plascampo","obs":"Plástico novo para cobrir estufa pequena","pag":123.6},{"doc":"FR 2024A20/33536","data":"23/11/2024","nome":"Sanipina","obs":"Milho partido para galinhas","pag":8.15},{"doc":"FR 2024A21/14914","data":"26/11/2024","nome":"Sanipina","obs":"Pulverizador com bateria","pag":67.47},{"doc":"FR 2024A21/14913","data":"26/11/2024","nome":"Sanipina","obs":"Cabeças motoroçadoras + óleo lubrificante","pag":73.34},{"doc":"FR 2024A16/2800","data":"27/11/2024","nome":"Convent'bio","obs":"Sementes Bio para sementeiras","pag":18.52},{"doc":"FR 2024A20/33825","data":"27/11/2024","nome":"Sanipina","obs":"Consumíveis e substrato sementeiras bio","pag":64.78},{"doc":"FT-3-818","data":"28/11/2024","nome":"Transvista","obs":"2 Fardos de Feno animais","pag":180.0}]},"Dezembro":{"mes":"Dezembro","ano":"2024","saldo_inicial":877.42,"entries":[{"doc":"FR 1175","data":"03/12/2024","nome":"HM Sobrado","obs":"Esferas para alfaias + Óleo de mistura","pag":60.49},{"doc":"FS Fas4241/805","data":"03/12/2024","nome":"Acácio C. Santos","obs":"Gás propano e Redutor","pag":41.7},{"doc":"FS Fas2241/2464","data":"03/12/2024","nome":"Acácio C. Santos","obs":"Tubo Borracha para Gás + Fogareiro","pag":52.7},{"doc":"FR NFR4241/267","data":"03/12/2024","nome":"Acácio C. Santos","obs":"Tara Gáz OZ (caução)","pag":25.0},{"doc":"FS 2/5854","data":"06/12/2024","nome":"CM Fixação","obs":"Cal para Calda Sulfocálcica","pag":19.75},{"doc":"FR U003/80147","data":"06/12/2024","nome":"Farmácia Amparo Lagoa","obs":"Material Caixa 1º Socorros (Global G.A.P.)","pag":70.25},{"doc":"FT 20240505101/011256","data":"06/12/2024","nome":"Leroy","obs":"Material nivelamento agua animais","pag":25.22},{"doc":"FR 130112024/4649","data":"09/12/2024","nome":"Marreiros, Lda.","obs":"Material Proteção Fitofármacos","pag":53.69},{"doc":"FR 130112024/4648","data":"09/12/2024","nome":"Marreiros, Lda.","obs":"Enxofre molhavél + Sabão Potássico","pag":175.73},{"doc":"FR 54/31364","data":"11/12/2024","nome":"Messinagro","obs":"Protafix + Fava Ratinha para sementeiras","pag":205.83},{"doc":"FR 2024A20/24582","data":"04/12/2024","nome":"Sanipina","obs":"Material para Rega","pag":91.16}]},"Janeiro":{"mes":"Janeiro","ano":"2025","saldo_inicial":55.9,"entries":[{"doc":"FR 2025A21/55","data":"02/01/2025","nome":"Sanipina","obs":"Bicos escarificador + Milho Partido","pag":43.75},{"doc":"FR 2025A20/14","data":"02/01/2025","nome":"Sanipina","obs":"Rolo Filme Paletização","pag":7.11},{"doc":"FACPP 2453C22/33141","data":"03/01/2025","nome":"Adubopor","obs":"Sementes + Placas sementeiras","pag":17.38},{"doc":"FR NFR251/13","data":"06/01/2025","nome":"Embalgarve","obs":"Caixas Cartão (60x40x17)","pag":26.81},{"doc":"FACPP 2453C22/33254","data":"08/01/2025","nome":"Adubopor","obs":"Tubo rega (100m 4Kg) + Sementes bio","pag":72.77},{"doc":"FACO2-N/1/39576","data":"08/01/2025","nome":"Sohorta","obs":"Sementes Bio + Ferramentas","pag":35.97},{"doc":"FR 2025A20/588","data":"10/01/2025","nome":"Sanipina","obs":"Material rega","pag":25.87},{"doc":"FR NFR251/30","data":"13/01/2025","nome":"Embalgarve","obs":"Caixa (60x40x17)","pag":33.52},{"doc":"FR n.51/19109","data":"13/01/2025","nome":"Messinagro","obs":"Calda bordalesa (25kg) + Medidor","pag":124.56},{"doc":"FR 2025A21/1212","data":"20/01/2025","nome":"Sanipina","obs":"Material vedação ovelheira + Sementes Bio","pag":41.08},{"doc":"FR 2025A20/2410","data":"29/01/2025","nome":"Sanipina","obs":"Material rega","pag":39.14},{"doc":"FT 20250045301/001144","data":"30/01/2025","nome":"Leroy","obs":"Bandeja Sementeira + Tomada","pag":17.44},{"doc":"FR NFR251/65","data":"30/01/2025","nome":"Embalgarve","obs":"80 uni Caixa 50x30x17","pag":88.56},{"doc":"N.º 2025200393","data":"30/01/2025","nome":"Seed","obs":"75 kg Batata bio","pag":184.43}]},"Fevereiro":{"mes":"Fevereiro","ano":"2025","saldo_inicial":-702.49,"entries":[{"doc":"","data":"01/02/2025","nome":"","obs":"Transferência Ana","rec":1200.0},{"doc":"FR 2025A21/1718","data":"03/02/2025","nome":"Sanipina","obs":"Milho galinhas + Filme + Atadora videiras","pag":78.9},{"doc":"703606555","data":"05/02/2025","nome":"STIHL","obs":"Podadora STIHL de mão","pag":169.0},{"doc":"FR 2025A21/1886","data":"06/02/2025","nome":"Sanipina","obs":"Material rega","pag":73.35},{"doc":"FR 2025A21/1889","data":"06/02/2025","nome":"Sanipina","obs":"Bate-estacas","pag":62.67},{"doc":"FR 2025A20/3256","data":"07/02/2025","nome":"Sanipina","obs":"Cerca electrica + acessórios","pag":50.76},{"doc":"FR NFR251/96","data":"10/02/2025","nome":"Embalgarve","obs":"Caixas Cartão (50x30x17) 90 uni","pag":99.63},{"doc":"FR 2025A21/2384","data":"17/02/2025","nome":"Agriloja","obs":"Material poda + Material rega + Fita rega","pag":118.13},{"doc":"FT M/2430","data":"21/02/2025","nome":"Sílabas diárias","obs":"Formação COTS Carlos Justino","pag":240.0}]},"Março":{"mes":"Março","ano":"2025","saldo_inicial":-394.93,"entries":[{"doc":"FR 2025A20/5348","data":"28/02/2025","nome":"AGRILOJA","obs":"Fio macarrão","pag":4.39},{"doc":"FS GKK007/272961","data":"06/03/2025","nome":"Continente","obs":"Etiquetas caixa fruta","pag":2.98},{"doc":"FAC02-N/1/40281","data":"07/03/2025","nome":"SOHORTA","obs":"Plantas p/ transplante","pag":50.9},{"doc":"FR 2025A20/6584","data":"12/03/2025","nome":"Agriloja","obs":"Fio Sisal","pag":4.03},{"doc":"FR 2025A20/6704","data":"13/03/2025","nome":"Agriloja","obs":"Fio Nylon (motorroçadora) 58 M","pag":46.42},{"doc":"FR 2025A21/4249","data":"21/03/2025","nome":"Agriloja","obs":"Lona + Esticadores","pag":21.4},{"doc":"FR 2025A20/8058","data":"28/03/2025","nome":"Agriloja","obs":"Material de Rega + Horta","pag":124.08}]},"Abril":{"mes":"Abril","ano":"2025","saldo_inicial":-649.13,"entries":[{"doc":"8515.0","data":"02/04/2025","nome":"Agriloja","obs":"Material Rega","pag":43.31},{"doc":"8601.0","data":"02/04/2025","nome":"Agriloja","obs":"Material Rega","pag":18.27},{"doc":"","data":"03/04/2025","nome":"Tranferência Ana","obs":"","rec":1500.0},{"doc":"004194","data":"05/04/2025","nome":"Leroy","obs":"Sementes bio + Tinta de Marcação","pag":11.01},{"doc":"9192.0","data":"07/04/2025","nome":"Agriloja","obs":"Estacas de Rega","pag":12.55},{"doc":"9660.0","data":"10/04/2025","nome":"Agriloja","obs":"Substrato Germinação","pag":18.22},{"doc":"6176.0","data":"16/04/2025","nome":"Agriloja","obs":"Material Tractor","pag":23.22},{"doc":"6384.0","data":"17/04/2025","nome":"Agriloja","obs":"União simples Tubo 50","pag":6.32},{"doc":"10484.0","data":"22/04/2025","nome":"Agriloja","obs":"Material substituição motorroçadora","pag":92.21},{"doc":"6813.0","data":"24/04/2025","nome":"Agriloja","obs":"Milho + Material reparação rega","pag":26.31},{"doc":"7221.0","data":"29/04/2025","nome":"Agriloja","obs":"Reparação motorroçadora","pag":164.48},{"doc":"7219.0","data":"29/04/2025","nome":"Agriloja","obs":"Botas Naveed","pag":36.22},{"doc":"7218.0","data":"29/04/2025","nome":"Agriloja","obs":"Material reparação rega","pag":37.27},{"doc":"11207.0","data":"29/04/2025","nome":"Agriloja","obs":"Material reparação rega","pag":2.63}]},"Maio":{"mes":"Maio","ano":"2025","saldo_inicial":358.85,"entries":[{"doc":"11344.0","data":"30/04/2025","nome":"Agriloja","obs":"Botas Sufian","pag":36.22},{"doc":"11343.0","data":"30/04/2025","nome":"Agriloja","obs":"Tesoura de Poda + Consumíveis","pag":14.14},{"doc":"12722.0","data":"09/05/2025","nome":"Agriloja","obs":"Material de Rega","pag":22.57},{"doc":"8042.0","data":"12/05/2025","nome":"Agriloja","obs":"Material de Canalização","pag":37.58},{"doc":"41203.0","data":"13/05/2025","nome":"SOHORTA","obs":"Sementes BIo","pag":47.5},{"doc":"13362.0","data":"15/05/2025","nome":"Agriloja","obs":"Substrato Bio + Material de Rega","pag":114.4},{"doc":"14220.0","data":"20/05/2025","nome":"Agriloja","obs":"EPI para pulverização","pag":10.97},{"doc":"14657.0","data":"23/05/2025","nome":"Agriloja","obs":"Milho Partido para galinhas","pag":9.47},{"doc":"9183.0","data":"27/05/2025","nome":"Agriloja","obs":"Material de Rega","pag":51.81}]},"Junho":{"mes":"Junho","ano":"2025","saldo_inicial":14.19,"entries":[{"doc":"9468.0","data":"02/06/2025","nome":"Agriloja","obs":"Consumíveis","pag":16.92},{"doc":"","data":"05/06/2025","nome":"","obs":"Transferência Ana","rec":1500.0},{"doc":"9602.0","data":"05/06/2025","nome":"Agriloja","obs":"Material Vedação","pag":9.9},{"doc":"16424.0","data":"06/06/2025","nome":"Agriloja","obs":"União Micro Rega","pag":5.23},{"doc":"16670.0","data":"07/06/2025","nome":"Agriloja","obs":"Sementes Bio","pag":21.2},{"doc":"10008.0","data":"09/06/2025","nome":"Agriloja","obs":"Material Rega","pag":35.46},{"doc":"9959.0","data":"09/06/2025","nome":"Agriloja","obs":"Peças Rega","pag":15.62},{"doc":"9961.0","data":"09/06/2025","nome":"Agriloja","obs":"Tubo Gotejador (abacateiro)","pag":43.55},{"doc":"006756","data":"09/06/2025","nome":"Leroy","obs":"Peça união Rega","pag":11.78},{"doc":"5487.0","data":"11/06/2025","nome":"MCGAD","obs":"Pulverizador (P/Bio)","pag":42.0},{"doc":"17062.0","data":"12/06/2025","nome":"Agriloja","obs":"Afia Correntes + Corrente Motoserra + Óleo","pag":76.03},{"doc":"17861.0","data":"18/06/2025","nome":"Agriloja","obs":"Material Rega","pag":13.48},{"doc":"4207.0","data":"20/06/2025","nome":"Agriloja","obs":"Cabo enxada + Tubo gota-a-gota","pag":74.68},{"doc":"18290.0","data":"24/06/2025","nome":"Agriloja","obs":"Tubagem depósito","pag":13.36},{"doc":"18996.0","data":"30/06/2025","nome":"Agriloja","obs":"Pilhas 9V + Material Rega","pag":19.21}]},"Julho":{"mes":"Julho","ano":"2025","saldo_inicial":1115.77,"entries":[{"doc":"11210.0","data":"01/07/2025","nome":"Agriloja","obs":"Sacos plásticos + Fio motorroçadora","pag":63.46},{"doc":"49586.0","data":"03/07/2025","nome":"Sulcave","obs":"Consumíveis","pag":5.97},{"doc":"004715","data":"03/07/2025","nome":"Pingo Doce","obs":"Detergente","pag":1.09},{"doc":"11670.0","data":"10/07/2025","nome":"Agriloja","obs":"Comida galinhas","pag":19.32},{"doc":"1385581.0","data":"15/07/2025","nome":"Messinagro","obs":"HD HIERRO","pag":106.06},{"doc":"21722.0","data":"24/07/2025","nome":"Agriloja","obs":"Mao de obra motoserra + Electrovalvula","pag":52.85},{"doc":"12560.0","data":"29/07/2025","nome":"Agriloja","obs":"Máscara proteção e fio tutor","pag":15.41}]},"Agosto":{"mes":"Agosto","ano":"2025","saldo_inicial":851.61,"entries":[{"doc":"61664.0","data":"01/08/2025","nome":"MATDIVER","obs":"Rede Vedação","pag":110.94},{"doc":"5280.0","data":"04/08/2025","nome":"Leroy","obs":"Alicate grampear cerca + Grampo","pag":38.57},{"doc":"23163.0","data":"07/08/2025","nome":"Agriloja","obs":"União estriada","pag":12.55},{"doc":"23820.0","data":"14/08/2025","nome":"Agriloja","obs":"Milho partido + consumiveis","pag":22.88},{"doc":"12805.0","data":"06/08/2025","nome":"Engidraulica","obs":"Reparação tubo hidráulico reboque","pag":67.22},{"doc":"13113.0","data":"08/08/2025","nome":"Agriloja","obs":"Consumíveis","pag":15.15}]},"Setembro 25":{"mes":"Setembro","ano":"2025","saldo_inicial":584.3,"entries":[{"doc":"14911.0","data":"11/09/2025","nome":"Agriloja","obs":"Consumíveis rega + Corrente motosserra","pag":76.17},{"doc":"NC 2025A17/469","data":"11/09/2025","nome":"Agriloja","obs":"NC FR 14911","rec":16.61},{"doc":"26043.0","data":"11/09/2025","nome":"Agriloja","obs":"Corrente Motosserra","pag":21.75},{"doc":"NC 2025A18/268","data":"12/09/2025","nome":"Agriloja","obs":"NC FR 14911","rec":7.88},{"doc":"14984.0","data":"12/09/2025","nome":"Agriloja","obs":"Porta-Limas","pag":7.88},{"doc":"15041.0","data":"12/09/2025","nome":"Agriloja","obs":"Tubo PEHD","pag":57.2},{"doc":"14988.0","data":"12/09/2025","nome":"Agriloja","obs":"Material para Auditoria","pag":39.51},{"doc":"26226.0","data":"17/09/2025","nome":"Agriloja","obs":"Consumíveis","pag":7.29},{"doc":"29962.0","data":"19/09/2025","nome":"MatDiver","obs":"Sistema gota-a-gota","pag":127.3},{"doc":"014639","data":"22/09/2025","nome":"Bricomania","obs":"Material Auditoria","pag":22.09},{"doc":"26849.0","data":"29/09/2025","nome":"Agriloja","obs":"Material Rega + Milho patos","pag":23.37}]},"Outubro 25":{"mes":"Outubro","ano":"2025","saldo_inicial":226.23,"entries":[{"doc":"16811.0","data":"01/10/2025","nome":"Agriloja","obs":"Pá alumínio + Consumíveis","pag":53.11},{"doc":"1387534.0","data":"01/10/2025","nome":"Messinagro","obs":"Armadilhas Ceratitis (BIO)","pag":159.0},{"doc":"1387646.0","data":"06/10/2025","nome":"Messinagro","obs":"Armadilhas Ceratitis (BIO)","pag":127.66},{"doc":"27338.0","data":"08/10/2025","nome":"Agriloja","obs":"Válvula de corte esfera","pag":5.54},{"doc":"1387900.0","data":"14/10/2025","nome":"Messinagro","obs":"Armadilhas Ceratitis + Insecticida Bio","pag":195.71},{"doc":"816.0","data":"17/10/2025","nome":"HMSOBRADO","obs":"Pistola aplicação + bico pulverizador","pag":68.01},{"doc":"1433008.0","data":"20/10/2025","nome":"Messinagro","obs":"Enxofre molhável","pag":109.45},{"doc":"18905.0","data":"23/10/2025","nome":"Agriloja","obs":"Ripador Oliveira","pag":5.97},{"doc":"870.0","data":"27/10/2025","nome":"Embalgarve","obs":"Caixas de Cartão","pag":90.77}]},"Novembro 25":{"mes":"Novembro","ano":"2025","saldo_inicial":-588.99,"entries":[{"doc":"","data":"31/10/2025","nome":"Tranferência Ana","obs":"","rec":2000.0},{"doc":"893.0","data":"06/11/2025","nome":"Embalgarve","obs":"Caixa de Cartão","pag":112.91},{"doc":"900.0","data":"10/11/2025","nome":"Embalgarve","obs":"Caixa de Cartão","pag":73.06},{"doc":"21459.0","data":"18/11/2025","nome":"Agriloja","obs":"Corrente e coleira","pag":8.83},{"doc":"931.0","data":"24/11/2025","nome":"Embalgarve","obs":"Caixa de Cartão","pag":110.7},{"doc":"121526.0","data":"25/11/2025","nome":"Farmácia Amparo Lagoa","obs":"Material Primeiros Socorros","pag":11.89},{"doc":"22199.0","data":"25/11/2025","nome":"Agriloja","obs":"EPI's","pag":67.87},{"doc":"00078658","data":"25/11/2025","nome":"Penisula Soalheira","obs":"Caixas para fitofármacos","pag":32.65},{"doc":"936.0","data":"27/11/2025","nome":"Embalgarve","obs":"Caixa de Cartão","pag":78.6}]},"Dezembro 25":{"mes":"Dezembro","ano":"2025","saldo_inicial":914.5,"entries":[{"doc":"16083.0","data":"02/12/2025","nome":"Pina Garden center","obs":"Cicatrizante poda árvores","pag":15.5},{"doc":"948.0","data":"04/12/2025","nome":"Hm Sobrado","obs":"Consumíveis facas e bicos fresa","pag":112.72},{"doc":"30379.0","data":"13/12/2025","nome":"Agriloja","obs":"Gás propano + consumíveis","pag":65.4},{"doc":"1389374.0","data":"18/12/2025","nome":"Messinagro","obs":"Sementes trevo Protafix","pag":182.02},{"doc":"1004.0","data":"29/12/2025","nome":"Embalgarve","obs":"Caixas de cartão","pag":97.42}]},"Janeiro 26":{"mes":"Janeiro","ano":"2026","saldo_inicial":441.44,"entries":[{"doc":"00002529","data":"24/12/2025","nome":"Penisula Soalheira","obs":"Balde Lixo 70L","pag":20.95},{"doc":"24618.0","data":"24/12/2025","nome":"Agriloja","obs":"Consumíveis","pag":26.26},{"doc":"512.0","data":"06/01/2026","nome":"Agriloja","obs":"Corrente motosserra","pag":22.58},{"doc":"4558.0","data":"09/01/2026","nome":"Marreiros","obs":"Perlite","pag":17.42},{"doc":"20.0","data":"12/01/2026","nome":"Embalgarve","obs":"75 Caixas de cartão","pag":83.03},{"doc":"33.0","data":"19/01/2026","nome":"Embalgarve","obs":"88 Caixas de cartão","pag":97.42},{"doc":"35.0","data":"22/01/2026","nome":"Embalgarve","obs":"88 Caixas de cartão","pag":97.42},{"doc":"1642.0","data":"27/01/2026","nome":"Agriloja","obs":"Luvas de trabalho impermeáveis","pag":6.69},{"doc":"46.0","data":"29/01/2026","nome":"Embalgarve","obs":"77 Caixas cartão","pag":85.24}]},"Fevereiro 26":{"mes":"Fevereiro","ano":"2026","saldo_inicial":-15.57,"entries":[{"doc":"3722.0","data":"25/02/2026","nome":"Agriloja","obs":"Fitossanitário Bio","pag":130.47},{"doc":"76.0","data":"12/02/2026","nome":"Embalgarve","obs":"Caixas 88","pag":97.42}]},"Março 26":{"mes":"Março","ano":"2026","saldo_inicial":-243.46,"entries":[{"doc":"1390710.0","data":"03/03/2026","nome":"Messinagro","obs":"Zinco p/ abacateiros foliar","pag":107.15},{"doc":"5346.0","data":"12/03/2026","nome":"Agriloja","obs":"Tubo de rega novo Laranjal","pag":298.55},{"doc":"5348.0","data":"12/03/2026","nome":"Agriloja","obs":"Tesoura de poda eléctrica","pag":197.11},{"doc":"","data":"18/03/2026","nome":"","obs":"Transferência Ana","rec":1500.0},{"doc":"5820.0","data":"19/03/2026","nome":"Agriloja","obs":"Material rega para a Estufa","pag":271.38},{"doc":"6118.0","data":"23/03/2026","nome":"Agriloja","obs":"Material rega para a Estufa","pag":102.82},{"doc":"1436893.0","data":"24/03/2026","nome":"Messinagro","obs":"Fitossanitários pomares (Bio)","pag":374.88}]},"Abril 26":{"mes":"Abril","ano":"2026","saldo_inicial":-95.35,"entries":[{"doc":"7757.0","data":"06/04/2026","nome":"Agriloja","obs":"Reparação sistema de rega","pag":16.52},{"doc":"8139.0","data":"10/04/2026","nome":"Agriloja","obs":"Consumíveis (estufa)","pag":13.48},{"doc":"8169.0","data":"10/04/2026","nome":"Agriloja","obs":"Consumíveis","pag":54.11},{"doc":"","data":"19/04/2026","nome":"","obs":"Transferencia Ana","rec":1000.0}]}};
+ 
+// ═══════════════════════════════════════════════════════
+// COMPANY CONFIG
+// ═══════════════════════════════════════════════════════
+const CO_CONFIG = {
+  ftg: { name:'Fourtimesgreen', shortName:'FTG', nif:'515 663 182', tagline:'Agricultura · Sustentabilidade · Inovação', seed: SEED_FTG },
+  ps:  { name:'Paisagem Silvestre, Lda.', shortName:'PS', nif:'515 691 690', tagline:'Produção Biológica Certificada', seed: SEED_PS }
+};
+ 
+const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function monthChronoRank(key, m) {
+  if (!m || typeof m !== 'object') m = {};
+  const monthName = String(m.mes || '').trim();
+  let yi = parseInt(String(m.ano || '').trim(), 10);
+  if (!Number.isFinite(yi)) {
+    const tail = String(key || '').trim().match(/\s+(\d{1,4})$/);
+    if (tail) {
+      let ty = parseInt(tail[1], 10);
+      if (tail[1].length <= 2) ty += 2000;
+      yi = ty;
+    } else {
+      yi = 0;
+    }
+  }
+  let mi = MONTH_NAMES.indexOf(monthName);
+  if (mi < 0) {
+    const baseKey = String(key || '').replace(/\s+\d{1,4}$/, '').trim();
+    mi = MONTH_NAMES.indexOf(baseKey);
+  }
+  if (mi < 0) mi = 12;
+  return { y: yi, m: mi, k: String(key || '') };
+}
+
+function compareMonthKeys(ka, kb, data) {
+  const ra = monthChronoRank(ka, data[ka]);
+  const rb = monthChronoRank(kb, data[kb]);
+  if (ra.y !== rb.y) return ra.y - rb.y;
+  if (ra.m !== rb.m) return ra.m - rb.m;
+  return ra.k.localeCompare(rb.k, 'pt');
+}
+
+function sortMonthKeys(keys, data) {
+  return keys.slice().sort((a, b) => compareMonthKeys(a, b, data));
+}
+ 
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let activeCo  = null;
+let activeKey = null;
+let tipoForm  = 'pag';
+let nmSelected = null;
+ 
+// ═══════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════
+
+const CAIXA_MEMORY_STORAGE_V336 = {};
+function safeGetV329(key) {
+  try { return localStorage.getItem(key); } catch(e) { return CAIXA_MEMORY_STORAGE_V336[key] || null; }
+}
+function safeSetV329(key, value) {
+  try { localStorage.setItem(key, value); } catch(e) { CAIXA_MEMORY_STORAGE_V336[key] = value; }
+}
+function storageKey(co) { return `caixa_${co}`; }
+ 
+function loadData(co) {
+  try {
+    const raw = safeGetV329(storageKey(co));
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  // first load: seed from historical data, add IDs
+  const seed = CO_CONFIG[co].seed;
+  const data = {};
+  for (const [k, m] of Object.entries(seed)) {
+    data[k] = {
+      mes: m.mes, ano: m.ano, saldo_inicial: m.saldo_inicial,
+      entries: m.entries.map((e, i) => ({ id: `seed_${k}_${i}`, ...e }))
+    };
+  }
+  saveData(co, data);
+  return data;
+}
+ 
+function saveData(co, data) {
+  safeSetV329(storageKey(co), JSON.stringify(data));
+  notifyCaixaParentV41();
+}
+ 
+function getData(co) {
+  return loadData(co);
+}
+ 
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+const fmt  = v => (v != null ? v.toLocaleString('pt-PT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €' : '—');
+const fmtN = v => (v != null ? v.toFixed(2) : '0.00');
+const r2   = v => Math.round(v * 100) / 100;
+ 
+function calcMonth(m) {
+  let rec = 0, pag = 0;
+  for (const e of m.entries) {
+    if (e.rec) rec = r2(rec + e.rec);
+    if (e.pag) pag = r2(pag + e.pag);
+  }
+  const saldo = r2(m.saldo_inicial + rec - pag);
+  return { rec, pag, saldo };
+}
+ 
+function calcRunSaldo(entries, saldo_inicial) {
+  let s = saldo_inicial;
+  return entries.map(e => {
+    if (e.rec) s = r2(s + e.rec);
+    if (e.pag) s = r2(s - e.pag);
+    return r2(s);
+  });
+}
+ 
+function calcAccumSaldo(co) {
+  const data = getData(co);
+  const keys = sortMonthKeys(Object.keys(data), data);
+  if (!keys.length) return 0;
+  const lastKey = keys[keys.length - 1];
+  const { saldo } = calcMonth(data[lastKey]);
+  return saldo;
+}
+ 
+// ═══════════════════════════════════════════════════════
+// SELECTOR SCREEN
+// ═══════════════════════════════════════════════════════
+function initSelector() {
+  for (const co of ['ftg','ps']) {
+    const data = getData(co);
+    const n = Object.keys(data).length;
+    document.getElementById(`co-months-${co}`).textContent = `${n} meses guardados`;
+  }
+}
+ 
+let selectedCoCard = null;
+function selectCo(key, el) {
+  document.querySelectorAll('.co-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedCoCard = key;
+  const btn = document.getElementById('btnEnter');
+  btn.classList.add('ready');
+}
+ 
+function enterApp() {
+  if (!selectedCoCard) return;
+  activeCo = selectedCoCard;
+  showScreen('screen-app');
+  initApp();
+}
+ 
+// ═══════════════════════════════════════════════════════
+// APP
+// ═══════════════════════════════════════════════════════
+function initApp() {
+  const co = CO_CONFIG[activeCo];
+  document.getElementById('sb-co-name').textContent = co.name;
+  document.getElementById('sb-co-nif').textContent  = 'NIF ' + co.nif;
+  updateSaldoTotal();
+  buildMonthList();
+ 
+  // auto-select last month (último cronologicamente)
+  const data = getData(activeCo);
+  const keys = sortMonthKeys(Object.keys(data), data);
+  if (keys.length) selectMonth(keys[keys.length - 1]);
+}
+ 
+function updateSaldoTotal() {
+  // Saldo disponível = saldo final do mês atualmente selecionado
+  let s = 0;
+  if (activeKey) {
+    const data = getData(activeCo);
+    const m = data[activeKey];
+    if (m) { const c = calcMonth(m); s = c.saldo; }
+  } else {
+    s = calcAccumSaldo(activeCo);
+  }
+  const el = document.getElementById('sb-saldo-total');
+  el.textContent = fmt(s);
+  el.className = 'sv' + (s < 0 ? ' neg' : '');
+}
+ 
+function buildMonthList() {
+  const data = getData(activeCo);
+  const list = document.getElementById('monthList');
+  list.innerHTML = '';
+ 
+  const currentYear = String(new Date().getFullYear());
+  // Group by year
+  const groups = {};
+  for (const [key, m] of Object.entries(data)) {
+    const yr = m.ano || '—';
+    if (!groups[yr]) groups[yr] = [];
+    groups[yr].push({ key, m });
+  }
+ 
+  const yearKeys = Object.keys(groups).sort((a, b) => {
+    const na = parseInt(String(a).trim(), 10);
+    const nb = parseInt(String(b).trim(), 10);
+    const ia = Number.isFinite(na) ? na : 999999;
+    const ib = Number.isFinite(nb) ? nb : 999999;
+    if (ia !== ib) return ia - ib;
+    return String(a).localeCompare(String(b), 'pt');
+  });
+
+  for (const yr of yearKeys) {
+    const items = groups[yr];
+    items.sort((a, b) => compareMonthKeys(a.key, b.key, data));
+    const isPast = yr < currentYear;
+    const isCurrentYearGroup = yr === currentYear;
+ 
+    const groupHeader = document.createElement('div');
+    groupHeader.className = 'month-group-header';
+    groupHeader.innerHTML = `<span>${yr}</span><span>${isPast ? '▾' : '▴'}</span>`;
+    list.appendChild(groupHeader);
+ 
+    const groupBody = document.createElement('div');
+    groupBody.className = 'month-group-body';
+    if (isPast) groupBody.classList.add('hidden');
+    list.appendChild(groupBody);
+ 
+    groupHeader.onclick = () => {
+      const hidden = groupBody.classList.toggle('hidden');
+      groupHeader.querySelector('span:last-child').textContent = hidden ? '▾' : '▴';
+    };
+ 
+    for (const { key, m } of items) {
+      const { saldo } = calcMonth(m);
+      const item = document.createElement('div');
+      item.className = 'month-item' + (key === activeKey ? ' active' : '');
+      item.dataset.key = key;
+      item.innerHTML = `
+        <div>
+          <div class="mi-name">${m.mes}</div>
+          <div class="mi-year">${m.ano}</div>
+        </div>
+        <div class="mi-bal ${saldo >= 0 ? 'pos' : 'neg'}">${saldo >= 0 ? '+' : ''}${fmtN(saldo)}</div>`;
+      item.onclick = () => selectMonth(key);
+      groupBody.appendChild(item);
+ 
+      // if this is the active key, make sure its group is expanded
+      if (key === activeKey) groupBody.classList.remove('hidden');
+    }
+  }
+}
+ 
+// Propagate saldo_inicial changes in cascade from a given key onwards
+function propagateFromKey(co, fromKey) {
+  const data = getData(co);
+  const keys = sortMonthKeys(Object.keys(data), data);
+  const idx  = keys.indexOf(fromKey);
+  if (idx < 0) return;
+  for (let i = idx; i < keys.length - 1; i++) {
+    const thisKey = keys[i];
+    const nextKey = keys[i + 1];
+    const { saldo } = calcMonth(data[thisKey]);
+    data[nextKey].saldo_inicial = r2(saldo);
+  }
+  saveData(co, data);
+}
+ 
+let sortCol = null, sortDir = 1;
+ 
+function selectMonth(key) {
+  activeKey = key;
+  sortCol = null; sortDir = 1;
+  document.querySelectorAll('.month-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.key === key);
+    // expand the group that contains the active key
+    if (el.dataset.key === key) {
+      const body = el.closest('.month-group-body');
+      if (body) body.classList.remove('hidden');
+    }
+  });
+  renderMonth();
+  updateSaldoTotal();
+}
+ 
+function renderMonth() {
+  if (!activeKey) return;
+  const data = getData(activeCo);
+  const m = data[activeKey];
+  if (!m) return;
+ 
+  const { rec, pag, saldo } = calcMonth(m);
+ 
+  document.getElementById('topbarTitle').textContent = `${m.mes} ${m.ano}`;
+  document.getElementById('sum-inicial').textContent = fmt(m.saldo_inicial);
+  document.getElementById('sum-inicial').className = 'sc-val' + (m.saldo_inicial < 0 ? ' neg' : '');
+  document.getElementById('sum-rec').textContent    = fmt(rec);
+  document.getElementById('sum-pag').textContent    = fmt(pag);
+  document.getElementById('sum-final').textContent  = fmt(saldo);
+  document.getElementById('sum-final').className    = 'sc-val' + (saldo < 0 ? ' neg' : '');
+  document.getElementById('sum-entries').textContent = `${m.entries.length} movimento${m.entries.length !== 1 ? 's' : ''}`;
+ 
+  const area = document.getElementById('entriesArea');
+ 
+  if (!m.entries.length) {
+    area.innerHTML = `<div class="empty-state">
+      <h3>Sem movimentos em ${m.mes}</h3>
+      <p>Clica em "Adicionar movimento" para registar o primeiro.</p>
+    </div>`;
+    return;
+  }
+ 
+  // Apply sort
+  let entries = [...m.entries];
+  if (sortCol !== null) {
+    const getVal = (e) => {
+      if (sortCol === 0) return (e.doc || '').toLowerCase();
+      if (sortCol === 1) { // date dd/mm/yyyy → sort as yyyymmdd
+        const p = (e.data || '').split('/');
+        return p.length === 3 ? `${p[2]}${p[1]}${p[0]}` : '';
+      }
+      if (sortCol === 2) return (e.nome || '').toLowerCase();
+      if (sortCol === 3) return (e.obs  || '').toLowerCase();
+      if (sortCol === 4) return e.rec || 0;
+      if (sortCol === 5) return e.pag || 0;
+      return 0;
+    };
+    entries.sort((a,b) => {
+      const va = getVal(a), vb = getVal(b);
+      if (va < vb) return -sortDir;
+      if (va > vb) return  sortDir;
+      return 0;
+    });
+  }
+ 
+  const runSaldos = calcRunSaldo(entries, m.saldo_inicial);
+ 
+  const cols = ['Doc. Nº','Data','Fornecedor','Descrição / Obs.','Recebimentos','Pagamentos'];
+  const ths  = cols.map((c, i) => {
+    const isNum = i >= 4;
+    let cls = `sortable${isNum ? ' num' : ''}`;
+    if (sortCol === i) cls += sortCol === i && sortDir === 1 ? ' sort-asc' : ' sort-desc';
+    return `<th class="${cls}" onclick="doSort(${i})">${c}</th>`;
+  }).join('');
+ 
+  let rows = '';
+  entries.forEach((e, i) => {
+    const s = runSaldos[i];
+    const sc = s < 0 ? 'saldo-neg' : 'saldo-pos';
+    rows += `<tr data-id="${e.id}">
+      <td class="doc-col editable" onclick="editCell(this,'${e.id}','doc')">${e.doc || ''}</td>
+      <td class="editable" onclick="editCell(this,'${e.id}','data')">${e.data || ''}</td>
+      <td class="nome-col editable" onclick="editCell(this,'${e.id}','nome')">${e.nome || ''}</td>
+      <td class="obs-col editable" onclick="editCell(this,'${e.id}','obs')">${e.obs || ''}</td>
+      <td class="${e.rec ? 'rec-val' : 'num'} editable" onclick="editNumCell(this,'${e.id}','rec')">${e.rec ? fmt(e.rec) : ''}</td>
+      <td class="${e.pag ? 'pag-val' : 'num'} editable" onclick="editNumCell(this,'${e.id}','pag')">${e.pag ? fmt(e.pag) : ''}</td>
+      <td class="${sc} num">${fmt(s)}</td>
+      <td class="act-col"><button class="del-btn" onclick="deleteEntry('${e.id}')" title="Eliminar">×</button></td>
+    </tr>`;
+  });
+ 
+  area.innerHTML = `<div class="table-wrap">
+    <table>
+      <thead><tr>${ths}<th class="num">Saldo</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+ 
+function doSort(col) {
+  if (sortCol === col) sortDir = -sortDir;
+  else { sortCol = col; sortDir = 1; }
+  renderMonth();
+}
+ 
+// ── Inline cell editing ──────────────────────────────────
+function editCell(td, id, field) {
+  if (td.querySelector('input,textarea')) return;
+  const cur = td.textContent.trim();
+  const inp = document.createElement('input');
+  inp.value = cur === '—' ? '' : cur;
+  inp.style.width = '100%';
+  td.textContent = '';
+  td.appendChild(inp);
+  inp.focus();
+ 
+  const commit = () => {
+    const val = inp.value.trim();
+    const data = getData(activeCo);
+    const entry = data[activeKey].entries.find(e => e.id === id);
+    if (entry) { entry[field] = val; saveData(activeCo, data); }
+    renderMonth(); buildMonthList();
+  };
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') inp.blur(); if (ev.key === 'Escape') { inp.value = cur; inp.blur(); } });
+}
+ 
+function editNumCell(td, id, field) {
+  if (td.querySelector('input')) return;
+  const data  = getData(activeCo);
+  const entry = data[activeKey].entries.find(e => e.id === id);
+  if (!entry) return;
+  const cur = entry[field] || '';
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.step = '0.01'; inp.min = '0';
+  inp.value = cur || '';
+  inp.className = 'num-input';
+  inp.style.width = '90px';
+  td.textContent = '';
+  td.appendChild(inp);
+  inp.focus(); inp.select();
+ 
+  const commit = () => {
+    const val = parseFloat(inp.value);
+    if (!isNaN(val) && val > 0) {
+      // clear both rec/pag then set the right one
+      delete entry.rec; delete entry.pag;
+      entry[field] = r2(val);
+    } else if (inp.value === '' || val <= 0) {
+      delete entry[field];
+    }
+    saveData(activeCo, data);
+    propagateFromKey(activeCo, activeKey);
+    renderMonth(); buildMonthList(); updateSaldoTotal();
+  };
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') inp.blur(); if (ev.key === 'Escape') { renderMonth(); } });
+}
+ 
+// ═══════════════════════════════════════════════════════
+// ADD ENTRY
+// ═══════════════════════════════════════════════════════
+function openAddModal() {
+  if (!activeKey) { alert('Seleciona um mês primeiro.'); return; }
+  // set today as default date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fData').value  = today;
+  document.getElementById('fValor').value = '';
+  document.getElementById('fDoc').value   = '';
+  document.getElementById('fNome').value  = '';
+  document.getElementById('fObs').value   = '';
+  setTipo('pag');
+  document.getElementById('modalAddTitle').textContent = `Novo movimento — ${getData(activeCo)[activeKey]?.mes}`;
+  openModal('modalAdd');
+}
+ 
+function setTipo(t) {
+  tipoForm = t;
+  document.getElementById('tipoPag').className = 'tipo-btn pag' + (t === 'pag' ? ' active' : '');
+  document.getElementById('tipoRec').className = 'tipo-btn rec' + (t === 'rec' ? ' active' : '');
+}
+ 
+function saveEntry() {
+  const dataVal = document.getElementById('fData').value;
+  const valor   = parseFloat(document.getElementById('fValor').value);
+  const doc     = document.getElementById('fDoc').value.trim();
+  const nome    = document.getElementById('fNome').value.trim();
+  const obs     = document.getElementById('fObs').value.trim();
+ 
+  if (!valor || valor <= 0) { alert('Insere um valor válido.'); return; }
+ 
+  // Auto-add supplier to DB
+  if (nome && activeCo) addSupplier(activeCo, nome);
+ 
+  // Format date as dd/mm/yyyy
+  let dataFmt = '';
+  if (dataVal) {
+    const [y,m,d] = dataVal.split('-');
+    dataFmt = `${d}/${m}/${y}`;
+  }
+ 
+  const entry = {
+    id: 'e_' + Date.now(),
+    doc, data: dataFmt, nome, obs,
+    [tipoForm]: r2(valor)
+  };
+ 
+  const data = getData(activeCo);
+  data[activeKey].entries.push(entry);
+  saveData(activeCo, data);
+  propagateFromKey(activeCo, activeKey);
+ 
+  closeModal('modalAdd');
+  renderMonth();
+  buildMonthList();
+  updateSaldoTotal();
+ 
+  // flash new row
+  setTimeout(() => {
+    const row = document.querySelector(`tr[data-id="${entry.id}"]`);
+    if (row) { row.classList.add('new-entry'); setTimeout(() => row.classList.remove('new-entry'), 2000); }
+  }, 50);
+}
+ 
+function deleteEntry(id) {
+  if (!confirm('Eliminar este movimento?')) return;
+  const data = getData(activeCo);
+  data[activeKey].entries = data[activeKey].entries.filter(e => e.id !== id);
+  saveData(activeCo, data);
+  propagateFromKey(activeCo, activeKey);
+  renderMonth();
+  buildMonthList();
+  updateSaldoTotal();
+}
+ 
+// ═══════════════════════════════════════════════════════
+// NEW MONTH
+// ═══════════════════════════════════════════════════════
+function openNewMonthModal() {
+  nmSelected = null;
+  const data = getData(activeCo);
+  const keys = sortMonthKeys(Object.keys(data), data);
+  const existing = new Set(keys.map(k => {
+    const m = data[k];
+    return `${m.mes}_${m.ano}`;
+  }));
+ 
+  const grid = document.getElementById('nmGrid');
+  grid.innerHTML = '';
+  MONTH_NAMES.forEach(mn => {
+    const chip = document.createElement('div');
+    chip.className = 'nm-chip';
+    chip.textContent = mn;
+    chip.onclick = () => {
+      document.querySelectorAll('.nm-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      nmSelected = mn;
+      // auto fill saldo from last month
+      if (keys.length) {
+        const lastKey = keys[keys.length - 1];
+        const { saldo } = calcMonth(data[lastKey]);
+        document.getElementById('nmSaldo').value = saldo.toFixed(2);
+      }
+    };
+    grid.appendChild(chip);
+  });
+ 
+  // default year
+  document.getElementById('nmAno').value = new Date().getFullYear();
+  document.getElementById('nmSaldo').value = '0';
+  openModal('modalNewMonth');
+}
+ 
+function createMonth() {
+  if (!nmSelected) { alert('Seleciona um mês.'); return; }
+  const ano     = parseInt(document.getElementById('nmAno').value);
+  const saldo_i = parseFloat(document.getElementById('nmSaldo').value) || 0;
+ 
+  const data = getData(activeCo);
+  // build key
+  let key = nmSelected;
+  if (ano >= 26 && ano <= 99) key += ' ' + String(ano).slice(-2);
+  else if (ano >= 2026)       key += ' ' + String(ano).slice(-2);
+ 
+  if (data[key]) { alert('Este mês já existe.'); return; }
+ 
+  data[key] = { mes: nmSelected, ano: String(ano), saldo_inicial: r2(saldo_i), entries: [] };
+  saveData(activeCo, data);
+ 
+  closeModal('modalNewMonth');
+  buildMonthList();
+  selectMonth(key);
+}
+ 
+// ═══════════════════════════════════════════════════════
+// EXPORT PDF
+// ═══════════════════════════════════════════════════════
+function exportPDF() {
+  if (!activeKey) { alert('Seleciona um mês primeiro.'); return; }
+  const data = getData(activeCo);
+  const m    = data[activeKey];
+  const co   = CO_CONFIG[activeCo];
+  const { rec, pag, saldo } = calcMonth(m);
+  const today = new Date().toLocaleDateString('pt-PT');
+ 
+  let rows = '';
+  m.entries.forEach((e, i) => {
+    rows += `<tr>
+      <td style="color:#666">${e.doc || '—'}</td>
+      <td>${e.data || ''}</td>
+      <td><strong>${e.nome || ''}</strong></td>
+      <td class="obs-cell">${e.obs || ''}</td>
+      <td class="num rec">${e.rec ? fmt(e.rec) : ''}</td>
+      <td class="num pag">${e.pag ? fmt(e.pag) : ''}</td>
+    </tr>`;
+  });
+ 
+  const sfCol = m.saldo_inicial < 0 ? '#c0392b' : '#1a2e4a';
+  const salCol = saldo < 0 ? '#c0392b' : '#1a2e4a';
+ 
+  document.getElementById('pdfPage').innerHTML = `
+    <div class="pdf-header">
+      <div class="pdf-logo-block">
+        <div class="pc">${co.name}</div>
+        <div class="pt">${co.tagline}</div>
+      </div>
+      <div class="pdf-meta">
+        <div class="pm-title">FOLHA DE CAIXA</div>
+        <table>
+          <tr><td>NIF</td><td>${co.nif}</td></tr>
+          <tr><td>Mês</td><td>${m.mes}</td></tr>
+          <tr><td>Ano</td><td>${m.ano}</td></tr>
+          <tr><td>Emissão</td><td>${today}</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="pdf-saldo-inicial">
+      <span>Saldo Inicial do Período</span>
+      <span style="color:${sfCol}">${fmt(m.saldo_inicial)}</span>
+    </div>
+    <table class="pdf-table">
+      <colgroup>
+        <col class="c-doc"><col class="c-data"><col class="c-nome"><col class="c-obs"><col class="c-rec"><col class="c-pag">
+      </colgroup>
+      <thead><tr>
+        <th>Doc. Nº</th><th>Data</th><th>Descrição / Nome</th><th>Observações</th>
+        <th class="num">Recebimentos</th><th class="num">Pagamentos</th>
+      </tr></thead>
+      <tbody>${rows || '<tr><td colspan="6" style="text-align:center;padding:20px;color:#888">Sem movimentos</td></tr>'}</tbody>
+      <tfoot><tr>
+        <td colspan="4" style="font-size:8.5pt;letter-spacing:.5px">TOTAIS DO PERÍODO</td>
+        <td class="num" style="color:#a8d5b8">${fmt(rec)}</td>
+        <td class="num" style="color:#f4a9a0">${fmt(pag)}</td>
+      </tr></tfoot>
+    </table>
+    <div class="pdf-totals">
+      <div class="ptc"><div class="pl">Total Recebimentos</div><div class="pv">${fmt(rec)}</div></div>
+      <div class="ptc"><div class="pl">Total Pagamentos</div><div class="pv">${fmt(pag)}</div></div>
+      <div class="ptc"><div class="pl">Saldo Final</div><div class="pv" style="color:${salCol}">${fmt(saldo)}</div></div>
+    </div>
+    <div class="pdf-sigs">
+      <div class="ps"><div class="psl">Caixa — Feito por<br>____ / ____ / ${m.ano}</div></div>
+      <div class="ps"><div class="psl">Tesouraria / Conferido<br>____ / ____ / ${m.ano}</div></div>
+      <div class="ps"><div class="psl">Direção Financeira<br>____ / ____ / ${m.ano}</div></div>
+    </div>
+    <div class="pdf-footer">
+      <span>${co.name} · NIF ${co.nif}</span>
+      <span>Gerado em ${today} · Folha de Caixa ${m.mes} ${m.ano}</span>
+    </div>`;
+  const printDoc = document.getElementById('print-doc');
+  printDoc.style.display = 'block';
+  printDoc.style.position = 'fixed';
+  printDoc.style.left = '-100000px';
+  printDoc.style.top = '0';
+  printDoc.style.opacity = '0';
+  window.print();
+  setTimeout(() => {
+    printDoc.style.display = 'none';
+    printDoc.style.position = '';
+    printDoc.style.left = '';
+    printDoc.style.top = '';
+    printDoc.style.opacity = '';
+  }, 300);
+}
+ 
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+ 
+function backToSelector() {
+  activeCo = null; activeKey = null;
+  showScreen('screen-selector');
+  initSelector();
+}
+ 
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+ 
+// close modal on overlay click
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
+});
+ 
+// ═══════════════════════════════════════════════════════
+// SUPPLIER DATABASE
+// ═══════════════════════════════════════════════════════
+function suppliersKey(co) { return `suppliers_${co}`; }
+
+function readStoredJsonV41(key) {
+  try {
+    const raw = safeGetV329(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+function cloneSeedDataV41(co) {
+  const seed = CO_CONFIG[co].seed || {};
+  const data = {};
+  for (const [k, m] of Object.entries(seed)) {
+    data[k] = {
+      mes: m.mes,
+      ano: m.ano,
+      saldo_inicial: m.saldo_inicial,
+      entries: (m.entries || []).map((e, i) => ({ id: `seed_${k}_${i}`, ...e }))
+    };
+  }
+  return data;
+}
+
+function getCaixaSyncStateV41() {
+  return {
+    data: {
+      ftg: readStoredJsonV41(storageKey('ftg')) || cloneSeedDataV41('ftg'),
+      ps: readStoredJsonV41(storageKey('ps')) || cloneSeedDataV41('ps')
+    },
+    suppliers: {
+      ftg: readStoredJsonV41(suppliersKey('ftg')) || [],
+      ps: readStoredJsonV41(suppliersKey('ps')) || []
+    }
+  };
+}
+window.getCaixaSyncStateV41 = getCaixaSyncStateV41;
+
+function applyCaixaSyncStateV41(state) {
+  if (!state || typeof state !== 'object') return;
+  const data = state.data && typeof state.data === 'object' ? state.data : {};
+  const suppliers = state.suppliers && typeof state.suppliers === 'object' ? state.suppliers : {};
+  if (data.ftg) safeSetV329(storageKey('ftg'), JSON.stringify(data.ftg));
+  if (data.ps) safeSetV329(storageKey('ps'), JSON.stringify(data.ps));
+  if (suppliers.ftg) safeSetV329(suppliersKey('ftg'), JSON.stringify(suppliers.ftg));
+  if (suppliers.ps) safeSetV329(suppliersKey('ps'), JSON.stringify(suppliers.ps));
+  try {
+    initSelector();
+    if (activeCo) {
+      const coData = getData(activeCo);
+      const ordered = sortMonthKeys(Object.keys(coData), coData);
+      buildMonthList();
+      if (activeKey && coData[activeKey]) selectMonth(activeKey);
+      else if (ordered.length) selectMonth(ordered[ordered.length - 1]);
+      else {
+        activeKey = null;
+        updateSaldoTotal();
+      }
+    }
+  } catch (e) {}
+}
+
+let caixaNotifyTimerV41 = null;
+function notifyCaixaParentV41() {
+  if (window.parent === window) return;
+  clearTimeout(caixaNotifyTimerV41);
+  caixaNotifyTimerV41 = setTimeout(function(){
+    try {
+      window.parent.postMessage({ type: 'caixaUpdate', state: getCaixaSyncStateV41() }, '*');
+    } catch(e) {}
+  }, 120);
+}
+
+window.addEventListener('message', function(ev) {
+  if (!ev || !ev.data || ev.data.type !== 'caixaLoad') return;
+  applyCaixaSyncStateV41(ev.data.state);
+});
+ 
+function loadSuppliers(co) {
+  try {
+    const raw = safeGetV329(suppliersKey(co));
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null; // null = not yet seeded
+}
+ 
+function saveSuppliers(co, list) {
+  safeSetV329(suppliersKey(co), JSON.stringify(list));
+  notifyCaixaParentV41();
+}
+ 
+function getSuppliers(co) {
+  let list = loadSuppliers(co);
+  if (!list) {
+    // Seed from all existing entries
+    list = extractSuppliersFromData(co);
+    saveSuppliers(co, list);
+  }
+  return list;
+}
+ 
+function extractSuppliersFromData(co) {
+  const data = getData(co);
+  const set = new Set();
+  for (const m of Object.values(data)) {
+    for (const e of m.entries) {
+      if (e.nome && e.nome.trim()) set.add(e.nome.trim());
+    }
+  }
+  return [...set].sort((a,b) => a.localeCompare(b, 'pt'));
+}
+ 
+function addSupplier(co, name) {
+  name = name.trim();
+  if (!name) return;
+  const list = getSuppliers(co);
+  if (!list.includes(name)) {
+    list.push(name);
+    list.sort((a,b) => a.localeCompare(b,'pt'));
+    saveSuppliers(co, list);
+  }
+}
+ 
+function removeSupplier(co, name) {
+  const list = getSuppliers(co).filter(s => s !== name);
+  saveSuppliers(co, list);
+}
+ 
+// ── Autocomplete in Add Modal ─────────────────────────
+function acRender(suppliers) {
+  const dd  = document.getElementById('acDropdown');
+  const val = document.getElementById('fNome').value.trim().toLowerCase();
+  if (!suppliers.length && !val) { dd.style.display='none'; return; }
+  const exact = suppliers.find(s => s.toLowerCase() === val);
+  let html = suppliers.map(s => {
+    const hi = val ? s.replace(new RegExp(`(${val.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<strong>$1</strong>') : s;
+    return `<div class="ac-item" onmousedown="event.preventDefault();acSelect('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"> ${hi}</div>`;
+  }).join('');
+  if (val && !exact) {
+    const raw = document.getElementById('fNome').value.trim().replace(/</g,'&lt;');
+    html += `<div class="ac-item ac-new" onmousedown="event.preventDefault();acAddNew()">＋ Adicionar "${raw}"</div>`;
+  }
+  dd.innerHTML = html;
+  dd.style.display = html ? 'block' : 'none';
+}
+ 
+function acShowAll() {
+  const suppliers = getSuppliers(activeCo);
+  acRender(suppliers);
+}
+ 
+function acFilter() {
+  const val = document.getElementById('fNome').value.trim().toLowerCase();
+  const suppliers = getSuppliers(activeCo);
+  const filtered = val ? suppliers.filter(s => s.toLowerCase().includes(val)) : suppliers;
+  acRender(filtered);
+}
+ 
+function acSelect(name) {
+  document.getElementById('fNome').value = name;
+  document.getElementById('acDropdown').style.display = 'none';
+}
+ 
+function acAddNew() {
+  const name = document.getElementById('fNome').value.trim();
+  if (name) { addSupplier(activeCo, name); renderSupManager(); }
+  document.getElementById('acDropdown').style.display = 'none';
+}
+ 
+function acHide() {
+  const dd = document.getElementById('acDropdown');
+  if (dd) dd.style.display = 'none';
+}
+ 
+// ── Supplier Manager (sidebar tab) ───────────────────
+function renderSupManager() {
+  const list = getSuppliers(activeCo);
+  const el = document.getElementById('supManager');
+  let html = `<span class="sp-label" style="margin-top:0">Fornecedores (${list.length})</span>`;
+  html += `<div class="sup-add-row">
+    <input id="supNewInput" placeholder="Novo fornecedor..." onkeydown="if(event.key==='Enter')addSupFromInput()">
+    <button onclick="addSupFromInput()">+ Adicionar</button>
+  </div>`;
+  html += '<div style="margin-top:10px">';
+  list.forEach(s => {
+    html += `<div class="sup-list-item">
+      <span>${s}</span>
+      <button onclick="removeSupplierAndRefresh('${s.replace(/'/g,"\\'")}')">×</button>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+ 
+function addSupFromInput() {
+  const inp = document.getElementById('supNewInput');
+  const name = inp?.value.trim();
+  if (name) { addSupplier(activeCo, name); inp.value=''; renderSupManager(); }
+}
+ 
+function removeSupplierAndRefresh(name) {
+  if (!confirm(`Remover "${name}" da lista de fornecedores?`)) return;
+  removeSupplier(activeCo, name);
+  renderSupManager();
+}
+ 
+// ── Sidebar tab switching ─────────────────────────────
+function switchSbTab(tab, el) {
+  document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sb-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(`sbp-${tab}`).classList.add('active');
+  if (tab === 'fornecedores') renderSupManager();
+  if (tab !== 'pesquisa') {
+    // hide search results if switching away
+    const srArea = document.getElementById('searchResultsArea');
+    if (srArea) srArea.style.display = 'none';
+  }
+}
+ 
+// ═══════════════════════════════════════════════════════
+// SEARCH / ANALYSIS
+// ═══════════════════════════════════════════════════════
+let spSelectedSuppliers = [];
+ 
+function spRenderSug(suppliers) {
+  const sug = document.getElementById('spSupSuggest');
+  const val = document.getElementById('spSupInput').value.trim().toLowerCase();
+  if (!suppliers.length) { sug.style.display='none'; return; }
+  sug.innerHTML = suppliers.map(s => {
+    const hi = val ? s.replace(new RegExp(`(${val.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<strong style="color:var(--gold)">$1</strong>') : s;
+    return `<div class="sup-suggest-item" onmousedown="event.preventDefault();spAddSupplier('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"> ${hi}</div>`;
+  }).join('');
+  sug.style.display = 'block';
+}
+ 
+function spShowAll() {
+  const all = getSuppliers(activeCo).filter(s => !spSelectedSuppliers.includes(s));
+  spRenderSug(all);
+}
+ 
+function spHideSug() {
+  const sug = document.getElementById('spSupSuggest');
+  if (sug) sug.style.display = 'none';
+}
+ 
+function spFilterSuppliers() {
+  const val = document.getElementById('spSupInput').value.trim().toLowerCase();
+  const suppliers = getSuppliers(activeCo).filter(s => !spSelectedSuppliers.includes(s));
+  const filtered  = val ? suppliers.filter(s => s.toLowerCase().includes(val)) : suppliers;
+  spRenderSug(filtered);
+}
+ 
+function spAddSupplier(name) {
+  if (!spSelectedSuppliers.includes(name)) {
+    spSelectedSuppliers.push(name);
+    renderSpTags();
+  }
+  document.getElementById('spSupInput').value = '';
+  document.getElementById('spSupSuggest').style.display = 'none';
+  // refresh suggestions minus newly added
+  spShowAll();
+}
+ 
+function spRemoveSupplier(name) {
+  spSelectedSuppliers = spSelectedSuppliers.filter(s => s !== name);
+  renderSpTags();
+}
+ 
+function renderSpTags() {
+  document.getElementById('spSupTags').innerHTML = spSelectedSuppliers.map(s =>
+    `<div class="sup-tag">
+      <span>${s}</span>
+      <button onclick="spRemoveSupplier('${s.replace(/'/g,"\\'")}')">×</button>
+    </div>`
+  ).join('');
+}
+ 
+function parseDate(str) {
+  // supports dd/mm/yyyy or yyyy-mm-dd
+  if (!str) return null;
+  if (str.includes('/')) {
+    const [d,m,y] = str.split('/');
+    return new Date(`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`);
+  }
+  return new Date(str);
+}
+ 
+function runSearch() {
+  const suppliers = [...spSelectedSuppliers];
+  const dateFrom  = document.getElementById('spDateFrom').value;
+  const dateTo    = document.getElementById('spDateTo').value;
+  const tipo      = document.getElementById('spTipo').value;
+  const dfObj     = dateFrom ? new Date(dateFrom) : null;
+  const dtObj     = dateTo   ? new Date(dateTo)   : null;
+ 
+  const data = getData(activeCo);
+  const results = []; // {key, mes, ano, entry}
+ 
+  for (const key of sortMonthKeys(Object.keys(data), data)) {
+    const m = data[key];
+    for (const e of m.entries) {
+      // Filter supplier
+      if (suppliers.length && !suppliers.includes(e.nome)) continue;
+      // Filter tipo
+      if (tipo === 'pag' && !e.pag) continue;
+      if (tipo === 'rec' && !e.rec) continue;
+      // Filter date
+      if (dfObj || dtObj) {
+        const ed = parseDate(e.data);
+        if (!ed) continue;
+        if (dfObj && ed < dfObj) continue;
+        if (dtObj && ed > dtObj) continue;
+      }
+      results.push({ key, mes: m.mes, ano: m.ano, entry: e });
+    }
+  }
+ 
+  showSearchResults(results, suppliers, dateFrom, dateTo, tipo);
+  // Switch main area to search results
+  switchSbTab('pesquisa', document.querySelector('.sb-tab:nth-child(2)'));
+}
+ 
+function clearSearch() {
+  spSelectedSuppliers = [];
+  renderSpTags();
+  document.getElementById('spSupInput').value = '';
+  document.getElementById('spDateFrom').value = '';
+  document.getElementById('spDateTo').value   = '';
+  document.getElementById('spTipo').value     = 'all';
+  const srArea = document.getElementById('searchResultsArea');
+  if (srArea) srArea.style.display = 'none';
+  // restore normal month view
+  renderMonth();
+}
+ 
+function showSearchResults(results, suppliers, dateFrom, dateTo, tipo) {
+  const area = document.getElementById('entriesArea');
+  const totalRec = r2(results.reduce((s,r) => s + (r.entry.rec || 0), 0));
+  const totalPag = r2(results.reduce((s,r) => s + (r.entry.pag || 0), 0));
+  const saldo    = r2(totalRec - totalPag);
+  const nFat     = results.length;
+ 
+  const supLabel = suppliers.length ? suppliers.join(', ') : 'Todos os fornecedores';
+  const dateLabel = dateFrom || dateTo
+    ? `${dateFrom || '—'} → ${dateTo || '—'}`
+    : 'Todas as datas';
+ 
+  let rows = results.map(r => `
+    <tr>
+      <td class="doc-col" title="${r.entry.doc}">${r.entry.doc || '—'}</td>
+      <td>${r.entry.data || ''}</td>
+      <td style="font-size:11px;color:var(--gray)">${r.mes} ${r.ano}</td>
+      <td class="nome-col">${r.entry.nome || ''}</td>
+      <td class="obs-col" title="${r.entry.obs}">${r.entry.obs || ''}</td>
+      <td class="${r.entry.rec ? 'rec-val' : 'num'}">${r.entry.rec ? fmt(r.entry.rec) : ''}</td>
+      <td class="${r.entry.pag ? 'pag-val' : 'num'}">${r.entry.pag ? fmt(r.entry.pag) : ''}</td>
+    </tr>`).join('');
+ 
+  area.innerHTML = `
+    <div class="sr-header">
+      <h2>Resultados da Pesquisa</h2>
+      <p>${supLabel} &nbsp;·&nbsp; ${dateLabel}</p>
+    </div>
+    <div class="sr-kpis">
+      <div class="sr-kpi k-fat">
+        <div class="sk-label">Movimentos</div>
+        <div class="sk-val">${nFat}</div>
+      </div>
+      <div class="sr-kpi k-rec">
+        <div class="sk-label">Total Recebimentos</div>
+        <div class="sk-val">${fmt(totalRec)}</div>
+      </div>
+      <div class="sr-kpi k-pag">
+        <div class="sk-label">Total Pagamentos</div>
+        <div class="sk-val">${fmt(totalPag)}</div>
+      </div>
+      <div class="sr-kpi k-liq">
+        <div class="sk-label">Saldo Líquido</div>
+        <div class="sk-val ${saldo < 0 ? 'neg' : ''}">${fmt(saldo)}</div>
+      </div>
+    </div>
+    ${results.length ? `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Doc. Nº</th><th>Data</th><th>Mês</th><th>Fornecedor</th><th>Descrição</th>
+          <th class="num">Recebimentos</th><th class="num">Pagamentos</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>` : `<div class="empty-state"><h3>Nenhum resultado encontrado</h3><p>Ajusta os filtros e tenta novamente.</p></div>`}
+  `;
+}
+ 
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+ 
+// Patch enterApp to also seed suppliers
+const _origEnterApp = enterApp;
+function enterApp() {
+  if (!selectedCoCard) return;
+  activeCo = selectedCoCard;
+  // Ensure suppliers are seeded from existing data
+  getSuppliers(activeCo);
+  showScreen('screen-app');
+  initApp();
+}
+ 
+initSelector();
+setTimeout(notifyCaixaParentV41, 400);
+</script>
+
+<script id="caixa-mobile-compat-v335">
+(function caixaMobileCompatV335(){
+  function isMobileLike(){ return window.matchMedia && window.matchMedia('(max-width: 820px)').matches; }
+  function bind(){
+    var cards = document.querySelectorAll('.co-card');
+    for (var i = 0; i < cards.length; i++) {
+      (function(card){
+        if (card.getAttribute('data-mobile-enter-bound')) return;
+        card.setAttribute('data-mobile-enter-bound','1');
+        card.addEventListener('touchend', function(){ if (isMobileLike()) setTimeout(function(){ if (typeof enterApp === 'function') enterApp(); }, 180); }, {passive:true});
+        card.addEventListener('dblclick', function(){ if (typeof enterApp === 'function') enterApp(); });
+      })(cards[i]);
+    }
+    var btn = document.getElementById('btnEnter');
+    if (btn && !btn.getAttribute('data-enter-bound-v335')) {
+      btn.setAttribute('data-enter-bound-v335','1');
+      btn.addEventListener('touchend', function(ev){ ev.preventDefault(); if (typeof enterApp === 'function') enterApp(); }, false);
+      btn.addEventListener('pointerup', function(){ if (typeof enterApp === 'function') enterApp(); }, false);
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+  setTimeout(bind, 300);
+})();
+</script>
+
+<script id="caixa-mobile-final-v336">
+(function caixaMobileFinalV336(){
+  function isMobileLike(){ return !window.matchMedia || window.matchMedia('(max-width: 900px)').matches || ('ontouchstart' in window); }
+  function enterSoon(){ setTimeout(function(){ if (typeof enterApp === 'function') enterApp(); }, 220); }
+  function bind(){
+    var hint = document.getElementById('caixaMobileHintV336');
+    var actions = document.querySelector('.selector-actions');
+    if (!hint && actions) {
+      hint = document.createElement('div');
+      hint.id = 'caixaMobileHintV336';
+      hint.style.cssText = 'margin-top:12px;color:#6b7280;font-size:14px;text-align:center;';
+      hint.textContent = 'No telemóvel, toca na empresa e depois em Entrar. Se o botão não responder, toca duas vezes na empresa.';
+      actions.appendChild(hint);
+    }
+    var cards = document.querySelectorAll('.co-card');
+    for (var i = 0; i < cards.length; i++) {
+      (function(card){
+        if (card.getAttribute('data-mobile-enter-bound-v336')) return;
+        card.setAttribute('data-mobile-enter-bound-v336','1');
+        card.addEventListener('touchend', function(){ if (isMobileLike()) enterSoon(); }, {passive:true});
+        card.addEventListener('dblclick', function(){ if (typeof enterApp === 'function') enterApp(); });
+      })(cards[i]);
+    }
+    var btn = document.getElementById('btnEnter');
+    if (btn && !btn.getAttribute('data-enter-bound-v336')) {
+      btn.setAttribute('data-enter-bound-v336','1');
+      btn.addEventListener('touchend', function(ev){ ev.preventDefault(); if (typeof enterApp === 'function') enterApp(); }, false);
+      btn.addEventListener('pointerup', function(){ if (typeof enterApp === 'function') enterApp(); }, false);
+      btn.addEventListener('click', function(){ if (typeof enterApp === 'function') enterApp(); }, false);
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+  setTimeout(bind, 300);
+})();
+</script>
+</body>
+</html>
+ 
