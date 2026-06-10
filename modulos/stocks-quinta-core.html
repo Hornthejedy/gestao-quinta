@@ -166,6 +166,7 @@
     .unit-col { width: 82px; }
     .status-col { width: 690px; }
     .forecast-col { width: 150px; }
+    .minimum-col { width: 105px; }
     .notes-col { width: auto; }
     th, td {
       padding: 9px 10px;
@@ -199,8 +200,8 @@
       white-space: nowrap;
     }
     .status.is-active { opacity: 1; box-shadow: inset 0 0 0 2px rgba(35, 48, 39, .16); }
-    .baixo { background: #fde8e4; color: #862d25; }
-    .alto { background: #e1f2e7; color: #215d3b; }
+    .disponivel { background: #e1f2e7; color: #215d3b; }
+    .sem-disponibilidade { background: #fde8e4; color: #862d25; }
     .em-desenvolvimento { background: #e3eff5; color: var(--blue); }
     .nao-cultivado, .fora-de-epoca { background: #f2ede5; color: #65533d; }
     .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -239,6 +240,17 @@
       font-weight: 700;
     }
     .export-warning.show { display: block; }
+    .week-panel {
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #edf4ea;
+    }
+    .week-panel .toolbar { margin: 0; padding: 0; border: 0; box-shadow: none; background: transparent; }
+    .week-badge { font-size: 18px; font-weight: 800; color: var(--green-dark); }
+    .history-list { display: grid; gap: 8px; max-height: 55vh; overflow: auto; }
+    .history-row { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 7px; }
     dialog {
       width: min(640px, calc(100vw - 24px));
       border: 0;
@@ -301,10 +313,10 @@
         <input id="workDate" type="date">
       </label>
       <label>Previsao de
-        <input id="forecastStart" type="date">
+        <input id="forecastStart" type="date" readonly>
       </label>
       <label>Previsao ate
-        <input id="forecastEnd" type="date">
+        <input id="forecastEnd" type="date" readonly>
       </label>
       <label>Colaborador
         <input id="collaborator" type="text" placeholder="Nome">
@@ -313,6 +325,19 @@
   </header>
 
   <main>
+    <section class="week-panel">
+      <div class="toolbar">
+        <div>
+          <div class="eyebrow">Registo semanal ativo</div>
+          <div id="activeWeekLabel" class="week-badge"></div>
+        </div>
+        <div class="actions">
+          <button id="newWeekBtn" class="primary" type="button">Nova semana</button>
+          <button id="historyBtn" type="button">Histórico semanal</button>
+          <button id="blankPrintBtn" type="button">Imprimir folha semanal em branco</button>
+        </div>
+      </div>
+    </section>
     <section class="toolbar" aria-label="Ferramentas do registo">
       <label class="search">Pesquisa
         <input id="search" type="search" placeholder="Pesquisar produto, categoria, estado ou observações">
@@ -327,8 +352,8 @@
         </label>
         <fieldset class="status-filter">
           <legend>Estado</legend>
-          <label><input class="status-filter-check" type="checkbox" value="Baixo"> Baixo</label>
-          <label><input class="status-filter-check" type="checkbox" value="Alto"> Alto</label>
+          <label><input class="status-filter-check" type="checkbox" value="Disponível"> Disponível</label>
+          <label><input class="status-filter-check" type="checkbox" value="Sem disponibilidade"> Sem disponibilidade</label>
           <label><input class="status-filter-check" type="checkbox" value="Em desenvolvimento"> Em desenvolvimento</label>
           <label><input class="status-filter-check" type="checkbox" value="Não cultivado"> Não cultivado</label>
           <label><input class="status-filter-check" type="checkbox" value="Fora de época"> Fora de época</label>
@@ -350,7 +375,7 @@
 
     <section class="summary" aria-label="Resumo dos stocks">
       <article><span>Total de produtos</span><strong id="totalCount">0</strong></article>
-      <article><span>Stock baixo</span><strong id="lowCount">0</strong></article>
+      <article><span>Stock baixo (calculado)</span><strong id="lowCount">0</strong></article>
       <article><span>Fora de época</span><strong id="seasonCount">0</strong></article>
       <article><span>Previsão visível</span><strong id="forecastTotal">0</strong></article>
     </section>
@@ -362,7 +387,7 @@
         <p class="eyebrow">Estrutura do ficheiro original</p>
         <h2>Stocks de hortícolas e aromáticas</h2>
       </div>
-      <p class="hint">Altere o estado nos botões da própria linha. A previsão da semana pode ser escrita diretamente.</p>
+      <p class="hint">A quantidade e o estado obedecem às regras de disponibilidade. O stock baixo é calculado pelo mínimo definido.</p>
     </section>
 
     <div id="tables"></div>
@@ -426,11 +451,24 @@
     </form>
   </dialog>
 
+  <dialog id="historyModal">
+    <form method="dialog">
+      <div class="modal-head">
+        <h2>Histórico semanal</h2>
+        <button type="button" id="closeHistoryBtn" aria-label="Fechar">×</button>
+      </div>
+      <div id="historyList" class="history-list"></div>
+      <div class="modal-actions">
+        <button type="button" id="closeHistoryFooterBtn">Fechar</button>
+      </div>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script>
     const STORE_KEY = "registoStocksQuinta.somenteStocks.v1";
-    const statuses = ["Baixo", "Alto", "Em desenvolvimento", "Não cultivado", "Fora de época"];
+    const statuses = ["Disponível", "Sem disponibilidade", "Em desenvolvimento", "Não cultivado", "Fora de época"];
     const originalProducts = [
       ["Hortícolas", "Abóbora", "uni"],
       ["Hortícolas", "Abóbora Atlântico", "uni"],
@@ -483,15 +521,58 @@
     const today = () => new Date().toISOString().slice(0, 10);
     const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
 
+    function isoWeekInfo(dateValue = today()) {
+      const date = new Date(`${dateValue}T12:00:00`);
+      const day = date.getDay() || 7;
+      date.setDate(date.getDate() + 4 - day);
+      const year = date.getFullYear();
+      const yearStart = new Date(year, 0, 1);
+      const week = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+      const monday = new Date(date);
+      monday.setDate(date.getDate() - ((date.getDay() || 7) - 1));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const iso = value => value.toISOString().slice(0, 10);
+      return { year, week, key: `${year}-W${String(week).padStart(2, "0")}`, start: iso(monday), end: iso(sunday) };
+    }
+
+    function clone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function normaliseStatus(status, forecast) {
+      const quantity = parseFloat(String(forecast ?? "").replace(",", ".")) || 0;
+      if (quantity > 0) return "Disponível";
+      if (status === "Alto" || status === "Baixo" || status === "Disponível") return "Sem disponibilidade";
+      if (statuses.includes(status)) return status;
+      return "Em desenvolvimento";
+    }
+
+    function normaliseRow(row, index = 0) {
+      const quantity = Math.max(0, parseFloat(String(row.forecast ?? "").replace(",", ".")) || 0);
+      const status = normaliseStatus(row.status, quantity);
+      return {
+        ...row,
+        id: row.id || uid(),
+        status,
+        forecast: status === "Disponível" ? String(quantity || "") : "",
+        minimum: Math.max(0, parseFloat(String(row.minimum ?? "").replace(",", ".")) || 0),
+        order: row.order || index + 1
+      };
+    }
+
     let state = load();
 
     function initialState() {
+      const week = isoWeekInfo();
       return {
         date: today(),
-        forecastStart: "",
-        forecastEnd: "",
+        forecastStart: week.start,
+        forecastEnd: week.end,
         collaborator: "",
         notes: "",
+        activeWeek: week.key,
+        weeks: {},
         categories: ["Hortícolas", "Aromáticas"],
         rows: originalProducts.map(([category, product, unit], index) => ({
           id: uid(),
@@ -500,6 +581,7 @@
           unit,
           status: "Em desenvolvimento",
           forecast: "",
+          minimum: 0,
           date: today(),
           notes: "",
           order: index + 1
@@ -518,15 +600,66 @@
 
     function migrate(data) {
       const categories = [...new Set([...(data.categories || []), ...originalProducts.map(row => row[0]), ...(data.rows || []).map(row => row.category)].filter(Boolean))];
-      return { ...data, forecastStart: data.forecastStart || "", forecastEnd: data.forecastEnd || "", categories, rows: data.rows || [] };
+      const week = isoWeekInfo(data.date || today());
+      const migrated = {
+        ...data,
+        date: data.date || today(),
+        forecastStart: data.forecastStart || week.start,
+        forecastEnd: data.forecastEnd || week.end,
+        activeWeek: data.activeWeek || week.key,
+        weeks: data.weeks && typeof data.weeks === "object" ? data.weeks : {},
+        categories,
+        rows: (data.rows || []).map(normaliseRow)
+      };
+      Object.keys(migrated.weeks).forEach(key => {
+        const record = migrated.weeks[key] || {};
+        migrated.weeks[key] = { ...record, key, rows: (record.rows || []).map(normaliseRow) };
+      });
+      if (!migrated.weeks[migrated.activeWeek]) {
+        migrated.weeks[migrated.activeWeek] = weekRecordFromState(migrated, "Em preenchimento");
+      }
+      loadWeekIntoState(migrated, migrated.activeWeek);
+      return migrated;
     }
 
     function save() {
+      state.weeks ||= {};
+      state.weeks[state.activeWeek] = weekRecordFromState(state, state.weeks[state.activeWeek]?.status || "Em preenchimento");
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
       // Sincronizar com a app principal via postMessage
       try {
         window.parent.postMessage({ type: 'stocksQuintaUpdate', state: JSON.parse(JSON.stringify(state)) }, '*');
       } catch(e) {}
+    }
+
+    function weekRecordFromState(source, status) {
+      const info = isoWeekInfo(source.forecastStart || source.date || today());
+      return {
+        key: source.activeWeek || info.key,
+        year: Number((source.activeWeek || info.key).slice(0, 4)),
+        week: Number((source.activeWeek || info.key).slice(-2)),
+        start: source.forecastStart || info.start,
+        end: source.forecastEnd || info.end,
+        date: source.date || today(),
+        collaborator: source.collaborator || "",
+        notes: source.notes || "",
+        status: status || "Em preenchimento",
+        updatedAt: new Date().toISOString(),
+        rows: clone(source.rows || [])
+      };
+    }
+
+    function loadWeekIntoState(target, key) {
+      const record = target.weeks?.[key];
+      if (!record) return false;
+      target.activeWeek = key;
+      target.date = record.date || record.start || today();
+      target.forecastStart = record.start || "";
+      target.forecastEnd = record.end || "";
+      target.collaborator = record.collaborator || "";
+      target.notes = record.notes || "";
+      target.rows = clone(record.rows || []).map(normaliseRow);
+      return true;
     }
 
     function normalise(text) {
@@ -594,11 +727,19 @@
     }
 
     function render() {
+      const activeRecord = state.weeks?.[state.activeWeek];
+      const locked = activeRecord?.status === "Concluída";
+      $("#activeWeekLabel").textContent = `${state.activeWeek || ""} · ${state.forecastStart || ""} a ${state.forecastEnd || ""}${activeRecord?.status ? " · " + activeRecord.status : ""}`;
       $("#workDate").value = state.date || today();
       $("#forecastStart").value = state.forecastStart || "";
       $("#forecastEnd").value = state.forecastEnd || "";
       $("#collaborator").value = state.collaborator || "";
       $("#generalNotes").value = state.notes || "";
+      $("#workDate").disabled = locked;
+      $("#collaborator").disabled = locked;
+      $("#generalNotes").disabled = locked;
+      $("#addBtn").disabled = locked;
+      $("#removeBtn").disabled = locked;
       renderCategoryControls();
       renderTables();
       renderSummary();
@@ -625,6 +766,7 @@
                   <col class="product-col">
                   <col class="unit-col">
                   <col class="forecast-col">
+                  <col class="minimum-col">
                   <col class="status-col">
                   <col class="notes-col">
                 </colgroup>
@@ -633,12 +775,13 @@
                     <th>Produto</th>
                     <th>Unidade</th>
                     <th>Previsão da semana</th>
+                    <th>Mínimo</th>
                     <th>Estado</th>
                     <th>Observações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${categoryRows.map(rowHtml).join("") || `<tr><td colspan="5">Sem produtos visíveis nesta categoria.</td></tr>`}
+                  ${categoryRows.map(rowHtml).join("") || `<tr><td colspan="6">Sem produtos visíveis nesta categoria.</td></tr>`}
                 </tbody>
               </table>
             </div>
@@ -648,30 +791,44 @@
     }
 
     function rowHtml(row) {
+      const locked = state.weeks?.[state.activeWeek]?.status === "Concluída";
       return `
         <tr>
           <td>${escapeHtml(row.product)}</td>
           <td>${escapeHtml(row.unit)}</td>
-          <td><input class="inline-input row-forecast ${needsForecast(row) ? "needs-value" : ""}" data-id="${row.id}" type="text" inputmode="decimal" value="${escapeHtml(row.forecast || "")}" placeholder="Escrever"></td>
+          <td><input class="inline-input row-forecast ${needsForecast(row) ? "needs-value" : ""}" data-id="${row.id}" type="number" min="0" step="${unitRequiresInteger(row.unit) ? "1" : "0.01"}" value="${escapeHtml(row.forecast || "")}" placeholder="0" ${locked ? "disabled" : ""}></td>
+          <td><input class="inline-input row-minimum" data-id="${row.id}" type="number" min="0" step="${unitRequiresInteger(row.unit) ? "1" : "0.01"}" value="${escapeHtml(row.minimum || "")}" placeholder="0" ${locked ? "disabled" : ""}></td>
           <td>
             <div class="status-buttons">
-              ${statuses.map(status => `<button class="small status ${slug(status)} ${row.status === status ? "is-active" : ""}" data-action="status" data-id="${row.id}" data-status="${escapeHtml(status)}">${escapeHtml(status)}</button>`).join("")}
+              ${statuses.map(status => `<button class="small status ${slug(status)} ${row.status === status ? "is-active" : ""}" data-action="status" data-id="${row.id}" data-status="${escapeHtml(status)}" ${locked ? "disabled" : ""}>${escapeHtml(status)}</button>`).join("")}
             </div>
           </td>
-          <td><textarea class="inline-notes row-notes" data-id="${row.id}" placeholder="Observações">${escapeHtml(row.notes || "")}</textarea></td>
+          <td><textarea class="inline-notes row-notes" data-id="${row.id}" placeholder="Observações" ${locked ? "disabled" : ""}>${escapeHtml(row.notes || "")}</textarea></td>
         </tr>
       `;
     }
 
     function needsForecast(row) {
-      return ["Baixo", "Alto"].includes(row.status) && !String(row.forecast || "").trim();
+      return row.status === "Disponível" && quantityOf(row) <= 0;
+    }
+
+    function quantityOf(row) {
+      return Math.max(0, parseFloat(String(row.forecast ?? "").replace(",", ".")) || 0);
+    }
+
+    function unitRequiresInteger(unit) {
+      return /(^|[^a-z])(uni|unidade|unidades)([^a-z]|$)/i.test(String(unit || ""));
+    }
+
+    function isLowStock(row) {
+      return row.status === "Disponível" && Number(row.minimum || 0) > 0 && quantityOf(row) <= Number(row.minimum || 0);
     }
 
     function renderSummary() {
       const rows = filteredRows();
       const totalForecast = rows.reduce((sum, row) => sum + (parseFloat(String(row.forecast).replace(",", ".")) || 0), 0);
       $("#totalCount").textContent = rows.length;
-      $("#lowCount").textContent = rows.filter(row => row.status === "Baixo").length;
+      $("#lowCount").textContent = rows.filter(isLowStock).length;
       $("#seasonCount").textContent = rows.filter(row => row.status === "Fora de época").length;
       $("#forecastTotal").textContent = totalForecast.toLocaleString("pt-PT");
     }
@@ -684,6 +841,7 @@
         unit: "kg",
         status: "Em desenvolvimento",
         forecast: "",
+        minimum: 0,
         date: state.date || today(),
         notes: ""
       };
@@ -711,6 +869,7 @@
         order: state.rows.length + 1,
         status: "Em desenvolvimento",
         forecast: "",
+        minimum: 0,
         date: state.date || today(),
         notes: "",
         ...data,
@@ -756,6 +915,36 @@
       if (shouldRender) render();
     }
 
+    function applyStatus(id, status) {
+      const row = state.rows.find(item => item.id === id);
+      if (!row) return;
+      const currentQuantity = quantityOf(row);
+      if (status === "Disponível" && currentQuantity <= 0) {
+        toast("Indique primeiro uma quantidade superior a zero para marcar o produto como Disponível.");
+        const input = document.querySelector(`.row-forecast[data-id="${id}"]`);
+        if (input) {
+          input.focus();
+          input.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        return;
+      }
+      if (status !== "Disponível" && currentQuantity > 0) {
+        if (!confirm(`Ao escolher "${status}", a quantidade de "${row.product}" será alterada para 0. Continuar?`)) return;
+      }
+      updateRow(id, { status, forecast: status === "Disponível" ? row.forecast : "" }, true);
+    }
+
+    function applyQuantity(id, rawValue) {
+      const row = state.rows.find(item => item.id === id);
+      if (!row) return;
+      let quantity = parseFloat(String(rawValue || "").replace(",", "."));
+      if (!Number.isFinite(quantity) || quantity < 0) quantity = 0;
+      if (unitRequiresInteger(row.unit)) quantity = Math.round(quantity);
+      const status = quantity > 0 ? "Disponível" : (row.status === "Disponível" ? "Sem disponibilidade" : row.status);
+      updateRow(id, { forecast: quantity > 0 ? String(quantity) : "", status });
+      return { quantity, status };
+    }
+
     function validateForecast(rows = state.rows) {
       const missing = rows.filter(needsForecast);
       if (!missing.length) return true;
@@ -768,13 +957,14 @@
           input.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       }, 50);
-      toast("Preencha a previsão da semana nos produtos com estado Baixo ou Alto.");
+      toast("Os produtos com estado Disponível têm de possuir quantidade superior a zero.");
       return false;
     }
 
     function exportRows(rows = filteredRows()) {
       return rows.map(row => ({
         data_registo: state.date || "",
+        semana_iso: state.activeWeek || "",
         previsao_de: state.forecastStart || "",
         previsao_ate: state.forecastEnd || "",
         colaborador: state.collaborator || "",
@@ -783,6 +973,7 @@
         unidade: row.unit,
         estado: row.status,
         previsao_semana: row.forecast,
+        stock_minimo: row.minimum || 0,
         observacoes: row.notes,
         notas_gerais: state.notes || ""
       }));
@@ -904,10 +1095,10 @@
       if (!requireStatusSelection()) return;
       const rows = filteredRows();
       if (!validateForecast(rows)) return;
-      const stockRows = rows.filter(row => ["Baixo", "Alto"].includes(row.status));
+      const stockRows = rows.filter(row => row.status === "Disponível");
       const developmentRows = rows.filter(row => row.status === "Em desenvolvimento");
-      const otherRows = rows.filter(row => !["Baixo", "Alto", "Em desenvolvimento"].includes(row.status));
-      const lowRows = rows.filter(row => row.status === "Baixo");
+      const otherRows = rows.filter(row => !["Disponível", "Em desenvolvimento"].includes(row.status));
+      const lowRows = rows.filter(isLowStock);
       const outOfSeasonRows = rows.filter(row => row.status === "Fora de época");
       const period = [state.forecastStart, state.forecastEnd].filter(Boolean).join(" a ") || "Sem período definido";
       const reportHtml = `
@@ -945,8 +1136,8 @@
             .state { width: 20%; }
             .obs { width: 15%; }
             .state-pill { display: inline-block; min-width: 86px; padding: 3px 7px; border-radius: 999px; text-align: center; font-size: 8.8px; font-weight: 800; border: 1px solid transparent; }
-            .state-pill.baixo { color: #8b2f25; background: #fde8e4; border-color: #f4c5be; }
-            .state-pill.alto { color: #215d3b; background: #e2f3e8; border-color: #bfe2ca; }
+            .state-pill.disponivel { color: #215d3b; background: #e2f3e8; border-color: #bfe2ca; }
+            .state-pill.sem-disponibilidade { color: #8b2f25; background: #fde8e4; border-color: #f4c5be; }
             .state-pill.em-desenvolvimento { color: #225a70; background: #e3eff5; border-color: #bdd8e4; }
             .state-pill.nao-cultivado { color: #615b52; background: #f1ede6; border-color: #ded6c8; }
             .state-pill.fora-de-epoca { color: #745213; background: #fff4d8; border-color: #efd38a; }
@@ -970,7 +1161,7 @@
           <section class="summary">
             <div class="metric"><span>Produtos em stock</span><strong>${stockRows.length}</strong></div>
             <div class="metric"><span>Total visível</span><strong>${rows.length}</strong></div>
-            <div class="metric"><span>Stock baixo</span><strong>${lowRows.length}</strong></div>
+            <div class="metric"><span>Stock baixo calculado</span><strong>${lowRows.length}</strong></div>
             <div class="metric"><span>Em desenvolvimento</span><strong>${developmentRows.length}</strong></div>
             <div class="metric"><span>Fora de época</span><strong>${outOfSeasonRows.length}</strong></div>
           </section>
@@ -995,6 +1186,181 @@
       setTimeout(() => printWindow.print(), 250);
     }
 
+    function blankPrintTable() {
+      const grouped = [...state.rows].sort((a, b) => a.category.localeCompare(b.category, "pt-PT") || a.product.localeCompare(b.product, "pt-PT"))
+        .reduce((acc, row) => { (acc[row.category] ||= []).push(row); return acc; }, {});
+      return Object.keys(grouped).map(category => `
+        <h2>${escapeHtml(category)}</h2>
+        <table>
+          <thead><tr><th>Produto</th><th>Unidade</th><th>Quantidade</th><th>Estado</th><th>Observações</th></tr></thead>
+          <tbody>${grouped[category].map(row => `<tr><td>${escapeHtml(row.product)}</td><td>${escapeHtml(row.unit)}</td><td></td><td></td><td></td></tr>`).join("")}</tbody>
+        </table>`).join("");
+    }
+
+    function printBlankWeeklySheet() {
+      const info = isoWeekInfo(state.forecastStart || today());
+      const html = `<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><title>Folha semanal em branco ${escapeHtml(info.key)}</title>
+        <style>
+          @page{size:A4 portrait;margin:9mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#17251c;font-size:9px;margin:0}
+          header{border:1px solid #78927d;padding:9px;margin-bottom:8px}h1{font-size:17px;margin:0 0 5px}h2{font-size:11px;background:#e8f0e6;padding:5px;margin:8px 0 0}
+          .meta{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}.line{display:inline-block;min-width:140px;border-bottom:1px solid #333;height:14px}
+          table{width:100%;border-collapse:collapse;page-break-inside:auto}th,td{border:1px solid #929b94;padding:4px;height:22px;text-align:left}th{background:#f1f3f1;font-size:8px}tr{page-break-inside:avoid}
+          th:nth-child(1){width:31%}th:nth-child(2){width:12%}th:nth-child(3){width:13%}th:nth-child(4){width:20%}th:nth-child(5){width:24%}
+          footer{margin-top:9px;display:flex;justify-content:space-between}.signature{width:45%;border-top:1px solid #333;padding-top:4px;text-align:center}
+        </style></head><body>
+        <header><h1>Registo semanal de Stocks da Quinta</h1><div class="meta"><div>Semana: <strong>${escapeHtml(info.key)}</strong></div><div>Período: <strong>${escapeHtml(info.start)} a ${escapeHtml(info.end)}</strong></div><div>Colaborador: <span class="line"></span></div><div>Data de preenchimento: <span class="line"></span></div></div></header>
+        ${blankPrintTable()}
+        <footer><div class="signature">Colaborador</div><div class="signature">Responsável</div></footer>
+        </body></html>`;
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) return toast("Permita pop-ups para imprimir a folha semanal.");
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => printWindow.print(), 250);
+    }
+
+    function createNewWeek() {
+      const requested = prompt("Indique uma data pertencente à nova semana:", today());
+      if (!requested) return;
+      const info = isoWeekInfo(requested);
+      if (state.weeks?.[info.key]) {
+        if (!confirm(`${info.key} já existe. Pretende abrir essa semana?`)) return;
+        openWeek(info.key);
+        return;
+      }
+      const copyPrevious = confirm("Copiar estados, mínimos e observações da semana atual? A quantidade será sempre iniciada a zero.");
+      const sourceRows = copyPrevious ? state.rows : state.rows.map(row => ({ ...row, status: "Em desenvolvimento", notes: "" }));
+      const rows = sourceRows.map(row => ({
+        ...clone(row),
+        forecast: "",
+        status: ["Não cultivado", "Fora de época", "Em desenvolvimento"].includes(row.status) ? row.status : "Sem disponibilidade"
+      }));
+      state.activeWeek = info.key;
+      state.date = requested;
+      state.forecastStart = info.start;
+      state.forecastEnd = info.end;
+      state.collaborator = "";
+      state.notes = "";
+      state.rows = rows;
+      state.weeks[info.key] = weekRecordFromState(state, "Em preenchimento");
+      save();
+      render();
+      toast(`Semana ${info.key} criada.`);
+    }
+
+    function openWeek(key) {
+      save();
+      if (!loadWeekIntoState(state, key)) return;
+      save();
+      render();
+      $("#historyModal").close();
+      toast(`Semana ${key} aberta.`);
+    }
+
+    function toggleWeekComplete(key) {
+      const record = state.weeks?.[key];
+      if (!record) return;
+      record.status = record.status === "Concluída" ? "Em preenchimento" : "Concluída";
+      if (key === state.activeWeek) save();
+      else {
+        localStorage.setItem(STORE_KEY, JSON.stringify(state));
+        try { window.parent.postMessage({ type: "stocksQuintaUpdate", state: clone(state) }, "*"); } catch(e) {}
+      }
+      renderHistory();
+      render();
+    }
+
+    function deleteWeek(key) {
+      if (key === state.activeWeek) return alert("Não é possível eliminar a semana que está aberta.");
+      if (!confirm(`Eliminar definitivamente ${key}?`)) return;
+      delete state.weeks[key];
+      save();
+      renderHistory();
+    }
+
+    function previousWeekRecord(key) {
+      const records = Object.values(state.weeks || {}).sort((a, b) => String(a.key).localeCompare(String(b.key)));
+      const index = records.findIndex(record => record.key === key);
+      return index > 0 ? records[index - 1] : null;
+    }
+
+    function weekComparison(record) {
+      const previous = previousWeekRecord(record.key);
+      if (!previous) return "Sem semana anterior para comparação";
+      const available = (record.rows || []).filter(row => row.status === "Disponível").length;
+      const previousAvailable = (previous.rows || []).filter(row => row.status === "Disponível").length;
+      const quantity = (record.rows || []).reduce((sum, row) => sum + quantityOf(row), 0);
+      const previousQuantity = (previous.rows || []).reduce((sum, row) => sum + quantityOf(row), 0);
+      const signed = value => value > 0 ? `+${value}` : String(value);
+      return `Disponíveis: ${signed(available - previousAvailable)} · Quantidade: ${signed(Number((quantity - previousQuantity).toFixed(2)))}`;
+    }
+
+    function duplicateWeek(key) {
+      const source = state.weeks?.[key];
+      if (!source) return;
+      const requested = prompt("Indique uma data pertencente à semana de destino:", today());
+      if (!requested) return;
+      const info = isoWeekInfo(requested);
+      if (state.weeks[info.key]) return alert(`A semana ${info.key} já existe.`);
+      const rows = clone(source.rows || []).map(row => ({
+        ...row,
+        forecast: "",
+        status: ["Não cultivado", "Fora de época", "Em desenvolvimento"].includes(row.status) ? row.status : "Sem disponibilidade"
+      }));
+      state.weeks[info.key] = {
+        ...clone(source),
+        key: info.key,
+        year: info.year,
+        week: info.week,
+        start: info.start,
+        end: info.end,
+        date: requested,
+        collaborator: "",
+        status: "Em preenchimento",
+        updatedAt: new Date().toISOString(),
+        rows
+      };
+      save();
+      renderHistory();
+      toast(`Semana ${info.key} criada por duplicação.`);
+    }
+
+    function printSavedWeek(key) {
+      const record = state.weeks?.[key];
+      if (!record) return;
+      const rows = record.rows || [];
+      const grouped = rows.reduce((acc, row) => { (acc[row.category] ||= []).push(row); return acc; }, {});
+      const body = Object.keys(grouped).sort().map(category => `<h2>${escapeHtml(category)}</h2><table><thead><tr><th>Produto</th><th>Unidade</th><th>Quantidade</th><th>Estado</th><th>Observações</th></tr></thead><tbody>${grouped[category].sort((a,b)=>a.product.localeCompare(b.product,"pt-PT")).map(row => `<tr><td>${escapeHtml(row.product)}</td><td>${escapeHtml(row.unit)}</td><td>${escapeHtml(row.forecast || "0")}</td><td>${escapeHtml(row.status)}</td><td>${escapeHtml(row.notes || "")}</td></tr>`).join("")}</tbody></table>`).join("");
+      const html = `<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><title>${escapeHtml(key)}</title><style>@page{size:A4 portrait;margin:10mm}body{font-family:Arial;font-size:9px}h1{font-size:18px}h2{font-size:11px;background:#e8f0e6;padding:5px;margin:8px 0 0}table{width:100%;border-collapse:collapse}th,td{border:1px solid #999;padding:4px;text-align:left}th{background:#f1f3f1}</style></head><body><h1>Stocks da Quinta · ${escapeHtml(key)}</h1><p>${escapeHtml(record.start || "")} a ${escapeHtml(record.end || "")} · ${escapeHtml(record.status || "")}</p>${body}</body></html>`;
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) return toast("Permita pop-ups para imprimir a semana.");
+      printWindow.document.write(html);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 250);
+    }
+
+    function renderHistory() {
+      const records = Object.values(state.weeks || {}).sort((a, b) => String(b.key).localeCompare(String(a.key)));
+      $("#historyList").innerHTML = records.length ? records.map(record => `
+        <div class="history-row">
+          <div><strong>${escapeHtml(record.key)}</strong><div>${escapeHtml(record.start || "")} a ${escapeHtml(record.end || "")}</div><div class="hint">${escapeHtml(record.status || "Em preenchimento")} · ${(record.rows || []).length} produtos</div><div class="hint">${escapeHtml(weekComparison(record))}</div></div>
+          <div class="actions">
+            <button type="button" data-week-open="${escapeHtml(record.key)}">Abrir</button>
+            <button type="button" data-week-print="${escapeHtml(record.key)}">Imprimir</button>
+            <button type="button" data-week-duplicate="${escapeHtml(record.key)}">Duplicar</button>
+            <button type="button" data-week-complete="${escapeHtml(record.key)}">${record.status === "Concluída" ? "Reabrir" : "Concluir"}</button>
+            <button type="button" class="danger" data-week-delete="${escapeHtml(record.key)}" ${record.key === state.activeWeek ? "disabled" : ""}>Eliminar</button>
+          </div>
+        </div>`).join("") : "<p>Sem semanas guardadas.</p>";
+    }
+
+    function openHistory() {
+      save();
+      renderHistory();
+      $("#historyModal").showModal();
+    }
+
     function toast(message) {
       const el = $("#toast");
       el.textContent = message;
@@ -1004,19 +1370,36 @@
 
     document.addEventListener("click", event => {
       const button = event.target.closest("[data-action]");
-      if (!button) return;
-      if (button.dataset.action === "status") {
-        updateRow(button.dataset.id, { status: button.dataset.status }, true);
-        const row = state.rows.find(item => item.id === button.dataset.id);
-        if (row && needsForecast(row)) validateForecast([row]);
+      if (button && button.dataset.action === "status") {
+        applyStatus(button.dataset.id, button.dataset.status);
+        return;
       }
+      const open = event.target.closest("[data-week-open]");
+      if (open) return openWeek(open.dataset.weekOpen);
+      const print = event.target.closest("[data-week-print]");
+      if (print) return printSavedWeek(print.dataset.weekPrint);
+      const duplicate = event.target.closest("[data-week-duplicate]");
+      if (duplicate) return duplicateWeek(duplicate.dataset.weekDuplicate);
+      const complete = event.target.closest("[data-week-complete]");
+      if (complete) return toggleWeekComplete(complete.dataset.weekComplete);
+      const remove = event.target.closest("[data-week-delete]");
+      if (remove) return deleteWeek(remove.dataset.weekDelete);
     });
 
     document.addEventListener("input", event => {
       if (event.target.classList.contains("row-forecast")) {
-        updateRow(event.target.dataset.id, { forecast: event.target.value });
-        const row = state.rows.find(item => item.id === event.target.dataset.id);
-        event.target.classList.toggle("needs-value", row ? needsForecast(row) : false);
+        const result = applyQuantity(event.target.dataset.id, event.target.value);
+        if (result) event.target.value = result.quantity > 0 ? result.quantity : "";
+        const tableRow = event.target.closest("tr");
+        tableRow?.querySelectorAll("[data-action='status']").forEach(button => {
+          button.classList.toggle("is-active", button.dataset.status === result?.status);
+        });
+        renderSummary();
+      }
+      if (event.target.classList.contains("row-minimum")) {
+        const value = Math.max(0, parseFloat(String(event.target.value || "").replace(",", ".")) || 0);
+        updateRow(event.target.dataset.id, { minimum: value });
+        renderSummary();
       }
       if (event.target.classList.contains("row-notes")) {
         updateRow(event.target.dataset.id, { notes: event.target.value });
@@ -1049,6 +1432,11 @@
     $("#jsonBtn").addEventListener("click", downloadJson);
     $("#sheetsBtn").addEventListener("click", exportSheets);
     $("#pdfBtn").addEventListener("click", printReport);
+    $("#newWeekBtn").addEventListener("click", createNewWeek);
+    $("#historyBtn").addEventListener("click", openHistory);
+    $("#blankPrintBtn").addEventListener("click", printBlankWeeklySheet);
+    $("#closeHistoryBtn").addEventListener("click", () => $("#historyModal").close());
+    $("#closeHistoryFooterBtn").addEventListener("click", () => $("#historyModal").close());
 
     // Receber dados da app principal (pull da cloud)
     window.addEventListener('message', function(ev) {
