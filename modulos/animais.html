@@ -6152,6 +6152,43 @@ window.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 
+<script id="patch-v45-reativar-animais-saida">
+(function(){
+  'use strict';
+
+  function h(value){ return typeof escapeHtml === 'function' ? escapeHtml(value == null ? '' : value) : String(value == null ? '' : value); }
+
+  window.renderSaidasAnimais = function(){
+    garantirEstruturasNovas();
+    if (!app.saidasAnimais.length) return '<p class="muted">Sem sa\u00eddas registadas.</p>';
+    const saidas = [...app.saidasAnimais].sort(function(a,b){ return String(b.data || '').localeCompare(String(a.data || '')); });
+    return '<div class="table-wrap"><table><thead><tr><th>Data</th><th>Animal</th><th>Motivo</th><th>Destino/Causa</th><th>Valor</th><th>Documento</th><th>Anexo</th><th>A\u00e7\u00f5es</th></tr></thead><tbody>' +
+      saidas.map(function(saida){
+        const animal = typeof findAnimal === 'function' ? findAnimal(saida.animalId) : null;
+        const ativo = animal && (animal.estado || 'Ativo') === 'Ativo';
+        return '<tr><td>' + h(saida.data) + '</td><td>' + h(typeof nomeAnimal === 'function' ? nomeAnimal(saida.animalId) : '') + '</td><td>' + h(saida.motivo) + '</td><td>' + h(saida.destino || saida.causa || '\u2014') + '</td><td>' + fmt(saida.valor || 0) + ' \u20ac</td><td>' + h(saida.documento || '\u2014') + '</td><td>' + h(saida.anexoNome || '\u2014') + '</td><td><div class="toolbar">' +
+          (animal ? '<button class="btn-sm" type="button" onclick="abrirModalAnimal(\'' + animal.id + '\')">Editar animal</button>' : '') +
+          (animal && !ativo ? '<button class="btn-sm" type="button" onclick="reativarAnimalDaSaidaV45(\'' + saida.id + '\')">Reativar</button>' : '') +
+          '</div></td></tr>';
+      }).join('') + '</tbody></table></div>';
+  };
+
+  window.reativarAnimalDaSaidaV45 = function(saidaId){
+    const saida = (app.saidasAnimais || []).find(function(item){ return item.id === saidaId; });
+    if (!saida) return alert('Registo de sa\u00edda n\u00e3o encontrado.');
+    const animal = typeof findAnimal === 'function' ? findAnimal(saida.animalId) : null;
+    if (!animal) return alert('Animal n\u00e3o encontrado.');
+    if (!confirm('Reativar ' + (animal.nome || 'este animal') + '? O registo desta sa\u00edda ser\u00e1 eliminado.')) return;
+    animal.estado = 'Ativo';
+    animal.saidaId = '';
+    app.saidasAnimais = app.saidasAnimais.filter(function(item){ return item.id !== saidaId; });
+    guardarDados();
+    if (typeof toast === 'function') toast('Animal reativado. J\u00e1 pode ser editado normalmente.', 'ok');
+    if (typeof renderAnimais === 'function') renderAnimais();
+  };
+})();
+</script>
+
 <script id="activador-modulo-v42">
 (function(){
   'use strict';
