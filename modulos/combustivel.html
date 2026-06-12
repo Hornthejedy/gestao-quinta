@@ -6,7 +6,7 @@
   <title>Gestão de combustível</title>
   <style>
     :root{--green:#25683d;--dark:#17472a;--soft:#e9f3eb;--ink:#213029;--muted:#68756e;--line:#d8e1da;--bg:#f4f7f4;--danger:#a83228;--diesel:#d5b128;--shadow:0 8px 24px rgba(25,54,35,.08)}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:10px 15px;background:var(--green);color:#fff;font-weight:750}.shell{max-width:1600px;margin:auto;padding:18px}.hero,.section-head{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}.hero{margin-bottom:16px}.hero h1{margin:0;font-size:30px;color:var(--dark)}.hero p{margin:5px 0 0;color:var(--muted)}.tabs,.toolbar,.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tabs{margin-bottom:16px}button.secondary,.tab{background:#fff;color:var(--dark);border:1px solid var(--line)}button.danger{background:#f9e8e5;color:var(--danger);border:1px solid #efd0cb}.tab.active{background:var(--green);color:#fff}.panel{display:none}.panel.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px;margin-bottom:16px}.card h2,.card h3{margin:0 0 12px;color:var(--dark)}.hint{padding:11px 13px;background:var(--soft);border:1px solid #cee0d2;border-radius:9px;color:#315c3e;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}.s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}.s6{grid-column:span 6}.s12{grid-column:span 12}label{display:grid;gap:5px;color:var(--muted);font-size:13px;font-weight:750}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;background:#fff;color:var(--ink)}textarea{min-height:84px;resize:vertical}input[readonly]{background:#f2f5f2;font-weight:800}.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px;box-shadow:var(--shadow)}.kpi span{display:block;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase}.kpi strong{display:block;margin-top:5px;font-size:25px;color:var(--dark)}.two-col{display:grid;grid-template-columns:minmax(300px,.85fr) minmax(0,2fr);gap:16px}.tank-card{display:grid;grid-template-columns:180px minmax(0,1fr);gap:20px;align-items:center}.tank{position:relative;width:150px;height:245px;border:8px solid #42584a;border-radius:30px 30px 20px 20px;overflow:hidden;background:#edf1ed;box-shadow:inset 0 0 18px rgba(0,0,0,.12);margin:auto}.tank-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#efd55b,var(--diesel));transition:height .5s}.tank-mark{position:absolute;z-index:2;left:0;right:0;top:50%;border-top:2px dashed rgba(45,54,48,.35)}.tank-label{position:absolute;z-index:4;inset:0;display:grid;place-content:center;text-align:center;color:#1e3426;text-shadow:0 1px #fff}.tank-label strong{font-size:27px}.tank-info{display:grid;gap:9px}.tank-info .level{font-size:32px;font-weight:850;color:var(--dark)}.warning{color:var(--danger);font-weight:750}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:920px}th,td{padding:10px;border-bottom:1px solid #e9eeea;text-align:left;vertical-align:top;font-size:13px}th{background:#f2f6f2;color:#536159;text-transform:uppercase;font-size:11px;position:sticky;top:0}.empty{text-align:center;padding:25px;color:var(--muted)}.chart{display:flex;align-items:flex-end;gap:10px;height:230px;padding:20px 8px 0;overflow-x:auto;border-bottom:1px solid var(--line)}.bar-wrap{min-width:58px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}.bar-value,.bar-label{color:var(--muted);font-size:11px;font-weight:750}.bar{width:34px;min-height:2px;background:linear-gradient(var(--green),#54a66c);border-radius:7px 7px 0 0}.bar.vehicle{background:linear-gradient(#d26945,#e8a151)}.toast{position:fixed;right:18px;bottom:18px;background:var(--dark);color:#fff;padding:12px 15px;border-radius:9px;box-shadow:var(--shadow);display:none}@media(max-width:950px){.two-col,.tank-card{grid-template-columns:1fr}.s2,.s3,.s4,.s6{grid-column:span 6}}@media(max-width:620px){.shell{padding:10px}.hero{align-items:flex-start;flex-direction:column}.s2,.s3,.s4,.s6{grid-column:span 12}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:10px 15px;background:var(--green);color:#fff;font-weight:750}.shell{max-width:1600px;margin:auto;padding:18px}.hero,.section-head{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}.hero{margin-bottom:16px}.hero h1{margin:0;font-size:30px;color:var(--dark)}.hero p{margin:5px 0 0;color:var(--muted)}.tabs,.toolbar,.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tabs{margin-bottom:16px}button.secondary,.tab{background:#fff;color:var(--dark);border:1px solid var(--line)}button.danger{background:#f9e8e5;color:var(--danger);border:1px solid #efd0cb}.tab.active{background:var(--green);color:#fff}.panel{display:none}.panel.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px;margin-bottom:16px}.card h2,.card h3{margin:0 0 12px;color:var(--dark)}.hint{padding:11px 13px;background:var(--soft);border:1px solid #cee0d2;border-radius:9px;color:#315c3e;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}.s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}.s6{grid-column:span 6}.s12{grid-column:span 12}label{display:grid;gap:5px;color:var(--muted);font-size:13px;font-weight:750}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;background:#fff;color:var(--ink)}textarea{min-height:84px;resize:vertical}input[readonly]{background:#f2f5f2;font-weight:800}.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px;box-shadow:var(--shadow)}.kpi span{display:block;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase}.kpi strong{display:block;margin-top:5px;font-size:25px;color:var(--dark)}.two-col{display:grid;grid-template-columns:minmax(300px,.85fr) minmax(0,2fr);gap:16px}.tank-card{display:grid;grid-template-columns:180px minmax(0,1fr);gap:20px;align-items:center}.tank{position:relative;width:150px;height:245px;border:8px solid #42584a;border-radius:30px 30px 20px 20px;overflow:hidden;background:#edf1ed;box-shadow:inset 0 0 18px rgba(0,0,0,.12);margin:auto}.tank-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#efd55b,var(--diesel));transition:height .5s}.tank-mark{position:absolute;z-index:2;left:0;right:0;top:50%;border-top:2px dashed rgba(45,54,48,.35)}.tank-label{position:absolute;z-index:4;inset:0;display:grid;place-content:center;text-align:center;color:#1e3426;text-shadow:0 1px #fff}.tank-label strong{font-size:27px}.tank-info{display:grid;gap:9px}.tank-info .level{font-size:32px;font-weight:850;color:var(--dark)}.warning{color:var(--danger);font-weight:750}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:920px}th,td{padding:10px;border-bottom:1px solid #e9eeea;text-align:left;vertical-align:top;font-size:13px}th{background:#f2f6f2;color:#536159;text-transform:uppercase;font-size:11px;position:sticky;top:0}th.sortable{cursor:pointer;user-select:none;padding-right:24px;white-space:nowrap}th.sortable:hover{background:#e4eee6;color:var(--dark)}th.sortable::after{content:" ↕";color:#8b9890}th.sortable[data-direction="asc"]::after{content:" ▲";color:var(--green)}th.sortable[data-direction="desc"]::after{content:" ▼";color:var(--green)}.empty{text-align:center;padding:25px;color:var(--muted)}.chart{display:flex;align-items:flex-end;gap:10px;height:230px;padding:20px 8px 0;overflow-x:auto;border-bottom:1px solid var(--line)}.bar-wrap{min-width:58px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}.bar-value,.bar-label{color:var(--muted);font-size:11px;font-weight:750}.bar{width:34px;min-height:2px;background:linear-gradient(var(--green),#54a66c);border-radius:7px 7px 0 0}.bar.vehicle{background:linear-gradient(#d26945,#e8a151)}.toast{position:fixed;right:18px;bottom:18px;background:var(--dark);color:#fff;padding:12px 15px;border-radius:9px;box-shadow:var(--shadow);display:none}@media(max-width:950px){.two-col,.tank-card{grid-template-columns:1fr}.s2,.s3,.s4,.s6{grid-column:span 6}}@media(max-width:620px){.shell{padding:10px}.hero{align-items:flex-start;flex-direction:column}.s2,.s3,.s4,.s6{grid-column:span 12}}
   </style>
 </head>
 <body>
@@ -27,19 +27,19 @@
         <form class="card" id="internalForm"><h2>Abastecimento de máquina</h2><input type="hidden" id="internalId"><div class="grid"><label class="s3">Data<input id="internalDate" type="date" required></label><label class="s3">Trator / giratória<select id="internalAsset" required></select></label><label class="s3">Horas da máquina<input id="internalHours" type="number" min="0" step="0.1" required></label><label class="s3">Responsável<input id="internalResponsible" required></label><label class="s3">Leitura inicial (L)<input id="internalStart" type="number" min="0" step="0.01" required></label><label class="s3">Leitura final (L)<input id="internalEnd" type="number" min="0" step="0.01" required></label><label class="s3">Litros abastecidos<input id="internalLiters" readonly></label><label class="s3">Combustível<input value="Gasóleo agrícola" readonly></label><label class="s12">Observações<textarea id="internalNotes"></textarea></label><div class="s12 actions"><button id="internalSubmit">Guardar registo</button><button class="secondary" type="button" onclick="cancelInternalEdit()">Limpar</button></div></div></form>
       </div>
     </div>
-    <div class="card"><div class="section-head"><h2>Movimentos do depósito</h2><label>Ano<select id="internalYear"></select></label></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Máquina / fornecedor</th><th>Horas</th><th>Inicial</th><th>Final</th><th>Litros</th><th>Responsável</th><th>Documento / obs.</th><th>Ações</th></tr></thead><tbody id="internalRows"></tbody></table></div></div>
+    <div class="card"><div class="section-head"><h2>Movimentos do depósito</h2><label>Ano<select id="internalYear"></select></label></div><div class="table-wrap"><table id="internalTable"><thead><tr><th class="sortable" data-sort="date">Data</th><th class="sortable" data-sort="movementType">Tipo</th><th class="sortable" data-sort="subject">Máquina / fornecedor</th><th class="sortable" data-sort="hourMeter">Horas</th><th class="sortable" data-sort="pumpStart">Inicial</th><th class="sortable" data-sort="pumpEnd">Final</th><th class="sortable" data-sort="liters">Litros</th><th class="sortable" data-sort="balance">Saldo</th><th class="sortable" data-sort="responsible">Responsável</th><th class="sortable" data-sort="details">Documento / obs.</th><th>Ações</th></tr></thead><tbody id="internalRows"></tbody></table></div></div>
   </section>
 
   <section class="panel" id="panel-vehicles">
     <div class="hint">As viaturas são lidas automaticamente do módulo Viaturas. A média é calculada em L/100 km entre abastecimentos consecutivos.</div>
     <form class="card" id="vehicleForm"><h2>Abastecimento de viatura</h2><input type="hidden" id="vehicleRecordId"><div class="grid"><label class="s3">Data<input id="vehicleDate" type="date" required></label><label class="s3">Viatura<select id="vehicleAsset" required></select></label><label class="s2">Combustível<select id="vehicleFuel"><option>Diesel</option><option>Gasolina 95</option></select></label><label class="s2">Quilómetros<input id="vehicleKm" type="number" min="0" step="1" required></label><label class="s2">Litros<input id="vehicleLiters" type="number" min="0.01" step="0.01" required></label><label class="s3">Valor (€)<input id="vehicleCost" type="number" min="0" step="0.01"></label><label class="s3">Responsável<input id="vehicleResponsible" required></label><label class="s6">Observações<input id="vehicleNotes"></label><div class="s12 actions"><button id="vehicleSubmit">Guardar registo</button><button class="secondary" type="button" onclick="cancelVehicleEdit()">Limpar</button></div></div></form>
     <div class="kpis" id="vehicleFuelTotals"></div>
-    <div class="card"><div class="section-head"><h2>Abastecimentos das viaturas</h2><label>Ano<select id="vehicleYear"></select></label></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Viatura</th><th>Combustível</th><th>Km</th><th>Litros</th><th>Valor</th><th>Responsável</th><th>Observações</th><th>Ações</th></tr></thead><tbody id="vehicleRows"></tbody></table></div></div>
+    <div class="card"><div class="section-head"><h2>Abastecimentos das viaturas</h2><label>Ano<select id="vehicleYear"></select></label></div><div class="table-wrap"><table id="vehicleTable"><thead><tr><th class="sortable" data-sort="date">Data</th><th class="sortable" data-sort="assetName">Viatura</th><th class="sortable" data-sort="fuel">Combustível</th><th class="sortable" data-sort="km">Km</th><th class="sortable" data-sort="liters">Litros</th><th class="sortable" data-sort="cost">Valor</th><th class="sortable" data-sort="responsible">Responsável</th><th class="sortable" data-sort="notes">Observações</th><th>Ações</th></tr></thead><tbody id="vehicleRows"></tbody></table></div></div>
   </section>
 
   <section class="panel" id="panel-summary">
     <div class="kpis" id="summaryKpis"></div>
-    <div class="two-col"><div class="card"><h2>Médias por equipamento</h2><div class="table-wrap"><table><thead><tr><th>Equipamento</th><th>Tipo</th><th>Litros</th><th>Média</th></tr></thead><tbody id="equipmentAverages"></tbody></table></div></div><div class="card"><div class="section-head"><h2>Consumo mensal</h2><label>Ano<select id="summaryYear"></select></label></div><div class="chart" id="monthlyChart"></div><div class="hint" style="margin-top:12px;margin-bottom:0">Verde: depósito interno. Laranja: viaturas.</div></div></div>
+    <div class="two-col"><div class="card"><h2>Médias por equipamento</h2><div class="table-wrap"><table id="averagesTable"><thead><tr><th class="sortable" data-sort="name">Equipamento</th><th class="sortable" data-sort="type">Tipo</th><th class="sortable" data-sort="total">Litros</th><th class="sortable" data-sort="average">Média</th></tr></thead><tbody id="equipmentAverages"></tbody></table></div></div><div class="card"><div class="section-head"><h2>Consumo mensal</h2><label>Ano<select id="summaryYear"></select></label></div><div class="chart" id="monthlyChart"></div><div class="hint" style="margin-top:12px;margin-bottom:0">Verde: depósito interno. Laranja: viaturas.</div></div></div>
   </section>
 </main>
 <div class="toast" id="toast"></div>
@@ -49,6 +49,7 @@ const n=v=>{const x=Number(String(v??"").replace(",","."));return Number.isFinit
 const defaults=()=>({capacity:600,initialLevel:0,tankEntries:[],internalRecords:[],vehicleRecords:[]});
 function loadState(){try{const p=JSON.parse(localStorage.getItem(FUEL_KEY)||"null")||{};return{...defaults(),...p,tankEntries:Array.isArray(p.tankEntries)?p.tankEntries:[],internalRecords:Array.isArray(p.internalRecords)?p.internalRecords:[],vehicleRecords:Array.isArray(p.vehicleRecords)?p.vehicleRecords:[]}}catch(_){return defaults()}}
 let state=loadState(),assets={machines:[],vehicles:[]};
+const tableSort={internal:{key:"date",direction:"desc"},vehicle:{key:"date",direction:"desc"},averages:{key:"name",direction:"asc"}};
 function readMain(){try{return JSON.parse(localStorage.getItem(MAIN_KEY)||"{}")||{}}catch(_){return{}}}
 const machineLabel=m=>[m.nome,m.matricula].filter(Boolean).join(" · ")||m.id,vehicleLabel=v=>[v.nome,v.matricula].filter(Boolean).join(" · ")||v.id,displayAsset=r=>[r.assetName,r.assetRegistration].filter(Boolean).join(" · ")||r.assetId||"—";
 function refreshAssets(show=true){const main=readMain(),machines=Array.isArray(main.maquinas)?main.maquinas:[];assets.machines=machines.filter(m=>`${m.tipo||""} ${m.nome||""}`.toLowerCase().match(/trator|girat/));assets.vehicles=Array.isArray(main.viaturas)?main.viaturas:[];populateAssets();renderAll();if(show)toast(`Atualizados: ${assets.machines.length} máquinas e ${assets.vehicles.length} viaturas.`)}
@@ -90,6 +91,93 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelect
 $("internalStart").oninput=$("internalEnd").oninput=updateInternalLiters;$("internalForm").onsubmit=submitInternal;$("tankEntryForm").onsubmit=submitEntry;$("vehicleForm").onsubmit=submitVehicle;$("internalYear").onchange=renderInternalRows;$("vehicleYear").onchange=renderVehicleRows;$("summaryYear").onchange=renderChart;
 window.addEventListener("storage",e=>{if(e.key===MAIN_KEY)refreshAssets(false)});window.addEventListener("focus",()=>refreshAssets(false));document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshAssets(false)});
 $("internalDate").value=$("tankEntryDate").value=$("vehicleDate").value=today();refreshAssets(false);
+</script>
+<script id="ordenacao-saldo-combustivel-v2">
+(function(){
+  function compareFuelValues(a,b){
+    if(a==null&&b==null)return 0;
+    if(a==null)return 1;
+    if(b==null)return-1;
+    if(typeof a==="number"||typeof b==="number")return n(a)-n(b);
+    return String(a).localeCompare(String(b),"pt",{numeric:true,sensitivity:"base"});
+  }
+  function sortFuelRows(rows,table){
+    const cfg=tableSort[table],factor=cfg.direction==="asc"?1:-1;
+    return rows.slice().sort((a,b)=>compareFuelValues(a[cfg.key],b[cfg.key])*factor);
+  }
+  function updateFuelHeaders(tableId,table){
+    document.querySelectorAll(`#${tableId} th.sortable`).forEach(th=>{
+      th.dataset.direction=th.dataset.sort===tableSort[table].key?tableSort[table].direction:"";
+    });
+  }
+  function movementOrderFuel(item,index){
+    const match=String(item.id||"").match(/_(\d{10,})_/);
+    return match?n(match[1]):null;
+  }
+  function movementsWithBalance(){
+    const all=[
+      ...state.internalRecords.map((x,i)=>({...x,movementType:"Consumo",sequence:i})),
+      ...state.tankEntries.map((x,i)=>({...x,movementType:"Entrada",sequence:state.internalRecords.length+i}))
+    ];
+    const chronological=all.slice().sort((a,b)=>{
+      const dateOrder=String(a.date||"").localeCompare(String(b.date||""));
+      if(dateOrder)return dateOrder;
+      const orderA=movementOrderFuel(a,a.sequence),orderB=movementOrderFuel(b,b.sequence);
+      if(orderA!=null&&orderB!=null)return orderA-orderB;
+      if(a.movementType!==b.movementType)return a.movementType==="Entrada"?-1:1;
+      return a.sequence-b.sequence;
+    });
+    let balance=n(state.initialLevel);
+    chronological.forEach(x=>{
+      balance+=x.movementType==="Entrada"?n(x.liters):-n(x.liters);
+      x.balance=balance;
+    });
+    return chronological.map(x=>{
+      const consumption=x.movementType==="Consumo";
+      return {...x,
+        subject:consumption?displayAsset(x):(x.supplier||"Abastecimento do depósito"),
+        details:consumption?x.notes:[x.document,x.notes].filter(Boolean).join(" · ")
+      };
+    });
+  }
+  renderInternalRows=function(){
+    const all=movementsWithBalance();
+    renderYear("internalYear",all);
+    const rows=sortFuelRows(filtered(all,"internalYear"),"internal");
+    updateFuelHeaders("internalTable","internal");
+    $("internalRows").innerHTML=rows.length?rows.map(x=>{
+      const consumption=x.movementType==="Consumo";
+      return `<tr><td>${esc(x.date)}</td><td>${x.movementType}</td><td><strong>${esc(x.subject)}</strong></td><td>${consumption?fmt(x.hourMeter,1)+" h":"—"}</td><td>${consumption?fmt(x.pumpStart):"—"}</td><td>${consumption?fmt(x.pumpEnd):"—"}</td><td><strong>${fmt(x.liters)} L</strong></td><td><strong>${fmt(x.balance)} L</strong></td><td>${esc(x.responsible||"—")}</td><td>${esc(x.details||"—")}</td><td><div class="actions"><button onclick="${consumption?`editInternal('${x.id}')`:`editTankEntry('${x.id}')`}">Editar</button><button class="danger" onclick="${consumption?`deleteInternal('${x.id}')`:`deleteTankEntry('${x.id}')`}">Apagar</button></div></td></tr>`;
+    }).join(""):'<tr><td colspan="11" class="empty">Ainda não existem movimentos.</td></tr>';
+  };
+  renderVehicleRows=function(){
+    renderYear("vehicleYear",state.vehicleRecords);
+    const prepared=state.vehicleRecords.map(x=>({...x,assetName:displayAsset(x)}));
+    const rows=sortFuelRows(filtered(prepared,"vehicleYear"),"vehicle");
+    updateFuelHeaders("vehicleTable","vehicle");
+    $("vehicleRows").innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.date)}</td><td><strong>${esc(x.assetName)}</strong></td><td>${esc(x.fuel)}</td><td>${fmt(x.km,0)} km</td><td>${fmt(x.liters)} L</td><td>${fmt(x.cost)} €</td><td>${esc(x.responsible||"—")}</td><td>${esc(x.notes||"—")}</td><td><div class="actions"><button onclick="editVehicle('${x.id}')">Editar</button><button class="danger" onclick="deleteVehicle('${x.id}')">Apagar</button></div></td></tr>`).join(""):'<tr><td colspan="9" class="empty">Ainda não existem abastecimentos.</td></tr>';
+    $("vehicleFuelTotals").innerHTML=["Diesel","Gasolina 95"].map(f=>`<div class="kpi"><span>${f}</span><strong>${fmt(state.vehicleRecords.filter(x=>x.fuel===f).reduce((s,x)=>s+n(x.liters),0),1)} L</strong></div>`).join("");
+  };
+  const renderSummaryBase=renderSummary;
+  renderSummary=function(){
+    renderSummaryBase();
+    const averages=[...internalAverages(),...vehicleAverages()];
+    const rows=sortFuelRows(averages,"averages");
+    updateFuelHeaders("averagesTable","averages");
+    $("equipmentAverages").innerHTML=rows.length?rows.map(x=>`<tr><td><strong>${esc(x.name)}</strong></td><td>${x.type}</td><td>${fmt(x.total,1)} L</td><td>${x.average==null?"Dados insuficientes":fmt(x.average)+" "+x.unit}</td></tr>`).join(""):'<tr><td colspan="4" class="empty">São necessários dois abastecimentos por equipamento para calcular médias.</td></tr>';
+  };
+  document.querySelectorAll("th.sortable").forEach(th=>th.addEventListener("click",()=>{
+    const table=th.closest("table").id;
+    const kind=table==="internalTable"?"internal":table==="vehicleTable"?"vehicle":"averages";
+    const cfg=tableSort[kind];
+    if(cfg.key===th.dataset.sort)cfg.direction=cfg.direction==="asc"?"desc":"asc";
+    else{cfg.key=th.dataset.sort;cfg.direction="asc";}
+    if(kind==="internal")renderInternalRows();
+    else if(kind==="vehicle")renderVehicleRows();
+    else renderSummary();
+  }));
+  renderAll();
+})();
 </script>
 </body>
 </html>
