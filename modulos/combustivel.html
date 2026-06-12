@@ -27,7 +27,7 @@
         <form class="card" id="internalForm"><h2>Abastecimento de máquina</h2><input type="hidden" id="internalId"><div class="grid"><label class="s3">Data<input id="internalDate" type="date" required></label><label class="s3">Trator / giratória<select id="internalAsset" required></select></label><label class="s3">Horas da máquina<input id="internalHours" type="number" min="0" step="0.1" required></label><label class="s3">Responsável<input id="internalResponsible" required></label><label class="s3">Leitura inicial (L)<input id="internalStart" type="number" min="0" step="0.01" required></label><label class="s3">Leitura final (L)<input id="internalEnd" type="number" min="0" step="0.01" required></label><label class="s3">Litros abastecidos<input id="internalLiters" readonly></label><label class="s3">Combustível<input value="Gasóleo agrícola" readonly></label><label class="s12">Observações<textarea id="internalNotes"></textarea></label><div class="s12 actions"><button id="internalSubmit">Guardar registo</button><button class="secondary" type="button" onclick="cancelInternalEdit()">Limpar</button></div></div></form>
       </div>
     </div>
-    <div class="card"><div class="section-head"><h2>Movimentos do depósito</h2><label>Ano<select id="internalYear"></select></label></div><div class="table-wrap"><table id="internalTable"><thead><tr><th class="sortable" data-sort="date">Data</th><th class="sortable" data-sort="movementType">Tipo</th><th class="sortable" data-sort="subject">Máquina / fornecedor</th><th class="sortable" data-sort="hourMeter">Horas</th><th class="sortable" data-sort="pumpStart">Inicial</th><th class="sortable" data-sort="pumpEnd">Final</th><th class="sortable" data-sort="liters">Litros</th><th class="sortable" data-sort="balance">Saldo</th><th class="sortable" data-sort="responsible">Responsável</th><th class="sortable" data-sort="details">Documento / obs.</th><th>Ações</th></tr></thead><tbody id="internalRows"></tbody></table></div></div>
+    <div class="card"><div class="section-head"><h2>Movimentos do depósito</h2><label>Ano<select id="internalYear"></select></label></div><div class="table-wrap"><table id="internalTable"><thead><tr><th class="sortable" data-sort="date">Data</th><th class="sortable" data-sort="movementType">Tipo</th><th class="sortable" data-sort="subject">Máquina / fornecedor</th><th class="sortable" data-sort="hourMeter">Horas</th><th class="sortable" data-sort="pumpStart">Inicial</th><th class="sortable" data-sort="pumpEnd">Final</th><th class="sortable" data-sort="liters">Litros</th><th class="sortable" data-sort="balance" title="Quantidade existente depois deste movimento">Saldo após movimento</th><th class="sortable" data-sort="responsible">Responsável</th><th class="sortable" data-sort="details">Documento / obs.</th><th>Ações</th></tr></thead><tbody id="internalRows"></tbody></table></div></div>
   </section>
 
   <section class="panel" id="panel-vehicles">
@@ -103,7 +103,13 @@ $("internalDate").value=$("tankEntryDate").value=$("vehicleDate").value=today();
   }
   function sortFuelRows(rows,table){
     const cfg=tableSort[table],factor=cfg.direction==="asc"?1:-1;
-    return rows.slice().sort((a,b)=>compareFuelValues(a[cfg.key],b[cfg.key])*factor);
+    return rows.slice().sort((a,b)=>{
+      const primary=compareFuelValues(a[cfg.key],b[cfg.key]);
+      const sequence=cfg.key==="date"&&a.movementSequence!=null&&b.movementSequence!=null
+        ? a.movementSequence-b.movementSequence
+        : 0;
+      return (primary||sequence)*factor;
+    });
   }
   function updateFuelHeaders(tableId,table){
     document.querySelectorAll(`#${tableId} th.sortable`).forEach(th=>{
@@ -124,13 +130,14 @@ $("internalDate").value=$("tankEntryDate").value=$("vehicleDate").value=today();
       if(dateOrder)return dateOrder;
       const orderA=movementOrderFuel(a,a.sequence),orderB=movementOrderFuel(b,b.sequence);
       if(orderA!=null&&orderB!=null)return orderA-orderB;
-      if(a.movementType!==b.movementType)return a.movementType==="Entrada"?-1:1;
+      if(a.movementType!==b.movementType)return a.movementType==="Consumo"?-1:1;
       return a.sequence-b.sequence;
     });
     let balance=n(state.initialLevel);
-    chronological.forEach(x=>{
+    chronological.forEach((x,index)=>{
       balance+=x.movementType==="Entrada"?n(x.liters):-n(x.liters);
       x.balance=balance;
+      x.movementSequence=index;
     });
     return chronological.map(x=>{
       const consumption=x.movementType==="Consumo";
