@@ -290,6 +290,9 @@
       font-weight: 800;
     }
 
+    .pill.positive { background: #e1f2e7; color: #215d3b; }
+    .pill.negative { background: #fde8e4; color: #862d25; }
+
     .need-controls {
       display: flex;
       flex-wrap: wrap;
@@ -833,6 +836,14 @@
       <section id="fertilizers" class="section">
         <div class="panel pad toolbar">
           <button type="button" id="addFertilizerBtn">Adicionar fertilizante</button>
+          <label style="min-width:240px">Agricultura biológica
+            <select id="fertilizerBioFilter">
+              <option value="all">Todos</option>
+              <option value="yes">Permitidos</option>
+              <option value="no">Não permitidos</option>
+              <option value="unknown">Não definidos</option>
+            </select>
+          </label>
         </div>
         <div class="panel">
           <div class="table-wrap">
@@ -842,6 +853,7 @@
                   <th>Nome</th>
                   <th>Unidade</th>
                   <th>Densidade</th>
+                  <th>Agricultura biológica</th>
                   <th>Nutrientes</th>
                   <th>Ações</th>
                 </tr>
@@ -958,7 +970,12 @@
         delete nutrients.N_amoniacal;
         nutrients.N = Math.max(0, Number(nutrients.N || 0));
       }
-      return { ...fertilizer, nutrients };
+      const bioAllowed = fertilizer.bioAllowed === true
+        ? true
+        : fertilizer.bioAllowed === false
+          ? false
+          : null;
+      return { ...fertilizer, bioAllowed, nutrients };
     }
 
     function migrateState(data) {
@@ -1431,14 +1448,28 @@
     }
 
     function renderFertilizers() {
-      $("fertilizerRows").innerHTML = state.fertilizers.map(f => `
+      const filter = $("fertilizerBioFilter")?.value || "all";
+      const fertilizers = state.fertilizers.filter(fertilizer => {
+        if (filter === "yes") return fertilizer.bioAllowed === true;
+        if (filter === "no") return fertilizer.bioAllowed === false;
+        if (filter === "unknown") return fertilizer.bioAllowed !== true && fertilizer.bioAllowed !== false;
+        return true;
+      });
+      $("fertilizerRows").innerHTML = fertilizers.length ? fertilizers.map(f => `
         <tr>
           <td><strong>${f.name}</strong><br><span class="pill">${f.notes || ""}</span></td>
           <td>${f.unit}</td>
           <td>${f.unit === "L" ? fmt(f.density || 1, 2) + " kg/L" : "-"}</td>
+          <td>${bioStatusHtml(f.bioAllowed)}</td>
           <td>${fertilizerNutrientsHtml(f)}</td>
           <td><div class="actions"><button type="button" onclick="openFertilizer('${f.id}')">Editar</button><button type="button" class="danger" onclick="removeFertilizer('${f.id}')">Apagar</button></div></td>
-        </tr>`).join("");
+        </tr>`).join("") : `<tr><td colspan="6" class="empty">Nenhum fertilizante corresponde ao filtro selecionado.</td></tr>`;
+    }
+
+    function bioStatusHtml(value) {
+      if (value === true) return `<span class="pill positive">Permitido</span>`;
+      if (value === false) return `<span class="pill negative">Não permitido</span>`;
+      return `<span class="pill">Não definido</span>`;
     }
 
     function fertilizerNutrientsHtml(fertilizer) {
@@ -1528,10 +1559,18 @@
       const hasAmmoniacal = Object.prototype.hasOwnProperty.call(f.nutrients || {}, "N_amoniacal");
       const nitricValue = hasNitric ? ((f.nutrients.N_nitrico || 0) * 100).toFixed(2) : "";
       const ammoniacalValue = hasAmmoniacal ? ((f.nutrients.N_amoniacal || 0) * 100).toFixed(2) : "";
+      const bioValue = f.bioAllowed === true ? "yes" : f.bioAllowed === false ? "no" : "unknown";
       openModal(id ? "Editar fertilizante" : "Adicionar fertilizante", `
         <label class="span-4">Nome<input name="name" required value="${f.name}"></label>
         <label class="span-2">Unidade<select name="unit"><option ${f.unit === "kg" ? "selected" : ""}>kg</option><option ${f.unit === "L" ? "selected" : ""}>L</option></select></label>
         <label class="span-2">Densidade<input name="density" type="number" min="0" step="0.001" value="${f.density || 1}"></label>
+        <label class="span-4">Permitido em agricultura biológica
+          <select name="bioAllowed">
+            <option value="unknown" ${bioValue === "unknown" ? "selected" : ""}>Não definido</option>
+            <option value="yes" ${bioValue === "yes" ? "selected" : ""}>Sim</option>
+            <option value="no" ${bioValue === "no" ? "selected" : ""}>Não</option>
+          </select>
+        </label>
         <label class="span-4">N nítrico %<input name="N_nitrico" type="number" min="0" step="0.01" value="${nitricValue}" oninput="updateNitrogenTotal()"></label>
         <label class="span-4">N amoniacal %<input name="N_amoniacal" type="number" min="0" step="0.01" value="${ammoniacalValue}" oninput="updateNitrogenTotal()"></label>
         <label class="span-4">N total %<input name="N" type="number" min="0" step="0.01" value="${((f.nutrients.N || 0) * 100).toFixed(2)}" readonly></label>
@@ -1548,6 +1587,7 @@
           const hasNitrogenComponents = nitricRaw !== "" || ammoniacalRaw !== "";
           const nitric = Math.max(0, Number(nitricRaw || 0)) / 100;
           const ammoniacal = Math.max(0, Number(ammoniacalRaw || 0)) / 100;
+          const bioRaw = fd.get("bioAllowed");
           const nitrogen = hasNitrogenComponents
             ? { N_nitrico: nitric, N_amoniacal: ammoniacal, N: nitric + ammoniacal }
             : { N: Math.max(0, Number(fd.get("N") || 0)) / 100 };
@@ -1556,6 +1596,7 @@
             name,
             unit: fd.get("unit"),
             density: Number(fd.get("density") || 1),
+            bioAllowed: bioRaw === "yes" ? true : bioRaw === "no" ? false : null,
             nutrients: {
               ...(f.nutrients || {}),
               ...nitrogen,
@@ -1647,6 +1688,7 @@
       $("saveRecordBtn").addEventListener("click", saveRecord);
       $("addSectorBtn").addEventListener("click", () => openSector(""));
       $("addFertilizerBtn").addEventListener("click", () => openFertilizer(""));
+      $("fertilizerBioFilter").addEventListener("change", renderFertilizers);
       $("closeModal").addEventListener("click", closeModal);
       $("modalBackdrop").addEventListener("click", (e) => { if (e.target.id === "modalBackdrop") closeModal(); });
       $("exportBtn").addEventListener("click", exportData);
