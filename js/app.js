@@ -16,7 +16,7 @@
     operacoes: 'modulos/operacoes.html',
     maquinas: 'modulos/tratores-maquinas.html',
     viaturas: 'modulos/viaturas.html',
-    combustivel: 'modulos/combustivel.html?v=20260612-saldo-sequencia-2',
+    combustivel: 'modulos/combustivel.html?v=20260612-saldo-cronologico-3',
     alfaias: 'modulos/alfaias.html',
     equipamentos: 'modulos/equipamentos.html',
     animais: 'modulos/animais.html?v=20260612-sanitario-1',
