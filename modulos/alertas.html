@@ -5777,6 +5777,66 @@ window.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 
+<script id="patch-v45-sanitario-alertas">
+(function(){
+  'use strict';
+  function normalizeType(value){
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  }
+  function findAssociated(evento){
+    const alertas = app.alertasAnimais || [];
+    return alertas.find(function(alerta){
+      return alerta.id === evento.alertaId || alerta.sanitarioId === evento.id;
+    }) || alertas.find(function(alerta){
+      return alerta.animalId === evento.animalId &&
+        alerta.origem === 'Registo sanit\u00e1rio' &&
+        normalizeType(alerta.tipo) === normalizeType(evento.tipo) &&
+        alerta.dataPrevista === evento.proximaData;
+    });
+  }
+  function reconcile(){
+    if (!window.app) return;
+    const eventos = (app.sanitarioAnimais || []).slice().sort(function(a,b){
+      return String(a.data || '').localeCompare(String(b.data || ''));
+    });
+    eventos.forEach(function(evento){
+      const current = findAssociated(evento);
+      (app.alertasAnimais || []).forEach(function(alerta){
+        if (!['Conclu\u00eddo','Cancelado'].includes(alerta.estado || 'Pendente') &&
+            alerta.id !== current?.id &&
+            alerta.sanitarioId !== evento.id &&
+            alerta.animalId === evento.animalId &&
+            normalizeType(alerta.tipo) === normalizeType(evento.tipo) &&
+            alerta.dataPrevista &&
+            alerta.dataPrevista <= evento.data) {
+          alerta.estado = 'Conclu\u00eddo';
+          alerta.dataConclusao = evento.data;
+          alerta.concluidoPorSanitarioId = evento.id;
+        }
+      });
+      const animal = typeof findAnimal === 'function' ? findAnimal(evento.animalId) : null;
+      if (!animal) return;
+      animal.fichaExtra = animal.fichaExtra || {};
+      const tipo = normalizeType(evento.tipo);
+      if (tipo.includes('desparasit')) {
+        animal.fichaExtra.ultimaDesparasitacao = evento.data || '';
+        animal.fichaExtra.proximaDesparasitacao = evento.proximaData || '';
+        animal.ultimaDesparasitacao = evento.data || '';
+        animal.proximaDesparasitacao = evento.proximaData || '';
+      } else if (tipo.includes('vacin')) {
+        animal.fichaExtra.ultimaVacina = evento.data || '';
+        animal.fichaExtra.proximaVacina = evento.proximaData || '';
+        animal.ultimaVacina = evento.data || '';
+        animal.proximaVacina = evento.proximaData || '';
+      }
+    });
+    if (eventos.length && typeof guardarDados === 'function') guardarDados();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', reconcile);
+  else reconcile();
+})();
+</script>
+
 <script id="activador-modulo-v42">
 (function(){
   'use strict';

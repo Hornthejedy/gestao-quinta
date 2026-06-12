@@ -4,7 +4,7 @@
   const moduloFrameId = 'moduloFrame';
   const moduloPadrao = 'alertas';
   const modulos = {
-    alertas: 'modulos/alertas.html',
+    alertas: 'modulos/alertas.html?v=20260612-sanitario-1',
     dashboard: 'modulos/dashboard.html',
     culturas: 'modulos/culturas.html',
     fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260612-edicao-1',
@@ -19,7 +19,7 @@
     combustivel: 'modulos/combustivel.html?v=20260612-1',
     alfaias: 'modulos/alfaias.html',
     equipamentos: 'modulos/equipamentos.html',
-    animais: 'modulos/animais.html',
+    animais: 'modulos/animais.html?v=20260612-sanitario-1',
     relatorios: 'modulos/relatorios.html'
   };
   function frame(){ return document.getElementById(moduloFrameId); }

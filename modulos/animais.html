@@ -5808,6 +5808,48 @@ window.addEventListener('DOMContentLoaded', function () {
     });
     return candidates.length === 1 ? candidates[0] : null;
   }
+  function normalizedSanitaryType(value){
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+  function completePreviousSanitaryAlerts(evento, currentAlert){
+    const eventType = normalizedSanitaryType(evento.tipo);
+    if (!eventType || !evento.data) return;
+    (app.alertasAnimais || []).forEach(function(alerta){
+      const pending = !['Concluído','Cancelado'].includes(alerta.estado || 'Pendente');
+      const isPrevious = alerta.dataPrevista && alerta.dataPrevista <= evento.data;
+      if (pending &&
+          isPrevious &&
+          alerta.id !== currentAlert?.id &&
+          alerta.sanitarioId !== evento.id &&
+          alerta.animalId === evento.animalId &&
+          normalizedSanitaryType(alerta.tipo) === eventType) {
+        alerta.estado = 'Concluído';
+        alerta.dataConclusao = evento.data;
+        alerta.concluidoPorSanitarioId = evento.id;
+      }
+    });
+  }
+  function syncAnimalSanitaryDates(evento){
+    const animal = typeof findAnimal === 'function' ? findAnimal(evento.animalId) : null;
+    if (!animal) return;
+    animal.fichaExtra = animal.fichaExtra || {};
+    const type = normalizedSanitaryType(evento.tipo);
+    if (type.includes('desparasit')) {
+      animal.fichaExtra.ultimaDesparasitacao = evento.data || '';
+      animal.fichaExtra.proximaDesparasitacao = evento.proximaData || '';
+      animal.ultimaDesparasitacao = evento.data || '';
+      animal.proximaDesparasitacao = evento.proximaData || '';
+    } else if (type.includes('vacin')) {
+      animal.fichaExtra.ultimaVacina = evento.data || '';
+      animal.fichaExtra.proximaVacina = evento.proximaData || '';
+      animal.ultimaVacina = evento.data || '';
+      animal.proximaVacina = evento.proximaData || '';
+    }
+  }
   function setRepeatVisibility(){
     const repetir = byId('sanRepetir')?.value === 'Sim';
     const wrap = byId('sanRepetirWrap');
@@ -5946,6 +5988,7 @@ window.addEventListener('DOMContentLoaded', function () {
     }
 
     let alerta = alertaExistente || associatedAlert(evento);
+    completePreviousSanitaryAlerts(evento, alerta);
     if (repetir) {
       const notas = fieldValue('sanAlertaNotas') || ('Repetir ' + tipo.toLowerCase() + (dados.produto ? ' com ' + dados.produto : '') + ' em ' + (animalName(animalId) || 'Animal') + '.');
       const alertaDados = {
@@ -5971,6 +6014,7 @@ window.addEventListener('DOMContentLoaded', function () {
       app.alertasAnimais = app.alertasAnimais.filter(function(item){ return item.id !== alerta.id; });
       delete evento.alertaId;
     }
+    reconcileExistingSanitaryData();
 
     guardarDados();
     if (typeof toast === 'function') toast(editId ? 'Registo sanit\u00e1rio atualizado.' : (repetir ? 'Registo sanit\u00e1rio guardado e alerta criado.' : 'Registo sanit\u00e1rio guardado.'), 'ok');
@@ -5990,6 +6034,18 @@ window.addEventListener('DOMContentLoaded', function () {
     window.abrirSanitarioAnimal(evento.animalId);
     if (typeof renderAlertas === 'function') renderAlertas();
   };
+
+  function reconcileExistingSanitaryData(){
+    const eventos = (app.sanitarioAnimais || []).slice().sort(function(a,b){
+      return String(a.data || '').localeCompare(String(b.data || ''));
+    });
+    eventos.forEach(function(evento){
+      completePreviousSanitaryAlerts(evento, associatedAlert(evento));
+      syncAnimalSanitaryDates(evento);
+    });
+    if (eventos.length && typeof guardarDados === 'function') guardarDados();
+  }
+  reconcileExistingSanitaryData();
 })();
 </script>
 
