@@ -945,6 +945,22 @@
       return JSON.parse(JSON.stringify(data));
     }
 
+    function normaliseFertilizerNitrogen(fertilizer) {
+      const nutrients = { ...(fertilizer.nutrients || {}) };
+      const hasNitric = Number.isFinite(Number(nutrients.N_nitrico));
+      const hasAmmoniacal = Number.isFinite(Number(nutrients.N_amoniacal));
+      if (hasNitric || hasAmmoniacal) {
+        nutrients.N_nitrico = hasNitric ? Math.max(0, Number(nutrients.N_nitrico)) : 0;
+        nutrients.N_amoniacal = hasAmmoniacal ? Math.max(0, Number(nutrients.N_amoniacal)) : 0;
+        nutrients.N = nutrients.N_nitrico + nutrients.N_amoniacal;
+      } else {
+        delete nutrients.N_nitrico;
+        delete nutrients.N_amoniacal;
+        nutrients.N = Math.max(0, Number(nutrients.N || 0));
+      }
+      return { ...fertilizer, nutrients };
+    }
+
     function migrateState(data) {
       data.sectors = data.sectors || clone(EXCEL_SEED.sectors);
       const validSectorIds = data.sectors.map(sector => sector.id);
@@ -953,19 +969,19 @@
         : [...validSectorIds];
       const known = Object.fromEntries(EXCEL_SEED.fertilizers.map(f => [f.id, f]));
       data.fertilizers = (data.fertilizers || []).map(f => {
-        if (!known[f.id]) return f;
+        if (!known[f.id]) return normaliseFertilizerNitrogen(f);
         const replacement = known[f.id];
-        return {
+        return normaliseFertilizerNitrogen({
           ...f,
           name: replacement.name,
           unit: replacement.unit,
           density: replacement.density,
           notes: replacement.notes,
           nutrients: { ...(f.nutrients || {}), ...replacement.nutrients }
-        };
+        });
       });
       EXCEL_SEED.fertilizers.forEach(f => {
-        if (!data.fertilizers.some(existing => existing.id === f.id)) data.fertilizers.push(clone(f));
+        if (!data.fertilizers.some(existing => existing.id === f.id)) data.fertilizers.push(normaliseFertilizerNitrogen(clone(f)));
       });
       return data;
     }
@@ -1338,7 +1354,14 @@
     }
 
     function labelNutrient(k) {
-      return ({ P2O5: "P₂O₅", K2O: "K₂O", MgO: "MgO" })[k] || k;
+      return ({
+        N: "N total",
+        N_nitrico: "N nítrico",
+        N_amoniacal: "N amoniacal",
+        P2O5: "P₂O₅",
+        K2O: "K₂O",
+        MgO: "MgO"
+      })[k] || k;
     }
 
     function monthShort(month) {
@@ -1413,9 +1436,21 @@
           <td><strong>${f.name}</strong><br><span class="pill">${f.notes || ""}</span></td>
           <td>${f.unit}</td>
           <td>${f.unit === "L" ? fmt(f.density || 1, 2) + " kg/L" : "-"}</td>
-          <td>${Object.entries(f.nutrients || {}).map(([k,v]) => `${labelNutrient(k)} ${fmt(Number(v) * 100, 2)}%`).join("<br>")}</td>
+          <td>${fertilizerNutrientsHtml(f)}</td>
           <td><div class="actions"><button type="button" onclick="openFertilizer('${f.id}')">Editar</button><button type="button" class="danger" onclick="removeFertilizer('${f.id}')">Apagar</button></div></td>
         </tr>`).join("");
+    }
+
+    function fertilizerNutrientsHtml(fertilizer) {
+      const nutrients = fertilizer.nutrients || {};
+      const nitrogenKeys = ["N_nitrico", "N_amoniacal", "N"];
+      const nitrogen = nitrogenKeys
+        .filter(key => key === "N" || Object.prototype.hasOwnProperty.call(nutrients, key))
+        .map(key => `${labelNutrient(key)} ${fmt(Number(nutrients[key] || 0) * 100, 2)}%`);
+      const others = Object.entries(nutrients)
+        .filter(([key]) => !nitrogenKeys.includes(key))
+        .map(([key, value]) => `${labelNutrient(key)} ${fmt(Number(value) * 100, 2)}%`);
+      return [...nitrogen, ...others].join("<br>");
     }
 
     function openModal(title, html, onSubmit) {
@@ -1476,13 +1511,30 @@
       toast("Setor apagado.");
     }
 
+    function updateNitrogenTotal() {
+      const form = $("modalForm");
+      const nitric = form?.elements?.N_nitrico;
+      const ammoniacal = form?.elements?.N_amoniacal;
+      const total = form?.elements?.N;
+      if (!nitric || !ammoniacal || !total) return;
+      const hasComponents = nitric.value !== "" || ammoniacal.value !== "";
+      if (!hasComponents) return;
+      total.value = (Math.max(0, Number(nitric.value || 0)) + Math.max(0, Number(ammoniacal.value || 0))).toFixed(2);
+    }
+
     function openFertilizer(id) {
       const f = state.fertilizers.find(x => x.id === id) || { id: "", name: "", unit: "kg", density: 1, nutrients: {}, notes: "" };
+      const hasNitric = Object.prototype.hasOwnProperty.call(f.nutrients || {}, "N_nitrico");
+      const hasAmmoniacal = Object.prototype.hasOwnProperty.call(f.nutrients || {}, "N_amoniacal");
+      const nitricValue = hasNitric ? ((f.nutrients.N_nitrico || 0) * 100).toFixed(2) : "";
+      const ammoniacalValue = hasAmmoniacal ? ((f.nutrients.N_amoniacal || 0) * 100).toFixed(2) : "";
       openModal(id ? "Editar fertilizante" : "Adicionar fertilizante", `
-        <label class="span-5">Nome<input name="name" required value="${f.name}"></label>
+        <label class="span-4">Nome<input name="name" required value="${f.name}"></label>
         <label class="span-2">Unidade<select name="unit"><option ${f.unit === "kg" ? "selected" : ""}>kg</option><option ${f.unit === "L" ? "selected" : ""}>L</option></select></label>
         <label class="span-2">Densidade<input name="density" type="number" min="0" step="0.001" value="${f.density || 1}"></label>
-        <label class="span-3">N %<input name="N" type="number" min="0" step="0.01" value="${((f.nutrients.N || 0) * 100).toFixed(2)}"></label>
+        <label class="span-4">N nítrico %<input name="N_nitrico" type="number" min="0" step="0.01" value="${nitricValue}" oninput="updateNitrogenTotal()"></label>
+        <label class="span-4">N amoniacal %<input name="N_amoniacal" type="number" min="0" step="0.01" value="${ammoniacalValue}" oninput="updateNitrogenTotal()"></label>
+        <label class="span-4">N total %<input name="N" type="number" min="0" step="0.01" value="${((f.nutrients.N || 0) * 100).toFixed(2)}" readonly></label>
         <label class="span-3">P₂O₅ %<input name="P2O5" type="number" min="0" step="0.01" value="${((f.nutrients.P2O5 || 0) * 100).toFixed(2)}"></label>
         <label class="span-3">K₂O %<input name="K2O" type="number" min="0" step="0.01" value="${((f.nutrients.K2O || 0) * 100).toFixed(2)}"></label>
         <label class="span-3">MgO %<input name="MgO" type="number" min="0" step="0.01" value="${((f.nutrients.MgO || 0) * 100).toFixed(2)}"></label>
@@ -1491,13 +1543,22 @@
         <div class="span-12 toolbar"><button type="submit">Guardar</button></div>`,
         (fd) => {
           const name = fd.get("name").trim();
+          const nitricRaw = String(fd.get("N_nitrico") || "").trim();
+          const ammoniacalRaw = String(fd.get("N_amoniacal") || "").trim();
+          const hasNitrogenComponents = nitricRaw !== "" || ammoniacalRaw !== "";
+          const nitric = Math.max(0, Number(nitricRaw || 0)) / 100;
+          const ammoniacal = Math.max(0, Number(ammoniacalRaw || 0)) / 100;
+          const nitrogen = hasNitrogenComponents
+            ? { N_nitrico: nitric, N_amoniacal: ammoniacal, N: nitric + ammoniacal }
+            : { N: Math.max(0, Number(fd.get("N") || 0)) / 100 };
           const next = {
             id: id || name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
             name,
             unit: fd.get("unit"),
             density: Number(fd.get("density") || 1),
             nutrients: {
-              N: Number(fd.get("N") || 0) / 100,
+              ...(f.nutrients || {}),
+              ...nitrogen,
               P2O5: Number(fd.get("P2O5") || 0) / 100,
               K2O: Number(fd.get("K2O") || 0) / 100,
               MgO: Number(fd.get("MgO") || 0) / 100,
@@ -1505,6 +1566,10 @@
             },
             notes: fd.get("notes").trim()
           };
+          if (!hasNitrogenComponents) {
+            delete next.nutrients.N_nitrico;
+            delete next.nutrients.N_amoniacal;
+          }
           state.fertilizers = state.fertilizers.filter(x => x.id !== id && x.id !== next.id);
           state.fertilizers.push(next);
           state.fertilizers.sort((a, b) => a.name.localeCompare(b.name, "pt"));
