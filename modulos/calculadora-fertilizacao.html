@@ -964,6 +964,7 @@
     let state = loadState();
     let activePage = "calculator";
     let lastCalculation = null;
+    let editingRecordId = "";
 
     const $ = (id) => document.getElementById(id);
     const fmt = (n, d = 2) => Number.isFinite(Number(n)) ? Number(n).toLocaleString("pt-PT", { maximumFractionDigits: d, minimumFractionDigits: d }) : "0,00";
@@ -1297,9 +1298,18 @@
     function saveRecord() {
       const calc = lastCalculation || calculate();
       if (!calc) return;
-      state.records.unshift(calc);
+      if (editingRecordId) {
+        const index = state.records.findIndex(record => record.id === editingRecordId);
+        calc.id = editingRecordId;
+        if (index >= 0) state.records[index] = calc;
+        else state.records.unshift(calc);
+      } else {
+        state.records.unshift(calc);
+      }
       saveState();
-      toast("Aplicação registada.");
+      toast(editingRecordId ? "Aplicação atualizada." : "Aplicação registada.");
+      editingRecordId = "";
+      $("saveRecordBtn").textContent = "Registar aplicação";
       setPage("records");
     }
 
@@ -1326,13 +1336,39 @@
           <td>${fmt(r.totalMinutes, 0)} min</td>
           <td>${fmt(r.nutrients.N || 0)} kg</td>
           <td>${fmt(r.nutrients.K2O || 0)} kg</td>
-          <td><div class="actions"><button class="danger" type="button" onclick="deleteRecord('${r.id}')">Apagar</button></div></td>
+          <td><div class="actions"><button type="button" onclick="editRecord('${r.id}')">Editar</button><button class="danger" type="button" onclick="deleteRecord('${r.id}')">Apagar</button></div></td>
         </tr>`).join("") : `<tr><td colspan="9" class="empty">Ainda não há registos.</td></tr>`;
+    }
+
+    function editRecord(id) {
+      const record = state.records.find(item => item.id === id);
+      if (!record) return;
+      editingRecordId = id;
+      setPage("calculator");
+      $("calcDate").value = record.date || new Date().toISOString().slice(0, 10);
+      $("calcCrop").value = record.crop || "Abacateiro";
+      $("calcFertilizer").value = record.fertilizerId || "";
+      $("calcDoseMode").value = "total";
+      $("calcQuantity").value = Number(record.totalProduct || 0);
+      $("calcWater").value = Number(record.totalWater || 0);
+      $("calcPump").value = Number(record.pump || 0);
+      $("calcSplit").value = "area";
+      const selected = new Set(record.sectors || []);
+      $("sectorChecks").querySelectorAll("input").forEach(input => {
+        input.checked = selected.has(input.value);
+      });
+      $("saveRecordBtn").textContent = "Guardar alterações";
+      calculate();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function deleteRecord(id) {
       if (!confirm("Apagar este registo?")) return;
       state.records = state.records.filter(r => r.id !== id);
+      if (editingRecordId === id) {
+        editingRecordId = "";
+        $("saveRecordBtn").textContent = "Registar aplicação";
+      }
       saveState();
       toast("Registo apagado.");
     }
