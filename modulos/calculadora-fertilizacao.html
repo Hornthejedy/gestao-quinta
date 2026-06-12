@@ -1,0 +1,1446 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora de Fertilização</title>
+  <style>
+    :root {
+      --bg: #f5f7f4;
+      --panel: #ffffff;
+      --panel-2: #eef4ec;
+      --ink: #1d2a24;
+      --muted: #6a756f;
+      --line: #d9e1d7;
+      --brand: #27623d;
+      --brand-2: #174c32;
+      --accent: #c79d37;
+      --danger: #b4423a;
+      --ok: #2f8650;
+      --shadow: 0 14px 38px rgba(31, 51, 37, 0.10);
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 0.72rem 0.95rem;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover { background: var(--brand-2); }
+
+    button.secondary {
+      background: #e8efe6;
+      color: var(--brand-2);
+      border: 1px solid var(--line);
+    }
+
+    button.secondary:hover { background: #dfe9dd; }
+
+    button.danger {
+      background: #f7e8e6;
+      color: var(--danger);
+      border: 1px solid #ebc8c3;
+    }
+
+    button.danger:hover { background: #f1d7d3; }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.7rem 0.75rem;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    textarea { min-height: 76px; resize: vertical; }
+
+    label {
+      display: grid;
+      gap: 0.35rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 0.72rem 0.65rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.92rem;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: #f8faf7;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      background: #183322;
+      color: #eef7ed;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      display: grid;
+      gap: 0.25rem;
+      padding: 0.4rem 0.2rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.15;
+    }
+
+    .brand span {
+      color: #b8cabd;
+      font-size: 0.88rem;
+    }
+
+    .nav {
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .nav button {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 1px solid transparent;
+      color: #dfece1;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .nav button.active {
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.18);
+      color: #fff;
+    }
+
+    .sidebar-actions {
+      margin-top: auto;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .sidebar-actions button {
+      background: rgba(255,255,255,0.10);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .main {
+      padding: 1.4rem;
+      display: grid;
+      gap: 1rem;
+      align-content: start;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 1.55rem;
+    }
+
+    .topbar p {
+      margin: 0.25rem 0 0;
+      color: var(--muted);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel.pad { padding: 1rem; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+
+    .span-2 { grid-column: span 2; }
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .metric small {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 1.55rem;
+    }
+
+    .section {
+      display: none;
+      gap: 1rem;
+    }
+
+    .section.active {
+      display: grid;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 62vh;
+      border-radius: 8px;
+    }
+
+    .hint {
+      border: 1px solid #cfe0c9;
+      background: #f0f7ee;
+      color: #36583f;
+      border-radius: 8px;
+      padding: 0.8rem 0.9rem;
+      font-size: 0.92rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      background: #edf2ec;
+      color: #395041;
+      padding: 0.22rem 0.52rem;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
+    .need-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: end;
+    }
+
+    .need-controls label {
+      min-width: 190px;
+    }
+
+    .bar-cell {
+      min-width: 180px;
+    }
+
+    .progress-bar {
+      height: 18px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #d95d54;
+      border: 1px solid rgba(0,0,0,0.08);
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: #1976d2;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.6rem;
+      margin-top: 0.25rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .month-cell {
+      background: #1f623d;
+      color: #fff;
+      font-weight: 800;
+      text-align: center;
+      vertical-align: middle;
+      min-width: 110px;
+    }
+
+    .phase-cell {
+      min-width: 220px;
+    }
+
+    .thermo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 1rem;
+      align-items: end;
+    }
+
+    .thermo-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 1rem 0.85rem;
+      background: #fbfcfb;
+      display: grid;
+      justify-items: center;
+      gap: 0.65rem;
+    }
+
+    .thermo-title {
+      text-align: center;
+      display: grid;
+      gap: 0.15rem;
+    }
+
+    .thermo-title strong {
+      font-size: 1.25rem;
+    }
+
+    .thermo-title small {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .thermo-wrap {
+      position: relative;
+      width: 128px;
+      height: 390px;
+      margin: 0.25rem 0;
+    }
+
+    .thermo-track {
+      position: absolute;
+      left: 44px;
+      top: 0;
+      width: 40px;
+      height: 100%;
+      border-radius: 999px;
+      background: #d95d54;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.12);
+    }
+
+    .thermo-fill {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      background: #1976d2;
+      border-radius: 999px;
+    }
+
+    .thermo-marker {
+      position: absolute;
+      left: 29px;
+      width: 70px;
+      height: 3px;
+      background: #2e9b54;
+      border-radius: 999px;
+      transform: translateY(1px);
+    }
+
+    .thermo-month {
+      position: absolute;
+      right: 92px;
+      transform: translateY(50%);
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .thermo-edge-label {
+      position: absolute;
+      left: 91px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .thermo-edge-label.top { top: -0.15rem; }
+    .thermo-edge-label.bottom { bottom: -0.15rem; }
+
+    .thermo-values {
+      width: 100%;
+      display: grid;
+      gap: 0.25rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .check-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+      gap: 0.45rem;
+      padding: 0.55rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfb;
+    }
+
+    .check-list label {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .check-list input { width: auto; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .result-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.85rem;
+      background: #fbfcfb;
+    }
+
+    .result-box small {
+      display: block;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+
+    .result-box strong {
+      display: block;
+      margin-top: 0.28rem;
+      font-size: 1.25rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      padding: 0.48rem 0.62rem;
+      font-size: 0.82rem;
+    }
+
+    .positive { color: var(--ok); }
+    .negative { color: var(--danger); }
+
+    .empty {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(12, 24, 17, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 20;
+    }
+
+    .modal-backdrop.active { display: flex; }
+
+    .modal {
+      width: min(780px, 100%);
+      max-height: 88vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.28);
+      padding: 1rem;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .toast {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      background: #183322;
+      color: #fff;
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      display: none;
+      z-index: 30;
+    }
+
+    @media (max-width: 860px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        height: auto;
+        padding: 0.8rem;
+      }
+      .brand { padding-bottom: 0.6rem; }
+      .nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .nav button {
+        justify-content: center;
+        text-align: center;
+        padding: 0.65rem 0.45rem;
+      }
+      .sidebar-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main { padding: 0.85rem; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .span-2, .span-3, .span-4, .span-5, .span-6, .span-7, .span-8 { grid-column: span 12; }
+      .result-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 520px) {
+      .nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metrics { grid-template-columns: 1fr; }
+      .sidebar-actions { grid-template-columns: 1fr; }
+      th, td { padding: 0.62rem 0.52rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>Calculadora de Fertilização</h1>
+        <span>Paisagem Silvestre · Abacateiro</span>
+      </div>
+      <nav class="nav" id="nav"></nav>
+      <div class="sidebar-actions">
+        <button type="button" id="exportBtn">Exportar dados</button>
+        <button type="button" id="importBtn">Importar dados</button>
+        <input id="importFile" type="file" accept="application/json" hidden>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="topbar">
+        <div>
+          <h2 id="pageTitle">Calcular aplicação</h2>
+          <p id="pageSubtitle">Dose, distribuição por setor, tempo de bomba e registo automático.</p>
+        </div>
+        <button type="button" class="secondary" id="resetBtn">Repor dados do Excel</button>
+      </section>
+
+      <section class="metrics" id="metrics"></section>
+
+      <section id="calculator" class="section active">
+        <div class="panel pad">
+          <form id="calcForm" class="grid">
+            <label class="span-3">Data
+              <input type="date" id="calcDate">
+            </label>
+            <label class="span-3">Cultura
+              <input id="calcCrop" value="Abacateiro">
+            </label>
+            <label class="span-3">Fertilizante
+              <select id="calcFertilizer"></select>
+            </label>
+            <label class="span-3">Modo da dose
+              <select id="calcDoseMode">
+                <option value="total">Quantidade total</option>
+                <option value="ha">Quantidade por hectare</option>
+                <option value="nTarget">Alvo de kg N/ha</option>
+              </select>
+            </label>
+            <label class="span-3">Quantidade
+              <input type="number" id="calcQuantity" min="0" step="0.01" value="150">
+            </label>
+            <label class="span-3">Água a injetar (L)
+              <input type="number" id="calcWater" min="0" step="1" value="550">
+            </label>
+            <label class="span-3">Capacidade da bomba (L/h)
+              <input type="number" id="calcPump" min="0" step="1" value="220">
+            </label>
+            <label class="span-3">Repartir por
+              <select id="calcSplit">
+                <option value="area">Área do setor</option>
+                <option value="trees">Número de árvores</option>
+                <option value="equal">Partes iguais</option>
+              </select>
+            </label>
+            <div class="span-12">
+              <div class="check-list" id="sectorChecks"></div>
+            </div>
+            <div class="span-12 toolbar">
+              <button type="button" id="calculateBtn">Calcular</button>
+              <button type="button" id="saveRecordBtn" class="secondary">Registar aplicação</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel pad">
+          <div class="result-grid" id="calcSummary"></div>
+        </div>
+
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Setor</th>
+                  <th>Área</th>
+                  <th>Produto</th>
+                  <th>Água</th>
+                  <th>Tempo</th>
+                  <th>Concentração</th>
+                  <th>kg/ha</th>
+                </tr>
+              </thead>
+              <tbody id="calcRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="records" class="section">
+        <div class="panel pad toolbar">
+          <label style="max-width:220px">Ano
+            <select id="recordYear"></select>
+          </label>
+          <label style="max-width:220px">Mês
+            <select id="recordMonth"></select>
+          </label>
+          <button type="button" id="clearFilters" class="secondary">Limpar filtros</button>
+        </div>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Setores</th>
+                  <th>Fertilizante</th>
+                  <th>Produto</th>
+                  <th>Água</th>
+                  <th>Tempo</th>
+                  <th>N</th>
+                  <th>K₂O</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="recordsRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="needs" class="section">
+        <div class="hint">Necessidades semanais importadas do Excel. As barras comparam o objetivo do período com o aplicado registado: vermelho é por aplicar, azul é o que já está coberto.</div>
+        <div class="panel pad">
+          <div class="thermo-grid" id="globalNeedsChart"></div>
+        </div>
+        <div class="panel pad need-controls">
+          <label>Nutriente na tabela semanal
+            <select id="needsNutrient">
+              <option value="all">Todos</option>
+              <option value="N">Azoto (N)</option>
+              <option value="P2O5">Fósforo (P₂O₅)</option>
+              <option value="K2O">Potássio (K₂O)</option>
+              <option value="MgO">Magnésio (MgO)</option>
+              <option value="S">Enxofre (S)</option>
+            </select>
+          </label>
+          <label>Mês
+            <select id="needsMonth"></select>
+          </label>
+        </div>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th>Nutriente</th>
+                  <th>Objetivo mensal</th>
+                  <th>Aplicado kg/ha</th>
+                  <th>Progresso</th>
+                </tr>
+              </thead>
+              <tbody id="needsMonthlyRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sectors" class="section">
+        <div class="panel pad toolbar">
+          <button type="button" id="addSectorBtn">Adicionar setor</button>
+        </div>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Setor</th>
+                  <th>Árvores</th>
+                  <th>Área</th>
+                  <th>Água m³</th>
+                  <th>Caudal m³/h</th>
+                  <th>Tempo rega</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="sectorRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="fertilizers" class="section">
+        <div class="panel pad toolbar">
+          <button type="button" id="addFertilizerBtn">Adicionar fertilizante</button>
+        </div>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Unidade</th>
+                  <th>Densidade</th>
+                  <th>Nutrientes</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="fertilizerRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="modalTitle"></h3>
+        <button type="button" class="secondary" id="closeModal">Fechar</button>
+      </div>
+      <form id="modalForm" class="grid"></form>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "fertilizacao_app_v1";
+
+    function buildWeeklyNeeds() {
+      const plan = [
+        ["Janeiro", 1.73, 0.45, 1.80, 0.25, 0.19, { 1: "Repouso" }],
+        ["Fevereiro", 6.90, 0.45, 1.80, 0.50, 0.38, { 1: "Pré-floração URGENTE" }],
+        ["Março", 6.90, 0.45, 1.80, 0.50, 0.38, { 3: "Plena floração" }],
+        ["Abril", 7.47, 0.45, 1.80, 0.60, 0.45, { 1: "Vingamento" }],
+        ["Maio", 8.05, 0.45, 1.80, 0.60, 0.45, { 1: "1.ª Flush vegetativa" }],
+        ["Junho", 6.33, 0.45, 1.80, 0.50, 0.38, { 1: "Crescimento do fruto" }],
+        ["Julho", 5.75, 0.45, 1.80, 0.50, 0.38, { 1: "Crescimento do fruto" }],
+        ["Agosto", 5.75, 0.45, 1.80, 0.50, 0.38, { 1: "2.ª Flush vegetativa" }],
+        ["Setembro", 4.60, 0.45, 1.80, 0.50, 0.38, { 1: "Pré-repouso / Ind. floral" }],
+        ["Outubro", 2.30, 0.45, 1.80, 0.30, 0.23, { 1: "Início repouso" }],
+        ["Novembro", 1.15, 0.45, 1.80, 0.15, 0.11, { 1: "Repouso" }],
+        ["Dezembro", 0.57, 0.45, 1.80, 0.10, 0.07, { 1: "Repouso" }]
+      ];
+      return plan.flatMap(([month, N, P2O5, K2O, MgO, S, phases], monthIndex) =>
+        [1, 2, 3, 4].map(week => ({
+          month,
+          monthIndex: monthIndex + 1,
+          week: `Semana ${week}`,
+          weekIndex: week,
+          phase: phases[week] || "",
+          N,
+          P2O5,
+          K2O,
+          MgO,
+          S
+        }))
+      );
+    }
+
+    const EXCEL_SEED = {
+      needs: { N: 230, "P2O5": 60, "K2O": 180, "MgO": 20, S: 15 },
+      weeklyNeeds: buildWeeklyNeeds(),
+      sectors: [
+        { id: "S01", trees: 275, area: 0.66, waterM3: 13.75, flowM3h: 10.1, irrigationTime: "01:21:31" },
+        { id: "S02", trees: 582, area: 1.40, waterM3: 29.10, flowM3h: 21.4, irrigationTime: "01:21:31" },
+        { id: "S03", trees: 377, area: 0.90, waterM3: 18.85, flowM3h: 13.9, irrigationTime: "01:21:31" },
+        { id: "S04", trees: 408, area: 0.98, waterM3: 20.40, flowM3h: 15.0, irrigationTime: "01:21:31" },
+        { id: "S05", trees: 236, area: 0.57, waterM3: 11.80, flowM3h: 8.7, irrigationTime: "01:21:31" },
+        { id: "S07", trees: 35, area: 0.08, waterM3: 1.75, flowM3h: 1.3, irrigationTime: "01:21:31" },
+        { id: "S08", trees: 79, area: 0.19, waterM3: 3.95, flowM3h: 2.9, irrigationTime: "01:21:31" },
+        { id: "S09", trees: 312, area: 0.75, waterM3: 15.60, flowM3h: 11.5, irrigationTime: "01:21:31" },
+        { id: "S12", trees: 365, area: 0.88, waterM3: 18.25, flowM3h: 13.4, irrigationTime: "01:21:31" }
+      ],
+      fertilizers: [
+        { id: "fertinatur-n", name: "Fertinatur Super N", unit: "L", density: 1.22, nutrients: { N: 0.06, P2O5: 0.01, P: 0.00437, K2O: 0.04, K: 0.0332, S: 0.0136, Aminoacidos: 0.088, MateriaOrganica: 0.333, AcidosHumicos: 0.179, AcidosFulvicos: 0.007 }, notes: "Adubo organomineral NPK fluido. Teores p/p: N 6,0%, P2O5 1,0%, K2O 4,0%, SO3 3,4% (S equivalente 1,36%), aminoacidos livres 8,8%, materia organica 33,3%, acidos humicos 17,9%, acidos fulvicos 0,7%." },
+        { id: "fertinatur-k", name: "Fertinatur K", unit: "L", density: 1.21, nutrients: { N: 0.03, P2O5: 0.01, P: 0.00437, K2O: 0.06, K: 0.0498 }, notes: "Líquido. Fórmula do Excel: 3% N, 1% P₂O₅, 6% K₂O, densidade 1,21 kg/L." },
+        { id: "kristalon-azul", name: "Kristalon Azul 17-6-18", unit: "kg", density: 1, nutrients: { N: 0.17, P2O5: 0.06, P: 0.02622, K2O: 0.18, K: 0.1494, MgO: 0.03, Mg: 0.01809, S: 0.008 }, notes: "Solido soluvel. Formula do Excel: 17% N, 6% P2O5, 18% K2O, 3% MgO, 2% SO3." },
+        { id: "krista-k-plus", name: "Krista K Plus 13-0-45", unit: "kg", density: 1, nutrients: { N: 0.13, P2O5: 0, P: 0, K2O: 0.45, K: 0.3735 }, notes: "Nitrato de potassio. Formula do Excel: 13% N, 0% P2O5, 45% K2O." },
+        { id: "ferronova", name: "Ferronova / Ferro", unit: "kg", density: 1, nutrients: { Fe: 1 }, notes: "Planeamento de ferro do Excel: 75 g por árvore por ciclo cultural, dividido em 10 aplicações." }
+      ],
+      records: []
+    };
+
+    const pages = [
+      ["calculator", "Calcular", "Dose, distribuição por setor, tempo de bomba e registo automático."],
+      ["records", "Registos", "Histórico das aplicações registadas."],
+      ["needs", "Necessidades", "Comparação entre metas anuais e aplicações registadas."],
+      ["sectors", "Setores", "Adicionar, editar ou apagar setores."],
+      ["fertilizers", "Fertilizantes", "Adicionar, editar ou apagar fertilizantes."]
+    ];
+
+    let state = loadState();
+    let activePage = "calculator";
+    let lastCalculation = null;
+
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n, d = 2) => Number.isFinite(Number(n)) ? Number(n).toLocaleString("pt-PT", { maximumFractionDigits: d, minimumFractionDigits: d }) : "0,00";
+    const val = (id) => $(id).value;
+    const num = (id) => Number($(id).value || 0);
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+    function clone(data) {
+      return JSON.parse(JSON.stringify(data));
+    }
+
+    function migrateState(data) {
+      const known = Object.fromEntries(EXCEL_SEED.fertilizers.map(f => [f.id, f]));
+      data.fertilizers = (data.fertilizers || []).map(f => {
+        if (!known[f.id]) return f;
+        const replacement = known[f.id];
+        return {
+          ...f,
+          name: replacement.name,
+          unit: replacement.unit,
+          density: replacement.density,
+          notes: replacement.notes,
+          nutrients: { ...(f.nutrients || {}), ...replacement.nutrients }
+        };
+      });
+      EXCEL_SEED.fertilizers.forEach(f => {
+        if (!data.fertilizers.some(existing => existing.id === f.id)) data.fertilizers.push(clone(f));
+      });
+      return data;
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return migrateState(clone(EXCEL_SEED));
+      try {
+        const parsed = JSON.parse(raw);
+        return migrateState({
+          needs: parsed.needs || clone(EXCEL_SEED.needs),
+          weeklyNeeds: parsed.weeklyNeeds || clone(EXCEL_SEED.weeklyNeeds),
+          sectors: parsed.sectors || clone(EXCEL_SEED.sectors),
+          fertilizers: parsed.fertilizers || clone(EXCEL_SEED.fertilizers),
+          records: parsed.records || []
+        });
+      } catch {
+        return migrateState(clone(EXCEL_SEED));
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+    }
+
+    function toast(message) {
+      const box = $("toast");
+      box.textContent = message;
+      box.style.display = "block";
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => box.style.display = "none", 2400);
+    }
+
+    function renderNav() {
+      $("nav").innerHTML = pages.map(([id, label]) => `<button type="button" class="${id === activePage ? "active" : ""}" data-page="${id}">${label}</button>`).join("");
+      document.querySelectorAll("[data-page]").forEach(btn => btn.addEventListener("click", () => setPage(btn.dataset.page)));
+    }
+
+    function setPage(page) {
+      activePage = page;
+      document.querySelectorAll(".section").forEach(s => s.classList.toggle("active", s.id === page));
+      const meta = pages.find(p => p[0] === page);
+      $("pageTitle").textContent = meta[1];
+      $("pageSubtitle").textContent = meta[2];
+      renderNav();
+    }
+
+    function renderMetrics() {
+      const area = state.sectors.reduce((a, s) => a + Number(s.area || 0), 0);
+      const trees = state.sectors.reduce((a, s) => a + Number(s.trees || 0), 0);
+      const product = state.records.reduce((a, r) => a + Number(r.totalProduct || 0), 0);
+      const minutes = state.records.reduce((a, r) => a + Number(r.totalMinutes || 0), 0);
+      $("metrics").innerHTML = [
+        ["Área total", `${fmt(area)} ha`],
+        ["Árvores", trees.toLocaleString("pt-PT")],
+        ["Produto registado", `${fmt(product)} kg/L`],
+        ["Tempo bomba", `${fmt(minutes / 60)} h`]
+      ].map(m => `<div class="metric"><small>${m[0]}</small><strong>${m[1]}</strong></div>`).join("");
+    }
+
+    function renderCalculatorInputs() {
+      $("calcFertilizer").innerHTML = state.fertilizers.map(f => `<option value="${f.id}">${f.name} (${f.unit})</option>`).join("");
+      $("sectorChecks").innerHTML = state.sectors.map(s => `<label><input type="checkbox" value="${s.id}" checked> ${s.id}</label>`).join("");
+      $("calcDate").value = new Date().toISOString().slice(0, 10);
+    }
+
+    function selectedSectors() {
+      const ids = [...$("sectorChecks").querySelectorAll("input:checked")].map(i => i.value);
+      return state.sectors.filter(s => ids.includes(s.id));
+    }
+
+    function calcWeight(sector, sectors, split) {
+      if (split === "equal") return 1 / sectors.length;
+      const key = split === "trees" ? "trees" : "area";
+      const total = sectors.reduce((a, s) => a + Number(s[key] || 0), 0);
+      return total > 0 ? Number(sector[key] || 0) / total : 1 / sectors.length;
+    }
+
+    function calculate() {
+      const fert = state.fertilizers.find(f => f.id === val("calcFertilizer"));
+      const sectors = selectedSectors();
+      if (!fert || !sectors.length) {
+        toast("Escolha pelo menos um setor e um fertilizante.");
+        return null;
+      }
+      const area = sectors.reduce((a, s) => a + Number(s.area || 0), 0);
+      const water = num("calcWater");
+      const pump = num("calcPump");
+      let totalProduct = num("calcQuantity");
+      if (val("calcDoseMode") === "ha") totalProduct = num("calcQuantity") * area;
+      if (val("calcDoseMode") === "nTarget") {
+        const n = fert.nutrients.N || 0;
+        const density = fert.unit === "L" ? Number(fert.density || 1) : 1;
+        totalProduct = n > 0 ? (num("calcQuantity") * area) / (n * density) : 0;
+      }
+      const density = fert.unit === "L" ? Number(fert.density || 1) : 1;
+      const kgProduct = totalProduct * density;
+      const nutrients = {};
+      Object.entries(fert.nutrients || {}).forEach(([k, pct]) => {
+        nutrients[k] = kgProduct * Number(pct || 0);
+      });
+      const rows = sectors.map(s => {
+        const share = calcWeight(s, sectors, val("calcSplit"));
+        const product = totalProduct * share;
+        const productKg = product * density;
+        const waterL = water * share;
+        const timeBasis = waterL > 0 ? waterL : product;
+        const minutes = pump > 0 ? Math.ceil((timeBasis / pump) * 60) : 0;
+        return {
+          id: s.id,
+          area: Number(s.area || 0),
+          product,
+          productKg,
+          waterL,
+          minutes,
+          concentration: waterL > 0 ? (productKg * 1000) / waterL : 0,
+          kgHa: Number(s.area || 0) > 0 ? productKg / Number(s.area || 0) : 0
+        };
+      });
+      lastCalculation = {
+        id: uid(),
+        date: val("calcDate"),
+        crop: val("calcCrop") || "Abacateiro",
+        fertilizerId: fert.id,
+        fertilizerName: fert.name,
+        unit: fert.unit,
+        sectors: sectors.map(s => s.id),
+        totalArea: area,
+        totalProduct,
+        totalProductKg: kgProduct,
+        totalWater: water,
+        pump,
+        totalMinutes: rows.reduce((a, r) => a + r.minutes, 0),
+        nutrients,
+        rows
+      };
+      renderCalculation(lastCalculation);
+      return lastCalculation;
+    }
+
+    function renderCalculation(calc) {
+      if (!calc) {
+        $("calcSummary").innerHTML = `<div class="empty">Preencha os campos e carregue em Calcular.</div>`;
+        $("calcRows").innerHTML = "";
+        return;
+      }
+      $("calcSummary").innerHTML = [
+        ["Área selecionada", `${fmt(calc.totalArea)} ha`],
+        ["Produto total", `${fmt(calc.totalProduct)} ${calc.unit}`],
+        ["Água total", `${fmt(calc.totalWater, 0)} L`],
+        ["Tempo total", `${fmt(calc.totalMinutes, 0)} min`],
+        ["N aplicado", `${fmt(calc.nutrients.N || 0)} kg`],
+        ["K₂O aplicado", `${fmt(calc.nutrients.K2O || 0)} kg`]
+      ].map(x => `<div class="result-box"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("");
+      $("calcRows").innerHTML = calc.rows.map(r => `
+        <tr>
+          <td><strong>${r.id}</strong></td>
+          <td>${fmt(r.area)} ha</td>
+          <td>${fmt(r.product)} ${calc.unit}</td>
+          <td>${fmt(r.waterL, 0)} L</td>
+          <td>${fmt(r.minutes, 0)} min</td>
+          <td>${fmt(r.concentration, 1)} g/L</td>
+          <td>${fmt(r.kgHa)} kg/ha</td>
+        </tr>`).join("");
+    }
+
+    function saveRecord() {
+      const calc = lastCalculation || calculate();
+      if (!calc) return;
+      state.records.unshift(calc);
+      saveState();
+      toast("Aplicação registada.");
+      setPage("records");
+    }
+
+    function renderRecords() {
+      const years = [...new Set(state.records.map(r => new Date(r.date).getFullYear()).filter(Boolean))].sort((a,b) => b-a);
+      $("recordYear").innerHTML = `<option value="">Todos</option>` + years.map(y => `<option>${y}</option>`).join("");
+      $("recordMonth").innerHTML = `<option value="">Todos</option>` + ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"].map((m,i) => `<option value="${i+1}">${m}</option>`).join("");
+      drawRecordRows();
+    }
+
+    function drawRecordRows() {
+      const y = Number(val("recordYear") || 0);
+      const m = Number(val("recordMonth") || 0);
+      let rows = [...state.records];
+      if (y) rows = rows.filter(r => new Date(r.date).getFullYear() === y);
+      if (m) rows = rows.filter(r => new Date(r.date).getMonth() + 1 === m);
+      $("recordsRows").innerHTML = rows.length ? rows.map(r => `
+        <tr>
+          <td>${r.date || ""}</td>
+          <td>${r.sectors.join(", ")}</td>
+          <td>${r.fertilizerName}</td>
+          <td>${fmt(r.totalProduct)} ${r.unit}</td>
+          <td>${fmt(r.totalWater, 0)} L</td>
+          <td>${fmt(r.totalMinutes, 0)} min</td>
+          <td>${fmt(r.nutrients.N || 0)} kg</td>
+          <td>${fmt(r.nutrients.K2O || 0)} kg</td>
+          <td><div class="actions"><button class="danger" type="button" onclick="deleteRecord('${r.id}')">Apagar</button></div></td>
+        </tr>`).join("") : `<tr><td colspan="9" class="empty">Ainda não há registos.</td></tr>`;
+    }
+
+    function deleteRecord(id) {
+      if (!confirm("Apagar este registo?")) return;
+      state.records = state.records.filter(r => r.id !== id);
+      saveState();
+      toast("Registo apagado.");
+    }
+
+    function renderNeeds() {
+      const weeklyNeeds = state.weeklyNeeds && state.weeklyNeeds.length ? state.weeklyNeeds : EXCEL_SEED.weeklyNeeds;
+      const selectedNutrient = $("needsNutrient") ? val("needsNutrient") : "all";
+      const selectedMonth = $("needsMonth") ? val("needsMonth") : "";
+      const allNutrients = ["N", "P2O5", "K2O", "MgO", "S"];
+      const nutrients = selectedNutrient === "all" ? allNutrients : [selectedNutrient];
+      const months = [...new Map(weeklyNeeds.map(r => [r.month, r.monthIndex])).entries()].map(([month, monthIndex]) => ({ month, monthIndex }));
+      renderGlobalNeedsChart(weeklyNeeds, months, allNutrients);
+      if ($("needsMonth")) {
+        const previous = $("needsMonth").value;
+        $("needsMonth").innerHTML = `<option value="">Todos os meses</option>` + months.map(m => `<option value="${m.month}">${m.month}</option>`).join("");
+        $("needsMonth").value = previous;
+      }
+      const monthlyRows = [];
+      months.forEach(m => {
+        if (selectedMonth && selectedMonth !== m.month) return;
+        nutrients.forEach(nutrient => {
+          const target = weeklyNeeds
+            .filter(r => r.month === m.month)
+            .reduce((a, r) => a + Number(r[nutrient] || 0), 0);
+          const applied = appliedForMonth(nutrient, m.monthIndex);
+          monthlyRows.push(`<tr>
+            <td><strong>${m.month}</strong></td>
+            <td>${labelNutrient(nutrient)}</td>
+            <td>${fmt(target)} kg/ha</td>
+            <td>${fmt(applied)} kg/ha</td>
+            <td class="bar-cell">${progressBar(applied, target)}</td>
+          </tr>`);
+        });
+      });
+      $("needsMonthlyRows").innerHTML = monthlyRows.join("");
+
+    }
+
+    function renderGlobalNeedsChart(weeklyNeeds, months, nutrients) {
+      const container = $("globalNeedsChart");
+      if (!container) return;
+      container.innerHTML = nutrients.map(nutrient => {
+        const annualTarget = weeklyNeeds.reduce((sum, row) => sum + Number(row[nutrient] || 0), 0);
+        const applied = appliedUntilWeek(nutrient, 12, 4);
+        const fillPct = annualTarget > 0 ? Math.min(100, Math.max(0, applied / annualTarget * 100)) : 0;
+        const markers = months.map(m => {
+          const cumulative = weeklyNeeds
+            .filter(row => row.monthIndex <= m.monthIndex)
+            .reduce((sum, row) => sum + Number(row[nutrient] || 0), 0);
+          const y = annualTarget > 0 ? 100 - Math.min(100, Math.max(0, cumulative / annualTarget * 100)) : 100;
+          return `<span class="thermo-marker" style="top:${y}%"></span><span class="thermo-month" style="bottom:${100 - y}%">${monthShort(m.month)}</span>`;
+        }).join("");
+        return `<article class="thermo-card">
+          <div class="thermo-title">
+            <strong>${labelNutrient(nutrient)}</strong>
+            <small>Objetivo anual ${fmt(annualTarget)} kg/ha</small>
+          </div>
+          <div class="thermo-wrap" aria-label="${labelNutrient(nutrient)} aplicado ${fmt(applied)} de ${fmt(annualTarget)} kg/ha">
+            <div class="thermo-track"><div class="thermo-fill" style="height:${fillPct}%"></div></div>
+            ${markers}
+            <span class="thermo-edge-label top">31 dez</span>
+            <span class="thermo-edge-label bottom">01 jan</span>
+          </div>
+          <div class="thermo-values">
+            <span>Aplicado: ${fmt(applied)} kg/ha</span>
+            <span>${fmt(fillPct, 0)}% do objetivo anual</span>
+          </div>
+        </article>`;
+      }).join("");
+    }
+
+    function labelNutrient(k) {
+      return ({ P2O5: "P₂O₅", K2O: "K₂O", MgO: "MgO" })[k] || k;
+    }
+
+    function monthShort(month) {
+      return {
+        Janeiro: "Jan",
+        Fevereiro: "Fev",
+        Março: "Mar",
+        Abril: "Abr",
+        Maio: "Mai",
+        Junho: "Jun",
+        Julho: "Jul",
+        Agosto: "Ago",
+        Setembro: "Set",
+        Outubro: "Out",
+        Novembro: "Nov",
+        Dezembro: "Dez"
+      }[month] || month.slice(0, 3);
+    }
+
+    function progressBar(applied, target) {
+      const pct = target > 0 ? Math.min(100, Math.max(0, (applied / target) * 100)) : 0;
+      const over = target > 0 && applied > target;
+      return `<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="progress-label"><span>${fmt(pct, 0)}%</span><span class="${over ? "positive" : ""}">${fmt(applied - target)} kg/ha</span></div>`;
+    }
+
+    function nutrientKgHa(record, nutrient) {
+      const area = Number(record.totalArea || 0) || state.sectors.reduce((a, s) => a + Number(s.area || 0), 0) || 1;
+      return Number((record.nutrients || {})[nutrient] || 0) / area;
+    }
+
+    function appliedForMonth(nutrient, monthIndex) {
+      return state.records.reduce((sum, r) => {
+        const date = new Date(r.date);
+        if (date.getFullYear() !== 2026 || date.getMonth() + 1 !== monthIndex) return sum;
+        return sum + nutrientKgHa(r, nutrient);
+      }, 0);
+    }
+
+    function appliedUntilWeek(nutrient, monthIndex, weekIndex) {
+      return state.records.reduce((sum, r) => {
+        const date = new Date(r.date);
+        if (date.getFullYear() !== 2026) return sum;
+        const recordMonth = date.getMonth() + 1;
+        const recordWeek = Math.min(4, Math.floor((date.getDate() - 1) / 7) + 1);
+        if (recordMonth < monthIndex || (recordMonth === monthIndex && recordWeek <= weekIndex)) {
+          return sum + nutrientKgHa(r, nutrient);
+        }
+        return sum;
+      }, 0);
+    }
+
+    function renderSectors() {
+      $("sectorRows").innerHTML = state.sectors.map(s => `
+        <tr>
+          <td><strong>${s.id}</strong></td>
+          <td>${Number(s.trees || 0).toLocaleString("pt-PT")}</td>
+          <td>${fmt(s.area)} ha</td>
+          <td>${fmt(s.waterM3)} m³</td>
+          <td>${fmt(s.flowM3h)} m³/h</td>
+          <td>${s.irrigationTime || ""}</td>
+          <td><div class="actions"><button type="button" onclick="openSector('${s.id}')">Editar</button><button type="button" class="danger" onclick="removeSector('${s.id}')">Apagar</button></div></td>
+        </tr>`).join("");
+    }
+
+    function renderFertilizers() {
+      $("fertilizerRows").innerHTML = state.fertilizers.map(f => `
+        <tr>
+          <td><strong>${f.name}</strong><br><span class="pill">${f.notes || ""}</span></td>
+          <td>${f.unit}</td>
+          <td>${f.unit === "L" ? fmt(f.density || 1, 2) + " kg/L" : "-"}</td>
+          <td>${Object.entries(f.nutrients || {}).map(([k,v]) => `${labelNutrient(k)} ${fmt(Number(v) * 100, 2)}%`).join("<br>")}</td>
+          <td><div class="actions"><button type="button" onclick="openFertilizer('${f.id}')">Editar</button><button type="button" class="danger" onclick="removeFertilizer('${f.id}')">Apagar</button></div></td>
+        </tr>`).join("");
+    }
+
+    function openModal(title, html, onSubmit) {
+      $("modalTitle").textContent = title;
+      $("modalForm").innerHTML = html;
+      $("modalBackdrop").classList.add("active");
+      $("modalForm").onsubmit = (e) => {
+        e.preventDefault();
+        onSubmit(new FormData(e.currentTarget));
+        $("modalBackdrop").classList.remove("active");
+      };
+    }
+
+    function closeModal() {
+      $("modalBackdrop").classList.remove("active");
+    }
+
+    function openSector(id) {
+      const s = state.sectors.find(x => x.id === id) || { id: "", trees: 0, area: 0, waterM3: 0, flowM3h: 0, irrigationTime: "" };
+      openModal(id ? "Editar setor" : "Adicionar setor", `
+        <label class="span-4">Setor<input name="id" required value="${s.id}"></label>
+        <label class="span-4">Árvores<input name="trees" type="number" min="0" step="1" value="${s.trees || 0}"></label>
+        <label class="span-4">Área ha<input name="area" type="number" min="0" step="0.0001" value="${s.area || 0}"></label>
+        <label class="span-4">Água m³<input name="waterM3" type="number" min="0" step="0.01" value="${s.waterM3 || 0}"></label>
+        <label class="span-4">Caudal m³/h<input name="flowM3h" type="number" min="0" step="0.01" value="${s.flowM3h || 0}"></label>
+        <label class="span-4">Tempo rega<input name="irrigationTime" value="${s.irrigationTime || ""}"></label>
+        <div class="span-12 toolbar"><button type="submit">Guardar</button></div>`,
+        (fd) => {
+          const next = {
+            id: fd.get("id").trim(),
+            trees: Number(fd.get("trees") || 0),
+            area: Number(fd.get("area") || 0),
+            waterM3: Number(fd.get("waterM3") || 0),
+            flowM3h: Number(fd.get("flowM3h") || 0),
+            irrigationTime: fd.get("irrigationTime").trim()
+          };
+          state.sectors = state.sectors.filter(x => x.id !== id && x.id !== next.id);
+          state.sectors.push(next);
+          state.sectors.sort((a, b) => a.id.localeCompare(b.id, "pt", { numeric: true }));
+          saveState();
+          renderCalculatorInputs();
+          calculate();
+          toast("Setor guardado.");
+        });
+    }
+
+    function removeSector(id) {
+      if (!confirm("Apagar este setor?")) return;
+      state.sectors = state.sectors.filter(s => s.id !== id);
+      saveState();
+      renderCalculatorInputs();
+      calculate();
+      toast("Setor apagado.");
+    }
+
+    function openFertilizer(id) {
+      const f = state.fertilizers.find(x => x.id === id) || { id: "", name: "", unit: "kg", density: 1, nutrients: {}, notes: "" };
+      openModal(id ? "Editar fertilizante" : "Adicionar fertilizante", `
+        <label class="span-5">Nome<input name="name" required value="${f.name}"></label>
+        <label class="span-2">Unidade<select name="unit"><option ${f.unit === "kg" ? "selected" : ""}>kg</option><option ${f.unit === "L" ? "selected" : ""}>L</option></select></label>
+        <label class="span-2">Densidade<input name="density" type="number" min="0" step="0.001" value="${f.density || 1}"></label>
+        <label class="span-3">N %<input name="N" type="number" min="0" step="0.01" value="${((f.nutrients.N || 0) * 100).toFixed(2)}"></label>
+        <label class="span-3">P₂O₅ %<input name="P2O5" type="number" min="0" step="0.01" value="${((f.nutrients.P2O5 || 0) * 100).toFixed(2)}"></label>
+        <label class="span-3">K₂O %<input name="K2O" type="number" min="0" step="0.01" value="${((f.nutrients.K2O || 0) * 100).toFixed(2)}"></label>
+        <label class="span-3">MgO %<input name="MgO" type="number" min="0" step="0.01" value="${((f.nutrients.MgO || 0) * 100).toFixed(2)}"></label>
+        <label class="span-3">S %<input name="S" type="number" min="0" step="0.01" value="${((f.nutrients.S || 0) * 100).toFixed(2)}"></label>
+        <label class="span-9">Notas<input name="notes" value="${f.notes || ""}"></label>
+        <div class="span-12 toolbar"><button type="submit">Guardar</button></div>`,
+        (fd) => {
+          const name = fd.get("name").trim();
+          const next = {
+            id: id || name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+            name,
+            unit: fd.get("unit"),
+            density: Number(fd.get("density") || 1),
+            nutrients: {
+              N: Number(fd.get("N") || 0) / 100,
+              P2O5: Number(fd.get("P2O5") || 0) / 100,
+              K2O: Number(fd.get("K2O") || 0) / 100,
+              MgO: Number(fd.get("MgO") || 0) / 100,
+              S: Number(fd.get("S") || 0) / 100
+            },
+            notes: fd.get("notes").trim()
+          };
+          state.fertilizers = state.fertilizers.filter(x => x.id !== id && x.id !== next.id);
+          state.fertilizers.push(next);
+          state.fertilizers.sort((a, b) => a.name.localeCompare(b.name, "pt"));
+          saveState();
+          renderCalculatorInputs();
+          toast("Fertilizante guardado.");
+        });
+    }
+
+    function removeFertilizer(id) {
+      if (!confirm("Apagar este fertilizante?")) return;
+      state.fertilizers = state.fertilizers.filter(f => f.id !== id);
+      saveState();
+      renderCalculatorInputs();
+      toast("Fertilizante apagado.");
+    }
+
+    function exportData() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `fertilizacao-dados-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importData(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!parsed.sectors || !parsed.fertilizers || !parsed.records) throw new Error("Formato inválido");
+          state = migrateState(parsed);
+          saveState();
+          renderCalculatorInputs();
+          toast("Dados importados.");
+        } catch {
+          toast("Não consegui importar esse ficheiro.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetData() {
+      if (!confirm("Repor os dados iniciais importados do Excel? Os registos atuais serão apagados.")) return;
+      state = clone(EXCEL_SEED);
+      saveState();
+      renderCalculatorInputs();
+      calculate();
+      toast("Dados repostos.");
+    }
+
+    // Integração com os comandos gerais da Gestão da Quinta.
+    window.exportarDados = exportData;
+    window.importarDados = function(event) {
+      const file = event?.target?.files?.[0];
+      if (file) importData(file);
+    };
+
+    function renderAll() {
+      renderMetrics();
+      renderSectors();
+      renderFertilizers();
+      renderRecords();
+      renderNeeds();
+      if (lastCalculation) renderCalculation(lastCalculation);
+    }
+
+    function init() {
+      renderNav();
+      renderCalculatorInputs();
+      renderAll();
+      calculate();
+      $("calculateBtn").addEventListener("click", calculate);
+      $("saveRecordBtn").addEventListener("click", saveRecord);
+      $("addSectorBtn").addEventListener("click", () => openSector(""));
+      $("addFertilizerBtn").addEventListener("click", () => openFertilizer(""));
+      $("closeModal").addEventListener("click", closeModal);
+      $("modalBackdrop").addEventListener("click", (e) => { if (e.target.id === "modalBackdrop") closeModal(); });
+      $("exportBtn").addEventListener("click", exportData);
+      $("importBtn").addEventListener("click", () => $("importFile").click());
+      $("importFile").addEventListener("change", (e) => e.target.files[0] && importData(e.target.files[0]));
+      $("resetBtn").addEventListener("click", resetData);
+      $("recordYear").addEventListener("change", drawRecordRows);
+      $("recordMonth").addEventListener("change", drawRecordRows);
+      $("needsNutrient").addEventListener("change", renderNeeds);
+      $("needsMonth").addEventListener("change", renderNeeds);
+      $("clearFilters").addEventListener("click", () => { $("recordYear").value = ""; $("recordMonth").value = ""; drawRecordRows(); });
+      ["calcDate", "calcCrop", "calcFertilizer", "calcDoseMode", "calcQuantity", "calcWater", "calcPump", "calcSplit"].forEach(id => $(id).addEventListener("change", calculate));
+      $("sectorChecks").addEventListener("change", calculate);
+    }
+
+    init();
+  </script>
+</body>
+</html>

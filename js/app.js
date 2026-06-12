@@ -7,6 +7,7 @@
     alertas: 'modulos/alertas.html',
     dashboard: 'modulos/dashboard.html',
     culturas: 'modulos/culturas.html',
+    fertilizacao: 'modulos/calculadora-fertilizacao.html',
     stocks: 'modulos/stocks.html',
     stocksQuinta: 'modulos/stocks-quinta.html',
     caixa: 'modulos/caixa.html',
