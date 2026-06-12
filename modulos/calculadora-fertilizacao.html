@@ -301,6 +301,42 @@
       min-width: 190px;
     }
 
+    .sector-filter {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .sector-filter-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .sector-filter-head h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .sector-selection-summary {
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .sector-selection-warning {
+      display: none;
+      padding: 0.75rem;
+      border-radius: 8px;
+      background: #fff3e0;
+      color: #7a4300;
+      border: 1px solid #ffcc80;
+      font-weight: 700;
+    }
+
+    .sector-selection-warning.show { display: block; }
+
     .bar-cell {
       min-width: 180px;
     }
@@ -720,6 +756,20 @@
 
       <section id="needs" class="section">
         <div class="hint">Necessidades semanais importadas do Excel. As barras comparam o objetivo do período com o aplicado registado: vermelho é por aplicar, azul é o que já está coberto.</div>
+        <div class="panel pad sector-filter">
+          <div class="sector-filter-head">
+            <div>
+              <h3>Setores a analisar</h3>
+              <div id="needsSectorSelectionSummary" class="sector-selection-summary"></div>
+            </div>
+            <div class="toolbar">
+              <button type="button" id="selectAllNeedsSectors" class="secondary">Selecionar todos</button>
+              <button type="button" id="clearNeedsSectors" class="secondary">Limpar seleção</button>
+            </div>
+          </div>
+          <div class="check-list" id="needsSectorChecks"></div>
+          <div id="needsSectorWarning" class="sector-selection-warning">Selecione pelo menos um setor para consultar as necessidades e as aplicações.</div>
+        </div>
         <div class="panel pad">
           <div class="thermo-grid" id="globalNeedsChart"></div>
         </div>
@@ -896,6 +946,11 @@
     }
 
     function migrateState(data) {
+      data.sectors = data.sectors || clone(EXCEL_SEED.sectors);
+      const validSectorIds = data.sectors.map(sector => sector.id);
+      data.needsSectorIds = Array.isArray(data.needsSectorIds)
+        ? data.needsSectorIds.filter(id => validSectorIds.includes(id))
+        : [...validSectorIds];
       const known = Object.fromEntries(EXCEL_SEED.fertilizers.map(f => [f.id, f]));
       data.fertilizers = (data.fertilizers || []).map(f => {
         if (!known[f.id]) return f;
@@ -924,6 +979,7 @@
           needs: parsed.needs || clone(EXCEL_SEED.needs),
           weeklyNeeds: parsed.weeklyNeeds || clone(EXCEL_SEED.weeklyNeeds),
           sectors: parsed.sectors || clone(EXCEL_SEED.sectors),
+          needsSectorIds: parsed.needsSectorIds,
           fertilizers: parsed.fertilizers || clone(EXCEL_SEED.fertilizers),
           records: parsed.records || []
         });
@@ -957,15 +1013,22 @@
       $("pageTitle").textContent = meta[1];
       $("pageSubtitle").textContent = meta[2];
       renderNav();
+      renderMetrics();
     }
 
     function renderMetrics() {
-      const area = state.sectors.reduce((a, s) => a + Number(s.area || 0), 0);
-      const trees = state.sectors.reduce((a, s) => a + Number(s.trees || 0), 0);
-      const product = state.records.reduce((a, r) => a + Number(r.totalProduct || 0), 0);
-      const minutes = state.records.reduce((a, r) => a + Number(r.totalMinutes || 0), 0);
+      const sectors = activePage === "needs" ? selectedNeedSectors() : state.sectors;
+      const sectorIds = sectors.map(sector => sector.id);
+      const area = sectors.reduce((a, s) => a + Number(s.area || 0), 0);
+      const trees = sectors.reduce((a, s) => a + Number(s.trees || 0), 0);
+      const product = activePage === "needs"
+        ? state.records.reduce((sum, record) => sum + recordProductForSectors(record, sectorIds), 0)
+        : state.records.reduce((sum, record) => sum + Number(record.totalProduct || 0), 0);
+      const minutes = activePage === "needs"
+        ? state.records.reduce((sum, record) => sum + recordMinutesForSectors(record, sectorIds), 0)
+        : state.records.reduce((sum, record) => sum + Number(record.totalMinutes || 0), 0);
       $("metrics").innerHTML = [
-        ["Área total", `${fmt(area)} ha`],
+        [activePage === "needs" ? "Área selecionada" : "Área total", `${fmt(area)} ha`],
         ["Árvores", trees.toLocaleString("pt-PT")],
         ["Produto registado", `${fmt(product)} kg/L`],
         ["Tempo bomba", `${fmt(minutes / 60)} h`]
@@ -981,6 +1044,85 @@
     function selectedSectors() {
       const ids = [...$("sectorChecks").querySelectorAll("input:checked")].map(i => i.value);
       return state.sectors.filter(s => ids.includes(s.id));
+    }
+
+    function selectedNeedSectorIds() {
+      const validIds = state.sectors.map(sector => sector.id);
+      return (state.needsSectorIds || []).filter(id => validIds.includes(id));
+    }
+
+    function selectedNeedSectors() {
+      const ids = selectedNeedSectorIds();
+      return state.sectors.filter(sector => ids.includes(sector.id));
+    }
+
+    function setNeedSectorSelection(ids) {
+      const validIds = state.sectors.map(sector => sector.id);
+      state.needsSectorIds = [...new Set(ids)].filter(id => validIds.includes(id));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderMetrics();
+      renderNeeds();
+    }
+
+    function renderNeedSectorControls() {
+      const container = $("needsSectorChecks");
+      if (!container) return;
+      const selectedIds = selectedNeedSectorIds();
+      container.innerHTML = state.sectors.map(sector => `
+        <label>
+          <input type="checkbox" value="${sector.id}" ${selectedIds.includes(sector.id) ? "checked" : ""}>
+          ${sector.id}
+        </label>`).join("");
+      container.querySelectorAll("input").forEach(input => input.addEventListener("change", () => {
+        setNeedSectorSelection([...container.querySelectorAll("input:checked")].map(item => item.value));
+      }));
+      const selected = selectedNeedSectors();
+      const area = selected.reduce((sum, sector) => sum + Number(sector.area || 0), 0);
+      const trees = selected.reduce((sum, sector) => sum + Number(sector.trees || 0), 0);
+      $("needsSectorSelectionSummary").textContent = selected.length
+        ? `${selected.length} de ${state.sectors.length} setores · ${fmt(area)} ha · ${trees.toLocaleString("pt-PT")} árvores`
+        : `0 de ${state.sectors.length} setores selecionados`;
+      $("needsSectorWarning").classList.toggle("show", selected.length === 0);
+    }
+
+    function recordRowsForSectors(record, sectorIds) {
+      if (!sectorIds.length) return [];
+      return (record.rows || []).filter(row => sectorIds.includes(row.id));
+    }
+
+    function legacyRecordFraction(record, sectorIds) {
+      const recordSectors = record.sectors || [];
+      if (!recordSectors.length || !sectorIds.length) return 0;
+      const matches = recordSectors.filter(id => sectorIds.includes(id)).length;
+      return matches / recordSectors.length;
+    }
+
+    function recordProductForSectors(record, sectorIds) {
+      const rows = recordRowsForSectors(record, sectorIds);
+      if (Array.isArray(record.rows) && record.rows.length) {
+        return rows.reduce((sum, row) => sum + Number(row.product || 0), 0);
+      }
+      return Number(record.totalProduct || 0) * legacyRecordFraction(record, sectorIds);
+    }
+
+    function recordMinutesForSectors(record, sectorIds) {
+      const rows = recordRowsForSectors(record, sectorIds);
+      if (Array.isArray(record.rows) && record.rows.length) {
+        return rows.reduce((sum, row) => sum + Number(row.minutes || 0), 0);
+      }
+      return Number(record.totalMinutes || 0) * legacyRecordFraction(record, sectorIds);
+    }
+
+    function recordNutrientForSectors(record, nutrient, sectorIds) {
+      const totalNutrient = Number((record.nutrients || {})[nutrient] || 0);
+      if (!totalNutrient || !sectorIds.length) return 0;
+      const rows = recordRowsForSectors(record, sectorIds);
+      if (Array.isArray(record.rows) && record.rows.length) {
+        const totalProductKg = record.rows.reduce((sum, row) => sum + Number(row.productKg || 0), 0);
+        const selectedProductKg = rows.reduce((sum, row) => sum + Number(row.productKg || 0), 0);
+        if (totalProductKg > 0) return totalNutrient * selectedProductKg / totalProductKg;
+      }
+      return totalNutrient * legacyRecordFraction(record, sectorIds);
     }
 
     function calcWeight(sector, sectors, split) {
@@ -1125,15 +1267,22 @@
       const weeklyNeeds = state.weeklyNeeds && state.weeklyNeeds.length ? state.weeklyNeeds : EXCEL_SEED.weeklyNeeds;
       const selectedNutrient = $("needsNutrient") ? val("needsNutrient") : "all";
       const selectedMonth = $("needsMonth") ? val("needsMonth") : "";
+      const sectorIds = selectedNeedSectorIds();
       const allNutrients = ["N", "P2O5", "K2O", "MgO", "S"];
       const nutrients = selectedNutrient === "all" ? allNutrients : [selectedNutrient];
       const months = [...new Map(weeklyNeeds.map(r => [r.month, r.monthIndex])).entries()].map(([month, monthIndex]) => ({ month, monthIndex }));
-      renderGlobalNeedsChart(weeklyNeeds, months, allNutrients);
+      renderNeedSectorControls();
       if ($("needsMonth")) {
         const previous = $("needsMonth").value;
         $("needsMonth").innerHTML = `<option value="">Todos os meses</option>` + months.map(m => `<option value="${m.month}">${m.month}</option>`).join("");
         $("needsMonth").value = previous;
       }
+      if (!sectorIds.length) {
+        $("globalNeedsChart").innerHTML = `<div class="empty">Selecione pelo menos um setor para apresentar os gráficos.</div>`;
+        $("needsMonthlyRows").innerHTML = `<tr><td colspan="5" class="empty">Selecione pelo menos um setor para apresentar a análise.</td></tr>`;
+        return;
+      }
+      renderGlobalNeedsChart(weeklyNeeds, months, allNutrients, sectorIds);
       const monthlyRows = [];
       months.forEach(m => {
         if (selectedMonth && selectedMonth !== m.month) return;
@@ -1141,7 +1290,7 @@
           const target = weeklyNeeds
             .filter(r => r.month === m.month)
             .reduce((a, r) => a + Number(r[nutrient] || 0), 0);
-          const applied = appliedForMonth(nutrient, m.monthIndex);
+          const applied = appliedForMonth(nutrient, m.monthIndex, sectorIds);
           monthlyRows.push(`<tr>
             <td><strong>${m.month}</strong></td>
             <td>${labelNutrient(nutrient)}</td>
@@ -1155,12 +1304,12 @@
 
     }
 
-    function renderGlobalNeedsChart(weeklyNeeds, months, nutrients) {
+    function renderGlobalNeedsChart(weeklyNeeds, months, nutrients, sectorIds) {
       const container = $("globalNeedsChart");
       if (!container) return;
       container.innerHTML = nutrients.map(nutrient => {
         const annualTarget = weeklyNeeds.reduce((sum, row) => sum + Number(row[nutrient] || 0), 0);
-        const applied = appliedUntilWeek(nutrient, 12, 4);
+        const applied = appliedUntilWeek(nutrient, 12, 4, sectorIds);
         const fillPct = annualTarget > 0 ? Math.min(100, Math.max(0, applied / annualTarget * 100)) : 0;
         const markers = months.map(m => {
           const cumulative = weeklyNeeds
@@ -1216,27 +1365,30 @@
         <div class="progress-label"><span>${fmt(pct, 0)}%</span><span class="${over ? "positive" : ""}">${fmt(applied - target)} kg/ha</span></div>`;
     }
 
-    function nutrientKgHa(record, nutrient) {
-      const area = Number(record.totalArea || 0) || state.sectors.reduce((a, s) => a + Number(s.area || 0), 0) || 1;
-      return Number((record.nutrients || {})[nutrient] || 0) / area;
+    function nutrientKgHa(record, nutrient, sectorIds) {
+      const area = state.sectors
+        .filter(sector => sectorIds.includes(sector.id))
+        .reduce((sum, sector) => sum + Number(sector.area || 0), 0);
+      if (area <= 0) return 0;
+      return recordNutrientForSectors(record, nutrient, sectorIds) / area;
     }
 
-    function appliedForMonth(nutrient, monthIndex) {
+    function appliedForMonth(nutrient, monthIndex, sectorIds) {
       return state.records.reduce((sum, r) => {
         const date = new Date(r.date);
         if (date.getFullYear() !== 2026 || date.getMonth() + 1 !== monthIndex) return sum;
-        return sum + nutrientKgHa(r, nutrient);
+        return sum + nutrientKgHa(r, nutrient, sectorIds);
       }, 0);
     }
 
-    function appliedUntilWeek(nutrient, monthIndex, weekIndex) {
+    function appliedUntilWeek(nutrient, monthIndex, weekIndex, sectorIds) {
       return state.records.reduce((sum, r) => {
         const date = new Date(r.date);
         if (date.getFullYear() !== 2026) return sum;
         const recordMonth = date.getMonth() + 1;
         const recordWeek = Math.min(4, Math.floor((date.getDate() - 1) / 7) + 1);
         if (recordMonth < monthIndex || (recordMonth === monthIndex && recordWeek <= weekIndex)) {
-          return sum + nutrientKgHa(r, nutrient);
+          return sum + nutrientKgHa(r, nutrient, sectorIds);
         }
         return sum;
       }, 0);
@@ -1300,9 +1452,13 @@
             flowM3h: Number(fd.get("flowM3h") || 0),
             irrigationTime: fd.get("irrigationTime").trim()
           };
+          const previousSelection = selectedNeedSectorIds();
           state.sectors = state.sectors.filter(x => x.id !== id && x.id !== next.id);
           state.sectors.push(next);
           state.sectors.sort((a, b) => a.id.localeCompare(b.id, "pt", { numeric: true }));
+          state.needsSectorIds = id
+            ? previousSelection.map(selectedId => selectedId === id ? next.id : selectedId)
+            : [...previousSelection, next.id];
           saveState();
           renderCalculatorInputs();
           calculate();
@@ -1313,6 +1469,7 @@
     function removeSector(id) {
       if (!confirm("Apagar este setor?")) return;
       state.sectors = state.sectors.filter(s => s.id !== id);
+      state.needsSectorIds = selectedNeedSectorIds().filter(selectedId => selectedId !== id);
       saveState();
       renderCalculatorInputs();
       calculate();
@@ -1393,7 +1550,7 @@
 
     function resetData() {
       if (!confirm("Repor os dados iniciais importados do Excel? Os registos atuais serão apagados.")) return;
-      state = clone(EXCEL_SEED);
+      state = migrateState(clone(EXCEL_SEED));
       saveState();
       renderCalculatorInputs();
       calculate();
@@ -1435,6 +1592,8 @@
       $("recordMonth").addEventListener("change", drawRecordRows);
       $("needsNutrient").addEventListener("change", renderNeeds);
       $("needsMonth").addEventListener("change", renderNeeds);
+      $("selectAllNeedsSectors").addEventListener("click", () => setNeedSectorSelection(state.sectors.map(sector => sector.id)));
+      $("clearNeedsSectors").addEventListener("click", () => setNeedSectorSelection([]));
       $("clearFilters").addEventListener("click", () => { $("recordYear").value = ""; $("recordMonth").value = ""; drawRecordRows(); });
       ["calcDate", "calcCrop", "calcFertilizer", "calcDoseMode", "calcQuantity", "calcWater", "calcPump", "calcSplit"].forEach(id => $(id).addEventListener("change", calculate));
       $("sectorChecks").addEventListener("change", calculate);
