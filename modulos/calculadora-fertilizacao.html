@@ -999,14 +999,33 @@
       return { ...fertilizer, bioAllowed, nutrients };
     }
 
-    function migrateState(data) {
-      data.sectors = data.sectors || clone(EXCEL_SEED.sectors);
+    function migrateState(source) {
+      const data = source && typeof source === "object" && !Array.isArray(source)
+        ? { ...source }
+        : {};
+      data.needs = data.needs && typeof data.needs === "object" && !Array.isArray(data.needs)
+        ? data.needs
+        : clone(EXCEL_SEED.needs);
+      data.weeklyNeeds = Array.isArray(data.weeklyNeeds)
+        ? data.weeklyNeeds
+        : clone(EXCEL_SEED.weeklyNeeds);
+      data.sectors = Array.isArray(data.sectors)
+        ? data.sectors.map(sector => ({
+            ...sector,
+            id: String(sector.id || "").trim(),
+            trees: Math.max(0, Number(sector.trees || 0)),
+            area: Math.max(0, Number(sector.area || 0)),
+            waterM3: Math.max(0, Number(sector.waterM3 || 0)),
+            flowM3h: Math.max(0, Number(sector.flowM3h || 0)),
+            irrigationTime: String(sector.irrigationTime || "")
+          })).filter(sector => sector.id)
+        : clone(EXCEL_SEED.sectors);
       const validSectorIds = data.sectors.map(sector => sector.id);
       data.needsSectorIds = Array.isArray(data.needsSectorIds)
         ? data.needsSectorIds.filter(id => validSectorIds.includes(id))
         : [...validSectorIds];
       const known = Object.fromEntries(EXCEL_SEED.fertilizers.map(f => [f.id, f]));
-      data.fertilizers = (data.fertilizers || []).map(f => {
+      data.fertilizers = (Array.isArray(data.fertilizers) ? data.fertilizers : []).map(f => {
         if (!known[f.id]) return normaliseFertilizerNitrogen(f);
         const replacement = known[f.id];
         return normaliseFertilizerNitrogen({
@@ -1021,6 +1040,7 @@
       EXCEL_SEED.fertilizers.forEach(f => {
         if (!data.fertilizers.some(existing => existing.id === f.id)) data.fertilizers.push(normaliseFertilizerNitrogen(clone(f)));
       });
+      data.records = Array.isArray(data.records) ? data.records : [];
       return data;
     }
 
@@ -1678,15 +1698,19 @@
       reader.onload = () => {
         try {
           const parsed = JSON.parse(reader.result);
-          if (!parsed.sectors || !parsed.fertilizers || !parsed.records) throw new Error("Formato inválido");
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Formato inválido");
+          if (!Array.isArray(parsed.sectors) || !Array.isArray(parsed.fertilizers)) throw new Error("Formato inválido");
           state = migrateState(parsed);
           saveState();
           renderCalculatorInputs();
-          toast("Dados importados.");
-        } catch {
-          toast("Não consegui importar esse ficheiro.");
+          calculate();
+          toast(`Importados: ${state.sectors.length} setores, ${state.fertilizers.length} fertilizantes e ${state.records.length} aplicações.`);
+        } catch (error) {
+          console.error("Erro ao importar dados de fertilização:", error);
+          toast("Não consegui importar: o ficheiro não tem o formato esperado.");
         }
       };
+      reader.onerror = () => toast("Não consegui ler esse ficheiro.");
       reader.readAsText(file);
     }
 
@@ -1729,7 +1753,11 @@
       $("modalBackdrop").addEventListener("click", (e) => { if (e.target.id === "modalBackdrop") closeModal(); });
       $("exportBtn").addEventListener("click", exportData);
       $("importBtn").addEventListener("click", () => $("importFile").click());
-      $("importFile").addEventListener("change", (e) => e.target.files[0] && importData(e.target.files[0]));
+      $("importFile").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) importData(file);
+        e.target.value = "";
+      });
       $("resetBtn").addEventListener("click", resetData);
       $("recordYear").addEventListener("change", drawRecordRows);
       $("recordMonth").addEventListener("change", drawRecordRows);
