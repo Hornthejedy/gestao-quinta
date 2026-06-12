@@ -1590,7 +1590,7 @@
         <label class="span-3">K₂O %<input name="K2O" type="number" min="0" step="0.01" value="${((f.nutrients.K2O || 0) * 100).toFixed(2)}"></label>
         <label class="span-3">MgO %<input name="MgO" type="number" min="0" step="0.01" value="${((f.nutrients.MgO || 0) * 100).toFixed(2)}"></label>
         <label class="span-3">S %<input name="S" type="number" min="0" step="0.01" value="${((f.nutrients.S || 0) * 100).toFixed(2)}"></label>
-        <label class="span-9">Notas<input name="notes" value="${f.notes || ""}"></label>
+        <label class="span-12">Notas<textarea name="notes" rows="5" placeholder="Composição, modo de utilização, certificação ou outras observações">${f.notes || ""}</textarea></label>
         <div class="span-12 toolbar"><button type="submit">Guardar</button></div>`,
         (fd) => {
           const name = fd.get("name").trim();
