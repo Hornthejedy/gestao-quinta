@@ -62,10 +62,23 @@
   window.abrirRelatoriosShell = function(){ abrirModulo('relatorios'); };
   window.abrirSincronizacaoShell = function(){
     const w = moduloActualWindow();
-    if (w) {
-      try { w.location.hash = 'modalSupabaseSync'; return; } catch(_e) {}
+    if (w && typeof w.abrirSupabaseSync === 'function') {
+      return w.abrirSupabaseSync();
     }
-    alert('Sincronização indisponível no módulo actual.');
+    const f = frame();
+    if (!f) return alert('Sincronização indisponível.');
+    const abrirQuandoCarregar = function(){
+      f.removeEventListener('load', abrirQuandoCarregar);
+      const destino = moduloActualWindow();
+      if (destino && typeof destino.abrirSupabaseSync === 'function') {
+        destino.abrirSupabaseSync();
+        return;
+      }
+      try { destino.location.hash = 'modalSupabaseSync'; }
+      catch(_e) { alert('Não foi possível abrir a sincronização.'); }
+    };
+    f.addEventListener('load', abrirQuandoCarregar);
+    abrirModulo('alertas');
   };
   document.addEventListener('DOMContentLoaded', function(){
     let inicial = moduloPadrao;
