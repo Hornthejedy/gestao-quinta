@@ -122,6 +122,17 @@
       z-index: 1;
     }
 
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    th.sortable:hover { background: #e8f0e8; color: var(--green); }
+    th.sortable::after { content: " ↕"; color: #96a19a; }
+    th.sortable[data-direction="asc"]::after { content: " ▲"; color: var(--green); }
+    th.sortable[data-direction="desc"]::after { content: " ▼"; color: var(--green); }
+
     .app-shell {
       min-height: 100vh;
       display: grid;
@@ -755,21 +766,86 @@
         </div>
         <div class="panel">
           <div class="table-wrap">
-            <table>
+            <table id="recordsTable">
               <thead>
                 <tr>
-                  <th>Data</th>
-                  <th>Setores</th>
-                  <th>Fertilizante</th>
-                  <th>Produto</th>
-                  <th>Água</th>
-                  <th>Tempo</th>
-                  <th>N</th>
-                  <th>K₂O</th>
+                  <th class="sortable" data-sort="date">Data</th>
+                  <th class="sortable" data-sort="sectors">Setores</th>
+                  <th class="sortable" data-sort="fertilizerName">Fertilizante</th>
+                  <th class="sortable" data-sort="totalProduct">Produto</th>
+                  <th class="sortable" data-sort="totalWater">Água</th>
+                  <th class="sortable" data-sort="totalMinutes">Tempo</th>
+                  <th class="sortable" data-sort="N">N</th>
+                  <th class="sortable" data-sort="K2O">K₂O</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody id="recordsRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="consumption" class="section">
+        <div class="panel pad sector-filter">
+          <div class="grid">
+            <label class="span-3">Data inicial
+              <input type="date" id="consumptionStart">
+            </label>
+            <label class="span-3">Data final
+              <input type="date" id="consumptionEnd">
+            </label>
+            <label class="span-3">Fertilizante
+              <select id="consumptionFertilizer"></select>
+            </label>
+            <div class="span-3 toolbar" style="align-items:end">
+              <button type="button" id="clearConsumptionFilters" class="secondary">Limpar filtros</button>
+            </div>
+            <div class="span-12 sector-filter-head">
+              <div>
+                <h3>Setores a analisar</h3>
+                <div id="consumptionSectorSummary" class="sector-selection-summary"></div>
+              </div>
+              <div class="toolbar">
+                <button type="button" id="selectAllConsumptionSectors" class="secondary">Selecionar todos</button>
+                <button type="button" id="clearConsumptionSectors" class="secondary">Limpar seleção</button>
+              </div>
+            </div>
+            <div class="span-12 check-list" id="consumptionSectorChecks"></div>
+          </div>
+        </div>
+
+        <div class="result-grid" id="consumptionMetrics"></div>
+
+        <div class="panel">
+          <div class="panel pad"><h3 style="margin:0">Consumo por fertilizante</h3></div>
+          <div class="table-wrap">
+            <table id="consumptionProductTable">
+              <thead><tr>
+                <th class="sortable" data-sort="name">Fertilizante</th>
+                <th class="sortable" data-sort="unit">Unidade</th>
+                <th class="sortable" data-sort="quantity">Quantidade consumida</th>
+                <th class="sortable" data-sort="applications">Aplicações</th>
+                <th class="sortable" data-sort="N">N aplicado</th>
+                <th class="sortable" data-sort="K2O">K₂O aplicado</th>
+              </tr></thead>
+              <tbody id="consumptionProductRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel pad"><h3 style="margin:0">Consumo por setor e fertilizante</h3></div>
+          <div class="table-wrap">
+            <table id="consumptionSectorTable">
+              <thead><tr>
+                <th class="sortable" data-sort="sector">Setor</th>
+                <th class="sortable" data-sort="fertilizer">Fertilizante</th>
+                <th class="sortable" data-sort="unit">Unidade</th>
+                <th class="sortable" data-sort="quantity">Quantidade consumida</th>
+                <th class="sortable" data-sort="applications">Aplicações</th>
+              </tr></thead>
+              <tbody id="consumptionSectorRows"></tbody>
             </table>
           </div>
         </div>
@@ -956,6 +1032,7 @@
     const pages = [
       ["calculator", "Calcular", "Dose, distribuição por setor, tempo de bomba e registo automático."],
       ["records", "Registos", "Histórico das aplicações registadas."],
+      ["consumption", "Consumos", "Totais por período, fertilizante e setor."],
       ["needs", "Necessidades", "Comparação entre metas anuais e aplicações registadas."],
       ["sectors", "Setores", "Adicionar, editar ou apagar setores."],
       ["fertilizers", "Fertilizantes", "Adicionar, editar ou apagar fertilizantes."]
@@ -965,6 +1042,11 @@
     let activePage = "calculator";
     let lastCalculation = null;
     let editingRecordId = "";
+    const tableSort = {
+      records: { key: "date", direction: "desc" },
+      consumptionProduct: { key: "quantity", direction: "desc" },
+      consumptionSector: { key: "sector", direction: "asc" }
+    };
 
     const $ = (id) => document.getElementById(id);
     const fmt = (n, d = 2) => Number.isFinite(Number(n)) ? Number(n).toLocaleString("pt-PT", { maximumFractionDigits: d, minimumFractionDigits: d }) : "0,00";
@@ -1089,6 +1171,7 @@
       $("pageSubtitle").textContent = meta[2];
       renderNav();
       renderMetrics();
+      if (page === "consumption") renderConsumption();
     }
 
     function renderMetrics() {
@@ -1313,10 +1396,46 @@
       setPage("records");
     }
 
+    function compareTableValues(a, b) {
+      if (a == null && b == null) return 0;
+      if (a == null) return 1;
+      if (b == null) return -1;
+      if (typeof a === "number" || typeof b === "number") return Number(a || 0) - Number(b || 0);
+      return String(a).localeCompare(String(b), "pt", { numeric: true, sensitivity: "base" });
+    }
+
+    function sortTableRows(rows, table) {
+      const config = tableSort[table];
+      const factor = config.direction === "asc" ? 1 : -1;
+      return [...rows].sort((a, b) => compareTableValues(a[config.key], b[config.key]) * factor);
+    }
+
+    function updateSortHeaders(tableId, table) {
+      document.querySelectorAll(`#${tableId} th.sortable`).forEach(th => {
+        th.dataset.direction = th.dataset.sort === tableSort[table].key ? tableSort[table].direction : "";
+      });
+    }
+
+    function bindSortableTable(tableId, table, render) {
+      document.querySelectorAll(`#${tableId} th.sortable`).forEach(th => th.addEventListener("click", () => {
+        const config = tableSort[table];
+        if (config.key === th.dataset.sort) config.direction = config.direction === "asc" ? "desc" : "asc";
+        else {
+          config.key = th.dataset.sort;
+          config.direction = "asc";
+        }
+        render();
+      }));
+    }
+
     function renderRecords() {
+      const oldYear = $("recordYear").value;
+      const oldMonth = $("recordMonth").value;
       const years = [...new Set(state.records.map(r => new Date(r.date).getFullYear()).filter(Boolean))].sort((a,b) => b-a);
       $("recordYear").innerHTML = `<option value="">Todos</option>` + years.map(y => `<option>${y}</option>`).join("");
       $("recordMonth").innerHTML = `<option value="">Todos</option>` + ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"].map((m,i) => `<option value="${i+1}">${m}</option>`).join("");
+      if ([...$("recordYear").options].some(option => option.value === oldYear)) $("recordYear").value = oldYear;
+      if ([...$("recordMonth").options].some(option => option.value === oldMonth)) $("recordMonth").value = oldMonth;
       drawRecordRows();
     }
 
@@ -1326,10 +1445,17 @@
       let rows = [...state.records];
       if (y) rows = rows.filter(r => new Date(r.date).getFullYear() === y);
       if (m) rows = rows.filter(r => new Date(r.date).getMonth() + 1 === m);
+      rows = sortTableRows(rows.map(record => ({
+        ...record,
+        sectors: (record.sectors || []).join(", "),
+        N: Number((record.nutrients || {}).N || 0),
+        K2O: Number((record.nutrients || {}).K2O || 0)
+      })), "records");
+      updateSortHeaders("recordsTable", "records");
       $("recordsRows").innerHTML = rows.length ? rows.map(r => `
         <tr>
           <td>${r.date || ""}</td>
-          <td>${r.sectors.join(", ")}</td>
+          <td>${r.sectors}</td>
           <td>${r.fertilizerName}</td>
           <td>${fmt(r.totalProduct)} ${r.unit}</td>
           <td>${fmt(r.totalWater, 0)} L</td>
@@ -1338,6 +1464,108 @@
           <td>${fmt(r.nutrients.K2O || 0)} kg</td>
           <td><div class="actions"><button type="button" onclick="editRecord('${r.id}')">Editar</button><button class="danger" type="button" onclick="deleteRecord('${r.id}')">Apagar</button></div></td>
         </tr>`).join("") : `<tr><td colspan="9" class="empty">Ainda não há registos.</td></tr>`;
+    }
+
+    function selectedConsumptionSectorIds() {
+      return [...$("consumptionSectorChecks").querySelectorAll("input:checked")].map(input => input.value);
+    }
+
+    function renderConsumptionInputs() {
+      const selected = new Set(selectedConsumptionSectorIds());
+      const useAll = !$("consumptionSectorChecks").children.length;
+      const selectedFertilizer = $("consumptionFertilizer").value;
+      $("consumptionSectorChecks").innerHTML = state.sectors.map(sector => `
+        <label><input type="checkbox" value="${sector.id}" ${useAll || selected.has(sector.id) ? "checked" : ""}> ${sector.id}</label>`).join("");
+      $("consumptionFertilizer").innerHTML = `<option value="">Todos</option>` +
+        state.fertilizers.map(fertilizer => `<option value="${fertilizer.id}">${fertilizer.name}</option>`).join("");
+      if ([...$("consumptionFertilizer").options].some(option => option.value === selectedFertilizer)) {
+        $("consumptionFertilizer").value = selectedFertilizer;
+      }
+    }
+
+    function filteredConsumptionRecords() {
+      const start = val("consumptionStart");
+      const end = val("consumptionEnd");
+      const fertilizerId = val("consumptionFertilizer");
+      const sectorIds = selectedConsumptionSectorIds();
+      return state.records.filter(record => {
+        if (start && String(record.date || "") < start) return false;
+        if (end && String(record.date || "") > end) return false;
+        if (fertilizerId && record.fertilizerId !== fertilizerId) return false;
+        return (record.sectors || []).some(id => sectorIds.includes(id));
+      });
+    }
+
+    function renderConsumption() {
+      if (!$("consumptionSectorChecks").children.length) renderConsumptionInputs();
+      const sectorIds = selectedConsumptionSectorIds();
+      const records = filteredConsumptionRecords();
+      const selectedSectors = state.sectors.filter(sector => sectorIds.includes(sector.id));
+      const area = selectedSectors.reduce((sum, sector) => sum + Number(sector.area || 0), 0);
+      $("consumptionSectorSummary").textContent = `${sectorIds.length} de ${state.sectors.length} setores · ${fmt(area)} ha`;
+
+      const unitTotals = {};
+      const productGroups = {};
+      records.forEach(record => {
+        const quantity = recordProductForSectors(record, sectorIds);
+        if (quantity <= 0) return;
+        const unit = record.unit || "kg";
+        unitTotals[unit] = (unitTotals[unit] || 0) + quantity;
+        const key = `${record.fertilizerId || record.fertilizerName}|${unit}`;
+        productGroups[key] ||= {
+          name: record.fertilizerName || "Fertilizante",
+          unit,
+          quantity: 0,
+          applications: 0,
+          N: 0,
+          K2O: 0
+        };
+        productGroups[key].quantity += quantity;
+        productGroups[key].applications += 1;
+        productGroups[key].N += recordNutrientForSectors(record, "N", sectorIds);
+        productGroups[key].K2O += recordNutrientForSectors(record, "K2O", sectorIds);
+      });
+
+      const totalText = Object.entries(unitTotals).map(([unit, total]) => `${fmt(total)} ${unit}`).join(" + ") || "0";
+      const totalN = records.reduce((sum, record) => sum + recordNutrientForSectors(record, "N", sectorIds), 0);
+      const totalK = records.reduce((sum, record) => sum + recordNutrientForSectors(record, "K2O", sectorIds), 0);
+      $("consumptionMetrics").innerHTML = [
+        ["Produto consumido", totalText],
+        ["Aplicações", records.length.toLocaleString("pt-PT")],
+        ["N aplicado", `${fmt(totalN)} kg`],
+        ["K₂O aplicado", `${fmt(totalK)} kg`]
+      ].map(item => `<div class="result-box"><small>${item[0]}</small><strong>${item[1]}</strong></div>`).join("");
+
+      const products = sortTableRows(Object.values(productGroups), "consumptionProduct");
+      updateSortHeaders("consumptionProductTable", "consumptionProduct");
+      $("consumptionProductRows").innerHTML = products.length ? products.map(item => `
+        <tr><td><strong>${item.name}</strong></td><td>${item.unit}</td><td>${fmt(item.quantity)} ${item.unit}</td><td>${item.applications}</td><td>${fmt(item.N)} kg</td><td>${fmt(item.K2O)} kg</td></tr>`).join("")
+        : `<tr><td colspan="6" class="empty">Não existem consumos para os filtros escolhidos.</td></tr>`;
+
+      const sectorGroups = {};
+      records.forEach(record => {
+        sectorIds.forEach(sector => {
+          if (!(record.sectors || []).includes(sector)) return;
+          const quantity = recordProductForSectors(record, [sector]);
+          if (quantity <= 0) return;
+          const unit = record.unit || "kg";
+          const key = `${sector}|${record.fertilizerId || record.fertilizerName}|${unit}`;
+          sectorGroups[key] ||= {
+            sector,
+            fertilizer: record.fertilizerName || "Fertilizante",
+            unit,
+            quantity: 0,
+            applications: 0
+          };
+          sectorGroups[key].quantity += quantity;
+          sectorGroups[key].applications += 1;
+        });
+      });
+      const sectors = sortTableRows(Object.values(sectorGroups), "consumptionSector");
+      updateSortHeaders("consumptionSectorTable", "consumptionSector");
+      $("consumptionSectorRows").innerHTML = sectors.length ? sectors.map(item => `
+        <tr><td><strong>${item.sector}</strong></td><td>${item.fertilizer}</td><td>${item.unit}</td><td>${fmt(item.quantity)} ${item.unit}</td><td>${item.applications}</td></tr>`).join("")
+        : `<tr><td colspan="5" class="empty">Não existem consumos por setor para os filtros escolhidos.</td></tr>`;
     }
 
     function editRecord(id) {
@@ -1771,6 +1999,8 @@
       renderSectors();
       renderFertilizers();
       renderRecords();
+      renderConsumptionInputs();
+      renderConsumption();
       renderNeeds();
       if (lastCalculation) renderCalculation(lastCalculation);
     }
@@ -1797,6 +2027,28 @@
       $("resetBtn").addEventListener("click", resetData);
       $("recordYear").addEventListener("change", drawRecordRows);
       $("recordMonth").addEventListener("change", drawRecordRows);
+      $("consumptionStart").addEventListener("change", renderConsumption);
+      $("consumptionEnd").addEventListener("change", renderConsumption);
+      $("consumptionFertilizer").addEventListener("change", renderConsumption);
+      $("consumptionSectorChecks").addEventListener("change", renderConsumption);
+      $("selectAllConsumptionSectors").addEventListener("click", () => {
+        $("consumptionSectorChecks").querySelectorAll("input").forEach(input => input.checked = true);
+        renderConsumption();
+      });
+      $("clearConsumptionSectors").addEventListener("click", () => {
+        $("consumptionSectorChecks").querySelectorAll("input").forEach(input => input.checked = false);
+        renderConsumption();
+      });
+      $("clearConsumptionFilters").addEventListener("click", () => {
+        $("consumptionStart").value = "";
+        $("consumptionEnd").value = "";
+        $("consumptionFertilizer").value = "";
+        $("consumptionSectorChecks").querySelectorAll("input").forEach(input => input.checked = true);
+        renderConsumption();
+      });
+      bindSortableTable("recordsTable", "records", drawRecordRows);
+      bindSortableTable("consumptionProductTable", "consumptionProduct", renderConsumption);
+      bindSortableTable("consumptionSectorTable", "consumptionSector", renderConsumption);
       $("needsNutrient").addEventListener("change", renderNeeds);
       $("needsMonth").addEventListener("change", renderNeeds);
       $("selectAllNeedsSectors").addEventListener("click", () => setNeedSectorSelection(state.sectors.map(sector => sector.id)));
