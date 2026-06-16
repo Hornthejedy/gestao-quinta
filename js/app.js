@@ -7,7 +7,7 @@
     alertas: 'modulos/alertas.html?v=20260612-sanitario-1',
     dashboard: 'modulos/dashboard.html',
     culturas: 'modulos/culturas.html',
-    fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260616-so3-1',
+    fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260616-so3-2',
     stocks: 'modulos/stocks.html',
     stocksQuinta: 'modulos/stocks-quinta.html',
     caixa: 'modulos/caixa.html',

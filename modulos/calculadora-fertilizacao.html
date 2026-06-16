@@ -1038,11 +1038,11 @@
       ["fertilizers", "Fertilizantes", "Adicionar, editar ou apagar fertilizantes."]
     ];
 
+    const SO3_TO_S = 0.4006;
     let state = loadState();
     let activePage = "calculator";
     let lastCalculation = null;
     let editingRecordId = "";
-    const SO3_TO_S = 0.4006;
     const tableSort = {
       records: { key: "date", direction: "desc" },
       consumptionProduct: { key: "quantity", direction: "desc" },
