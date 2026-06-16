@@ -1020,9 +1020,9 @@
         { id: "S12", trees: 365, area: 0.88, waterM3: 18.25, flowM3h: 13.4, irrigationTime: "01:21:31" }
       ],
       fertilizers: [
-        { id: "fertinatur-n", name: "Fertinatur Super N", unit: "L", density: 1.22, nutrients: { N: 0.06, P2O5: 0.01, P: 0.00437, K2O: 0.04, K: 0.0332, S: 0.0136, Aminoacidos: 0.088, MateriaOrganica: 0.333, AcidosHumicos: 0.179, AcidosFulvicos: 0.007 }, notes: "Adubo organomineral NPK fluido. Teores p/p: N 6,0%, P2O5 1,0%, K2O 4,0%, SO3 3,4% (S equivalente 1,36%), aminoacidos livres 8,8%, materia organica 33,3%, acidos humicos 17,9%, acidos fulvicos 0,7%." },
+        { id: "fertinatur-n", name: "Fertinatur Super N", unit: "L", density: 1.22, nutrients: { N: 0.06, P2O5: 0.01, P: 0.00437, K2O: 0.04, K: 0.0332, SO3: 0.034, S: 0.0136204, Aminoacidos: 0.088, MateriaOrganica: 0.333, AcidosHumicos: 0.179, AcidosFulvicos: 0.007 }, notes: "Adubo organomineral NPK fluido. Teores p/p: N 6,0%, P2O5 1,0%, K2O 4,0%, SO3 3,4% (S equivalente 1,36%), aminoacidos livres 8,8%, materia organica 33,3%, acidos humicos 17,9%, acidos fulvicos 0,7%." },
         { id: "fertinatur-k", name: "Fertinatur K", unit: "L", density: 1.21, nutrients: { N: 0.03, P2O5: 0.01, P: 0.00437, K2O: 0.06, K: 0.0498 }, notes: "Líquido. Fórmula do Excel: 3% N, 1% P₂O₅, 6% K₂O, densidade 1,21 kg/L." },
-        { id: "kristalon-azul", name: "Kristalon Azul 17-6-18", unit: "kg", density: 1, nutrients: { N: 0.17, P2O5: 0.06, P: 0.02622, K2O: 0.18, K: 0.1494, MgO: 0.03, Mg: 0.01809, S: 0.008 }, notes: "Solido soluvel. Formula do Excel: 17% N, 6% P2O5, 18% K2O, 3% MgO, 2% SO3." },
+        { id: "kristalon-azul", name: "Kristalon Azul 17-6-18", unit: "kg", density: 1, nutrients: { N: 0.17, P2O5: 0.06, P: 0.02622, K2O: 0.18, K: 0.1494, MgO: 0.03, Mg: 0.01809, SO3: 0.02, S: 0.008012 }, notes: "Solido soluvel. Formula do Excel: 17% N, 6% P2O5, 18% K2O, 3% MgO, 2% SO3." },
         { id: "krista-k-plus", name: "Krista K Plus 13-0-45", unit: "kg", density: 1, nutrients: { N: 0.13, P2O5: 0, P: 0, K2O: 0.45, K: 0.3735 }, notes: "Nitrato de potassio. Formula do Excel: 13% N, 0% P2O5, 45% K2O." },
         { id: "ferronova", name: "Ferronova / Ferro", unit: "kg", density: 1, nutrients: { Fe: 1 }, notes: "Planeamento de ferro do Excel: 75 g por árvore por ciclo cultural, dividido em 10 aplicações." }
       ],
@@ -1042,6 +1042,7 @@
     let activePage = "calculator";
     let lastCalculation = null;
     let editingRecordId = "";
+    const SO3_TO_S = 0.4006;
     const tableSort = {
       records: { key: "date", direction: "desc" },
       consumptionProduct: { key: "quantity", direction: "desc" },
@@ -1073,6 +1074,12 @@
         delete nutrients.N_amoniacal;
         delete nutrients.N_amidico;
         nutrients.N = Math.max(0, Number(nutrients.N || 0));
+      }
+      if (Number.isFinite(Number(nutrients.SO3)) && Number(nutrients.SO3) > 0) {
+        nutrients.SO3 = Math.max(0, Number(nutrients.SO3));
+        nutrients.S = nutrients.SO3 * SO3_TO_S;
+      } else if (Number.isFinite(Number(nutrients.S))) {
+        nutrients.S = Math.max(0, Number(nutrients.S));
       }
       const bioAllowed = fertilizer.bioAllowed === true
         ? true
@@ -1683,7 +1690,9 @@
         N_amidico: "N amídico",
         P2O5: "P₂O₅",
         K2O: "K₂O",
-        MgO: "MgO"
+        MgO: "MgO",
+        SO3: "SO₃",
+        S: "S"
       })[k] || k;
     }
 
@@ -1864,6 +1873,15 @@
       ).toFixed(2);
     }
 
+    function updateSulfurFromSO3() {
+      const form = $("modalForm");
+      const so3 = form?.elements?.SO3;
+      const sulfur = form?.elements?.S;
+      if (!so3 || !sulfur) return;
+      const value = Number(so3.value || 0);
+      sulfur.value = Number.isFinite(value) && value > 0 ? (value * SO3_TO_S).toFixed(2) : "";
+    }
+
     function openFertilizer(id) {
       const f = state.fertilizers.find(x => x.id === id) || { id: "", name: "", unit: "kg", density: 1, nutrients: {}, notes: "" };
       const hasNitric = Object.prototype.hasOwnProperty.call(f.nutrients || {}, "N_nitrico");
@@ -1872,6 +1890,7 @@
       const nitricValue = hasNitric ? ((f.nutrients.N_nitrico || 0) * 100).toFixed(2) : "";
       const ammoniacalValue = hasAmmoniacal ? ((f.nutrients.N_amoniacal || 0) * 100).toFixed(2) : "";
       const amidicValue = hasAmidic ? ((f.nutrients.N_amidico || 0) * 100).toFixed(2) : "";
+      const so3Value = Object.prototype.hasOwnProperty.call(f.nutrients || {}, "SO3") ? ((f.nutrients.SO3 || 0) * 100).toFixed(2) : "";
       const bioValue = f.bioAllowed === true ? "yes" : f.bioAllowed === false ? "no" : "unknown";
       openModal(id ? "Editar fertilizante" : "Adicionar fertilizante", `
         <label class="span-4">Nome<input name="name" required value="${f.name}"></label>
@@ -1891,6 +1910,7 @@
         <label class="span-3">P₂O₅ %<input name="P2O5" type="number" min="0" step="0.01" value="${((f.nutrients.P2O5 || 0) * 100).toFixed(2)}"></label>
         <label class="span-3">K₂O %<input name="K2O" type="number" min="0" step="0.01" value="${((f.nutrients.K2O || 0) * 100).toFixed(2)}"></label>
         <label class="span-3">MgO %<input name="MgO" type="number" min="0" step="0.01" value="${((f.nutrients.MgO || 0) * 100).toFixed(2)}"></label>
+        <label class="span-3">SO₃ %<input name="SO3" type="number" min="0" step="0.01" value="${so3Value}" oninput="updateSulfurFromSO3()"></label>
         <label class="span-3">S %<input name="S" type="number" min="0" step="0.01" value="${((f.nutrients.S || 0) * 100).toFixed(2)}"></label>
         <div class="span-12 fertilizer-notes-field" style="grid-column:1/-1;width:100%;min-width:0">
           <label for="fertilizerNotes">Notas</label>
@@ -1907,6 +1927,9 @@
           const ammoniacal = Math.max(0, Number(ammoniacalRaw || 0)) / 100;
           const amidic = Math.max(0, Number(amidicRaw || 0)) / 100;
           const bioRaw = fd.get("bioAllowed");
+          const so3Raw = String(fd.get("SO3") || "").trim();
+          const so3 = so3Raw === "" ? null : Math.max(0, Number(so3Raw) || 0) / 100;
+          const sulfur = so3 !== null ? so3 * SO3_TO_S : Number(fd.get("S") || 0) / 100;
           const nitrogen = hasNitrogenComponents
             ? { N_nitrico: nitric, N_amoniacal: ammoniacal, N_amidico: amidic, N: nitric + ammoniacal + amidic }
             : { N: Math.max(0, Number(fd.get("N") || 0)) / 100 };
@@ -1922,10 +1945,12 @@
               P2O5: Number(fd.get("P2O5") || 0) / 100,
               K2O: Number(fd.get("K2O") || 0) / 100,
               MgO: Number(fd.get("MgO") || 0) / 100,
-              S: Number(fd.get("S") || 0) / 100
+              S: sulfur
             },
             notes: fd.get("notes").trim()
           };
+          if (so3 !== null) next.nutrients.SO3 = so3;
+          else delete next.nutrients.SO3;
           if (!hasNitrogenComponents) {
             delete next.nutrients.N_nitrico;
             delete next.nutrients.N_amoniacal;
