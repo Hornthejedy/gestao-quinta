@@ -22,6 +22,7 @@
         <button class="btn-secondary" onclick="abrirBackupsShell()">Backups</button>
         <button class="btn-secondary" onclick="abrirRelatoriosShell()">Relatórios</button>
         <button class="btn-secondary" onclick="abrirSincronizacaoShell()">Sincronização</button>
+        <span id="syncStatusShell" class="sync-status-shell" aria-live="polite">Sincronização a preparar</span>
       </div>
     </div>
     <div class="nav-principal">
@@ -45,14 +46,15 @@
     </div>
     <div id="estadoModulo" class="status">A carregar módulo...</div>
     <iframe id="moduloFrame" class="modulo-frame" title="Módulo activo"></iframe>
+    <iframe id="syncBridgeFrame" title="Serviço de sincronização" hidden></iframe>
   </div>
   <script src="js/storage.js"></script>
   <script src="js/dados.js"></script>
   <script src="js/pesquisa.js"></script>
   <script src="js/exportacao.js"></script>
   <script src="js/backups.js"></script>
-  <script src="js/sincronizacao.js"></script>
+  <script src="js/sincronizacao.js?v=20260623-sync-1"></script>
   <script src="js/relatorios.js"></script>
-  <script src="js/app.js?v=20260616-so3-3"></script>
+  <script src="js/app.js?v=20260623-sync-1"></script>
 </body>
 </html>

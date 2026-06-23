@@ -4263,10 +4263,34 @@ window.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function syncModularStates(target){
+    if (!target || typeof target !== 'object') return;
+    var states = target.dadosModulares && typeof target.dadosModulares === 'object' ? target.dadosModulares : {};
+    [['fertilizacao', 'fertilizacao_app_v1'], ['combustivel', 'gestao_quinta_combustivel_v1']].forEach(function(pair){
+      try {
+        var raw = localStorage.getItem(pair[1]);
+        if (raw) states[pair[0]] = JSON.parse(raw);
+      } catch(_e) {}
+    });
+    if (Object.keys(states).length) target.dadosModulares = states;
+  }
+
+  function persistModularStates(source){
+    var states = source && source.dadosModulares;
+    if (!states || typeof states !== 'object') return;
+    [['fertilizacao', 'fertilizacao_app_v1'], ['combustivel', 'gestao_quinta_combustivel_v1']].forEach(function(pair){
+      if (!Object.prototype.hasOwnProperty.call(states, pair[0])) return;
+      try { localStorage.setItem(pair[1], JSON.stringify(states[pair[0]])); } catch(_e) {}
+    });
+  }
+
   function currentPayload(){
-    var source = (typeof app !== 'undefined' && app) ? app : (window.app || {});
+    var source = null;
+    try { source = JSON.parse(localStorage.getItem('gestao_quinta_v2') || 'null'); } catch(_e) {}
+    if (!source || typeof source !== 'object') source = (typeof app !== 'undefined' && app) ? app : (window.app || {});
     ensureStocksQuintaHydrated(source);
     ensureCaixaHydrated(source);
+    syncModularStates(source);
     try { return JSON.parse(JSON.stringify(source)); } catch(e) { return source; }
   }
 
@@ -4530,6 +4554,7 @@ window.addEventListener('DOMContentLoaded', function () {
         ensureCaixaHydrated(window.app, { skipLiveFrame: true });
         persistCaixaLocal(window.app.caixa);
       }
+      persistModularStates(payload);
       safeRender();
       var pullStats = stocksQuintaStats((typeof app !== 'undefined' && app) ? app : window.app);
       var pullCaixaStats = caixaStats((typeof app !== 'undefined' && app) ? app : window.app);

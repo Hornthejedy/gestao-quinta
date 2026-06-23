@@ -4,7 +4,7 @@
   const moduloFrameId = 'moduloFrame';
   const moduloPadrao = 'alertas';
   const modulos = {
-    alertas: 'modulos/alertas.html?v=20260612-sanitario-1',
+    alertas: 'modulos/alertas.html?v=20260623-sync-1',
     dashboard: 'modulos/dashboard.html',
     culturas: 'modulos/culturas.html',
     fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260616-so3-3',
@@ -84,6 +84,8 @@
     let inicial = moduloPadrao;
     try { inicial = localStorage.getItem('gestao_quinta_modulo_activo_v42') || moduloPadrao; } catch(_e) {}
     if (!modulos[inicial]) inicial = moduloPadrao;
-    window.abrirModulo(inicial);
+    const abrirInicial = function(){ window.abrirModulo(inicial); };
+    if (typeof window.iniciarSincronizacaoGlobal === 'function') window.iniciarSincronizacaoGlobal(abrirInicial);
+    else abrirInicial();
   });
 })();
