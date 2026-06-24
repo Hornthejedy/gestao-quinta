@@ -5777,6 +5777,124 @@ window.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 
+<script id="seguros-viaturas-v1">
+(function(){
+  'use strict';
+  function esc(v){ return typeof escapeHtml === 'function' ? escapeHtml(String(v == null ? '' : v)) : String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function n(v){ var x=Number(String(v == null ? '' : v).replace(',', '.')); return Number.isFinite(x) ? x : 0; }
+  function dataHoje(){ return typeof hoje === 'function' ? hoje() : new Date().toISOString().slice(0,10); }
+  function diasAteData(data){
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data || ''))) return null;
+    var inicio=new Date(dataHoje()+'T00:00:00');
+    var fim=new Date(String(data)+'T00:00:00');
+    return Math.ceil((fim-inicio)/86400000);
+  }
+  function seguroDaViatura(v){ return v && v.seguro && typeof v.seguro === 'object' ? v.seguro : null; }
+  function estadoSeguro(v){
+    var seguro=seguroDaViatura(v);
+    if (!seguro || !seguro.validade) return { classe:'', texto:'Seguro não registado', alerta:false };
+    var dias=diasAteData(seguro.validade);
+    if (dias === null) return { classe:'', texto:'Validade do seguro por indicar', alerta:false };
+    if (dias < 0) return { classe:'zero', texto:'Seguro vencido há '+Math.abs(dias)+' dias', alerta:true, nivel:'vencido' };
+    if (dias <= 8) return { classe:'low', texto:'Seguro termina em '+dias+' dia'+(dias===1?'':'s'), alerta:true, nivel:'urgente' };
+    return { classe:'', texto:'Seguro até '+seguro.validade, alerta:false };
+  }
+  window.seguroViaturaBadgeHTML = function(v){ var e=estadoSeguro(v); return '<span class="badge '+e.classe+'">'+esc(e.texto)+'</span>'; };
+
+  function camposSeguroNaCriacao(){
+    var modal=document.getElementById('modalViatura');
+    if (!modal || document.getElementById('viaturaSeguroCampos')) return;
+    var obs=document.getElementById('viaturaObs');
+    if (!obs) return;
+    var grupo=document.createElement('div');
+    grupo.id='viaturaSeguroCampos';
+    grupo.innerHTML='<hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb"><h3 style="margin:0 0 10px">Seguro</h3><div class="form-row"><div class="form-group"><label>Seguradora</label><input id="viaturaSeguradora" placeholder="ex: Fidelidade"></div><div class="form-group"><label>N.º da apólice / documento</label><input id="viaturaSeguroDocumento" placeholder="ex: 123456789"></div></div><div class="form-row"><div class="form-group"><label>Prémio da apólice (€)</label><input type="number" id="viaturaSeguroValor" min="0" step="0.01"></div><div class="form-group"><label>Validade do seguro</label><input type="date" id="viaturaSeguroValidade"></div></div><div class="alert warn">Será criado um aviso automático 8 dias antes do fim do seguro.</div>';
+    obs.closest('.form-group').before(grupo);
+  }
+  var abrirModalAnterior=window.abrirModal;
+  window.abrirModal=function(idModal){
+    if (idModal==='modalViatura') camposSeguroNaCriacao();
+    return abrirModalAnterior.apply(this, arguments);
+  };
+  var guardarViaturaAnterior=window.guardarViatura;
+  window.guardarViatura=function(){
+    var totalAntes=(app.viaturas || []).length;
+    var seguradora=document.getElementById('viaturaSeguradora');
+    var documento=document.getElementById('viaturaSeguroDocumento');
+    var valor=document.getElementById('viaturaSeguroValor');
+    var validade=document.getElementById('viaturaSeguroValidade');
+    var seguro={ seguradora:seguradora ? seguradora.value.trim() : '', documento:documento ? documento.value.trim() : '', valor:valor ? n(valor.value) : 0, validade:validade ? validade.value : '', avisoDias:8 };
+    var resultado=guardarViaturaAnterior.apply(this, arguments);
+    if ((app.viaturas || []).length > totalAntes) {
+      var viatura=app.viaturas[app.viaturas.length-1];
+      if (seguro.seguradora || seguro.documento || seguro.valor || seguro.validade) viatura.seguro=seguro;
+      if (seguradora) seguradora.value=''; if (documento) documento.value=''; if (valor) valor.value=''; if (validade) validade.value='';
+      guardarDados();
+      if (typeof renderViaturas==='function') renderViaturas();
+    }
+    return resultado;
+  };
+
+  window.abrirSeguroViatura=function(idViatura){
+    var v=(app.viaturas || []).find(function(x){ return x.id===idViatura; });
+    if (!v) return alert('Viatura não encontrada.');
+    var seguro=seguroDaViatura(v) || {};
+    garantirModalDinamico('modalSeguroViatura','Seguro da viatura');
+    document.getElementById('modalSeguroViaturaTitulo').textContent='Seguro · '+(v.nome || 'Viatura');
+    document.getElementById('modalSeguroViaturaConteudo').innerHTML='<div class="alert">O aviso aparece automaticamente 8 dias antes da data de validade.</div><div class="form-row"><div class="form-group"><label>Seguradora *</label><input id="seguroViaturaSeguradora" value="'+esc(seguro.seguradora || '')+'"></div><div class="form-group"><label>N.º da apólice / documento *</label><input id="seguroViaturaDocumento" value="'+esc(seguro.documento || '')+'"></div></div><div class="form-row"><div class="form-group"><label>Prémio da apólice (€)</label><input type="number" id="seguroViaturaValor" min="0" step="0.01" value="'+esc(seguro.valor || '')+'"></div><div class="form-group"><label>Validade do seguro *</label><input type="date" id="seguroViaturaValidade" value="'+esc(seguro.validade || '')+'"></div></div><div class="toolbar"><button class="btn-primary" type="button" onclick="guardarSeguroViatura(\''+esc(v.id)+'\')">Guardar seguro</button>' + (seguroDaViatura(v) ? '<button class="btn-secondary btn-delete" type="button" onclick="apagarSeguroViatura(\''+esc(v.id)+'\')">Remover seguro</button>' : '') + '</div>';
+    abrirModal('modalSeguroViatura');
+  };
+  window.guardarSeguroViatura=function(idViatura){
+    var v=(app.viaturas || []).find(function(x){ return x.id===idViatura; });
+    if (!v) return alert('Viatura não encontrada.');
+    var seguradora=document.getElementById('seguroViaturaSeguradora').value.trim();
+    var documento=document.getElementById('seguroViaturaDocumento').value.trim();
+    var validade=document.getElementById('seguroViaturaValidade').value;
+    if (!seguradora || !documento || !validade) return alert('Indica a seguradora, o número da apólice/documento e a validade.');
+    v.seguro={ seguradora:seguradora, documento:documento, valor:n(document.getElementById('seguroViaturaValor').value), validade:validade, avisoDias:8 };
+    guardarDados(); fecharModal('modalSeguroViatura');
+    if (typeof renderTudo==='function') renderTudo(); else if (typeof renderViaturas==='function') renderViaturas();
+    if (typeof toast==='function') toast('Seguro guardado.', 'ok');
+  };
+  window.apagarSeguroViatura=function(idViatura){
+    var v=(app.viaturas || []).find(function(x){ return x.id===idViatura; });
+    if (!v || !confirm('Remover o registo de seguro desta viatura?')) return;
+    delete v.seguro; guardarDados(); fecharModal('modalSeguroViatura');
+    if (typeof renderTudo==='function') renderTudo(); else if (typeof renderViaturas==='function') renderViaturas();
+  };
+
+  var renderViaturasAnterior=window.renderViaturas;
+  window.renderViaturas=function(){
+    var resultado=renderViaturasAnterior.apply(this, arguments);
+    var cards=document.querySelectorAll('#listaViaturas .grid > .card');
+    (app.viaturas || []).forEach(function(v, indice){
+      var card=cards[indice]; if (!card || card.querySelector('[data-seguro-viatura]')) return;
+      var seguro=seguroDaViatura(v) || {};
+      var estado=estadoSeguro(v);
+      var barra=card.querySelector('.toolbar');
+      if (barra) barra.insertAdjacentHTML('afterbegin','<button class="btn-sm" type="button" onclick="abrirSeguroViatura(\''+esc(v.id)+'\')">Seguro</button>');
+      var detalhes=document.createElement('div');
+      detalhes.setAttribute('data-seguro-viatura','1');
+      detalhes.innerHTML='<div class="data-row"><div class="data-label">Seguro:</div><div class="data-value">'+seguroViaturaBadgeHTML(v)+'</div></div><div class="data-row"><div class="data-label">Seguradora:</div><div class="data-value">'+esc(seguro.seguradora || '—')+'</div></div><div class="data-row"><div class="data-label">Apólice/documento:</div><div class="data-value">'+esc(seguro.documento || '—')+'</div></div><div class="data-row"><div class="data-label">Prémio:</div><div class="data-value">'+(seguro.valor ? esc(Number(seguro.valor).toFixed(2))+' €' : '—')+'</div></div>';
+      var ultimo=card.querySelector('.data-row:last-of-type');
+      if (ultimo) ultimo.after(detalhes); else card.appendChild(detalhes);
+    });
+    return resultado;
+  };
+
+  var alertasGeraisAnterior=window.alertasGerais;
+  window.alertasGerais=function(){
+    var out=typeof alertasGeraisAnterior==='function' ? alertasGeraisAnterior.apply(this, arguments) : [];
+    (app.viaturas || []).forEach(function(v){
+      var estado=estadoSeguro(v), seguro=seguroDaViatura(v);
+      if (!seguro || !estado.alerta) return;
+      out.push({ nivel:estado.nivel, titulo:'Seguro · '+(v.nome || 'Viatura'), msg:estado.texto+'. Apólice/documento: '+(seguro.documento || '—')+'. Seguradora: '+(seguro.seguradora || '—')+'.' });
+    });
+    return out;
+  };
+})();
+</script>
+
 <script id="activador-modulo-v42">
 (function(){
   'use strict';

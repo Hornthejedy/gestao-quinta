@@ -4,7 +4,7 @@
   const moduloFrameId = 'moduloFrame';
   const moduloPadrao = 'alertas';
   const modulos = {
-    alertas: 'modulos/alertas.html?v=20260623-sync-1',
+    alertas: 'modulos/alertas.html?v=20260624-seguros-1',
     dashboard: 'modulos/dashboard.html',
     culturas: 'modulos/culturas.html',
     fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260616-so3-3',
@@ -15,7 +15,7 @@
     fitossanidade: 'modulos/fitossanidade.html',
     operacoes: 'modulos/operacoes.html',
     maquinas: 'modulos/tratores-maquinas.html',
-    viaturas: 'modulos/viaturas.html',
+    viaturas: 'modulos/viaturas.html?v=20260624-seguros-1',
     combustivel: 'modulos/combustivel.html?v=20260624-import-2',
     alfaias: 'modulos/alfaias.html',
     equipamentos: 'modulos/equipamentos.html',
