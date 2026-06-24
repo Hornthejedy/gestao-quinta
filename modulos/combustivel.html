@@ -43,7 +43,7 @@
   </section>
 </main>
 <div class="toast" id="toast"></div>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="../js/vendor/xlsx.full.min.js"></script>
 <script>
 const MAIN_KEY="gestao_quinta_v2",FUEL_KEY="gestao_quinta_combustivel_v1",$=id=>document.getElementById(id),today=()=>new Date().toISOString().slice(0,10),uid=p=>`${p}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 const n=v=>{const x=Number(String(v??"").replace(",","."));return Number.isFinite(x)?x:0},fmt=(v,d=2)=>n(v).toLocaleString("pt-PT",{minimumFractionDigits:d,maximumFractionDigits:d}),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
