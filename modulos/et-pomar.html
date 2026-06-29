@@ -1,0 +1,1645 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ET Pomar</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface2: #f0efe9;
+      --border: #dddbd3;
+      --text: #1a1917;
+      --text2: #5a5850;
+      --text3: #9a9890;
+      --green: #2d6a4f;
+      --green-l: #e8f4ee;
+      --green-b: #b7dfc9;
+      --amber: #b45309;
+      --amber-l: #fef3c7;
+      --red: #b91c1c;
+      --red-l: #fee2e2;
+      --radius: 10px;
+      --shadow: 0 10px 28px rgba(26, 25, 23, .08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--green);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .16);
+    }
+
+    .topbar-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      font-size: 1.35rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      font-size: .88rem;
+      color: rgba(255,255,255,.86);
+    }
+
+    .meta span {
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: rgba(255,255,255,.08);
+    }
+
+    main {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin: 8px 0 16px;
+    }
+
+    .kpi, .card, .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .kpi {
+      padding: 14px;
+      min-height: 102px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .kpi .label {
+      color: var(--text2);
+      font-size: .78rem;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .kpi .value {
+      font-size: clamp(1.35rem, 2.2vw, 2rem);
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .kpi .sub {
+      color: var(--text2);
+      font-size: .86rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 2px 0 14px;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text2);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 6px 0 14px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h2 { margin-bottom: 4px; font-size: 1.25rem; }
+    .muted { color: var(--text2); }
+    .small { font-size: .86rem; }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-weight: 750;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 38px;
+    }
+
+    .btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
+    .btn.danger { color: var(--red); border-color: #efb3b3; background: #fffafa; }
+    .btn.ghost { background: transparent; }
+    .btn:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid var(--green-b);
+      outline-offset: 2px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-head, .row-between {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .code {
+      color: var(--green);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 900;
+      font-size: 1.35rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: .76rem;
+      font-weight: 800;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .badge.green { color: var(--green); background: var(--green-l); border-color: var(--green-b); }
+    .badge.amber { color: var(--amber); background: var(--amber-l); border-color: #f7cf7a; }
+    .badge.red { color: var(--red); background: var(--red-l); border-color: #f7b4b4; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px;
+    }
+
+    .stat b { display: block; font-size: 1.02rem; }
+    .stat span { color: var(--text2); font-size: .78rem; }
+
+    .et-box {
+      background: var(--green-l);
+      border: 1px solid var(--green-b);
+      border-radius: 8px;
+      padding: 11px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .et-box strong { display: block; color: var(--green); font-size: 1.08rem; }
+    .et-box span { font-size: .75rem; color: var(--text2); }
+
+    .cultures {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .card-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .panel { padding: 16px; margin-bottom: 14px; }
+
+    .slider-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .slider {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .slider label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--text2);
+      font-weight: 750;
+      font-size: .9rem;
+      margin-bottom: 10px;
+    }
+
+    input[type="range"] { width: 100%; accent-color: var(--green); }
+
+    .banner {
+      background: var(--green);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .banner span { color: rgba(255,255,255,.78); font-size: .82rem; }
+    .banner strong { display: block; font-size: 1.55rem; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    tfoot td {
+      background: var(--green-l);
+      color: var(--green);
+      font-weight: 850;
+      border-bottom: 0;
+    }
+
+    .chart-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .chart-box {
+      height: 420px;
+      max-height: 58vh;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text2);
+      font-weight: 700;
+      font-size: .84rem;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,.1);
+    }
+
+    .source-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .source-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .status-line {
+      color: var(--text2);
+      font-size: .86rem;
+      margin-top: 4px;
+    }
+
+    .history-filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(26,25,23,.44);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      width: min(760px, 100%);
+      max-height: min(92vh, 920px);
+      overflow: auto;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 26px 80px rgba(0,0,0,.25);
+    }
+
+    .modal-head, .modal-foot {
+      position: sticky;
+      background: var(--surface);
+      z-index: 2;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-foot {
+      bottom: 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .modal-body { padding: 16px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { color: var(--text2); font-size: .84rem; font-weight: 750; }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 10px;
+      min-height: 40px;
+    }
+
+    input:disabled { color: var(--text3); background: var(--surface2); }
+
+    .culture-editor {
+      margin-top: 16px;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 14px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--green-l);
+      border: 1px solid var(--green-b);
+      color: var(--green);
+      border-radius: 999px;
+      padding: 5px 8px 5px 10px;
+      font-weight: 800;
+      font-size: .82rem;
+    }
+
+    .tag button {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 0;
+      background: var(--green);
+      color: #fff;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .error {
+      display: none;
+      color: var(--red);
+      background: var(--red-l);
+      border: 1px solid #f5b1b1;
+      border-radius: 8px;
+      padding: 9px 10px;
+      margin-top: 12px;
+      font-weight: 750;
+    }
+
+    .error.show { display: block; }
+
+    @media (max-width: 1050px) {
+      .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .slider-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 680px) {
+      .topbar-inner { align-items: flex-start; flex-direction: column; }
+      .meta { justify-content: flex-start; }
+      main { padding: 14px 10px; }
+      .kpis, .grid, .slider-grid, .banner, .form-grid, .form-grid.three {
+        grid-template-columns: 1fr;
+      }
+      .section-head { align-items: stretch; flex-direction: column; }
+      .section-head .btn { width: 100%; }
+      .source-bar { align-items: stretch; flex-direction: column; }
+      .source-actions { justify-content: stretch; }
+      .source-actions .btn { flex: 1; }
+      .history-filters { grid-template-columns: 1fr; }
+      .card-actions { grid-template-columns: 1fr; }
+      .et-box { grid-template-columns: 1fr; }
+      .chart-box { height: 330px; }
+      .modal-backdrop { padding: 8px; }
+    }
+
+    @media (max-width: 380px) {
+      .brand { font-size: 1.15rem; }
+      .tab-btn { padding: 9px 11px; font-size: .9rem; }
+      .kpi { min-height: 88px; }
+      .modal-head, .modal-foot, .modal-body { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">ET Pomar</div>
+      <div class="meta" id="topMeta"></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="kpis" id="kpis"></section>
+
+    <nav class="tabs" aria-label="Secções">
+      <button class="tab-btn active" data-tab="parcelas">Parcelas</button>
+      <button class="tab-btn" data-tab="calculo">Cálculo ET</button>
+      <button class="tab-btn" data-tab="semanal">Resumo semanal</button>
+      <button class="tab-btn" data-tab="historico">Histórico</button>
+    </nav>
+
+    <section id="tabContent"></section>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="modalTitle">Nova parcela</h2>
+        <button class="btn ghost" type="button" onclick="closeModal()" aria-label="Fechar">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field">
+            <label for="fId">Código</label>
+            <input id="fId" type="text" maxlength="12" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="fArea">Área (m²)</label>
+            <input id="fArea" type="number" min="1" step="1">
+          </div>
+        </div>
+
+        <div class="form-grid" style="margin-top:12px">
+          <div class="field">
+            <label for="fArvores">Árvores / lugares de rega</label>
+            <input id="fArvores" type="number" min="0" step="1">
+          </div>
+        </div>
+
+        <div class="culture-editor">
+          <h3>Culturas desta parcela</h3>
+          <div class="tag-row" id="cultureTags"></div>
+
+          <div class="form-grid three">
+            <div class="field">
+              <label for="cNome">Cultura</label>
+              <select id="cNome">
+                <option>Abacate</option>
+                <option>Tangerina</option>
+                <option>Vinha</option>
+                <option>Horticultura</option>
+                <option>Oliveira</option>
+                <option>Outra</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="cFase">Fase fenológica</label>
+              <select id="cFase"></select>
+            </div>
+            <div class="field">
+              <label for="cKc">Kc</label>
+              <input id="cKc" type="number" min="0" max="2" step="0.01">
+            </div>
+          </div>
+
+          <div class="form-grid three" style="margin-top:12px">
+            <div class="field">
+              <label for="cEfic">Efic. rega (%)</label>
+              <input id="cEfic" type="number" min="1" max="100" step="1">
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button class="btn primary" type="button" onclick="addModalCulture()">+ Adicionar cultura</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="error" id="modalError"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" type="button" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" type="button" onclick="saveParcel()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LAT_RAD = 37.13 * Math.PI / 180;
+    const ALTITUDE = 30;
+    const WEEK_COLORS = ['#1b4332','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2','#b7e4c7','#76a56f','#638a5c'];
+    const PLANTACAO = {
+      compassoLinha: 4,
+      compassoEntrelinha: 6,
+      camalhao: 3,
+      distanciaFitaTronco: 0.5,
+      solo: 'argiloso',
+      larguraMolhada: 1.8,
+      keBase: 0.18,
+      fatorRega: 0.75,
+      estrategia: 'défice controlado 75% ETc',
+      diametroCopa: 4.6,
+      fcManual: null
+    };
+    const FORECAST_SOURCES = [
+      { label: 'Lagoa', url: 'https://api.ipma.pt/open-data/forecast/meteorology/cities/daily/1080600.json' },
+      { label: 'Portimão', url: 'https://api.ipma.pt/open-data/forecast/meteorology/cities/daily/1081100.json' }
+    ];
+    const IPMA_ET0_URLS = [
+      'https://api.ipma.pt/open-data/observation/agrometeorology/evapotranspiration/eto-daily.csv',
+      'https://api.ipma.pt/open-data/observation/agrometeorology/evapotranspiration/et0-daily.csv',
+      'https://api.ipma.pt/open-data/observation/agrometeorology/evapotranspiration-daily.csv'
+    ];
+    const LAGOA_DICO = '0806';
+    const HISTORY_KEY = 'et_pomar_porches_lagoa_history_v1';
+    const ET_STATE_KEY = 'gestao_quinta_et_pomar_v1';
+    const persistedState = loadEtState();
+
+    const KC_FASES = {
+      ini:   { kc: 0.60, label: 'Dormência / pós-poda' },
+      dev:   { kc: 0.80, label: 'Desenvolvimento vegetativo' },
+      flor:  { kc: 0.95, label: 'Floração / vingamento' },
+      fruto: { kc: 0.85, label: 'Crescimento do fruto' },
+      mat:   { kc: 0.70, label: 'Maturação / colheita' }
+    };
+
+    const SEED_WEEK = [
+      { date:'2026-06-29', label:'Seg 29/6', tmax:28, tmin:17, hr:60, u2k:14, doy:180, source:'Exemplo inicial' },
+      { date:'2026-06-30', label:'Ter 30/6', tmax:32, tmin:20, hr:58, u2k:16, doy:181, source:'Exemplo inicial' },
+      { date:'2026-07-01', label:'Qua 1/7',  tmax:32, tmin:19, hr:56, u2k:16, doy:182, source:'Exemplo inicial' },
+      { date:'2026-07-02', label:'Qui 2/7',  tmax:34, tmin:22, hr:52, u2k:22, doy:183, source:'Exemplo inicial' },
+      { date:'2026-07-03', label:'Sex 3/7',  tmax:32, tmin:23, hr:55, u2k:24, doy:184, source:'Exemplo inicial' },
+      { date:'2026-07-04', label:'Sáb 4/7',  tmax:34, tmin:23, hr:54, u2k:24, doy:185, source:'Exemplo inicial' },
+      { date:'2026-07-05', label:'Dom 5/7',  tmax:35, tmin:23, hr:53, u2k:21, doy:186, source:'Exemplo inicial' }
+    ];
+
+    const DEFAULT_PARCELAS = [
+      { id:'A01', area:6600, arvores:275, culturas:[{ nome:'Abacate', fase:'fruto', kc:0.85, efic:90 }] },
+      { id:'A02', area:14000, arvores:582, culturas:[{ nome:'Abacate', fase:'fruto', kc:0.85, efic:90 }] },
+      { id:'A03', area:9000, arvores:377, culturas:[{ nome:'Abacate', fase:'fruto', kc:0.85, efic:90 }] },
+      { id:'A04', area:9800, arvores:408, culturas:[{ nome:'Abacate', fase:'fruto', kc:0.85, efic:90 }] },
+      { id:'A05', area:5700, arvores:236, culturas:[{ nome:'Abacate', fase:'fruto', kc:0.85, efic:90 }] },
+      { id:'A07', area:800, arvores:35, culturas:[{ nome:'Abacate', fase:'fruto', kc:0.85, efic:90 }] },
+      { id:'A08', area:1900, arvores:79, culturas:[{ nome:'Abacate', fase:'fruto', kc:0.85, efic:90 }] },
+      { id:'A09', area:7500, arvores:312, culturas:[{ nome:'Abacate', fase:'fruto', kc:0.85, efic:90 }] },
+      { id:'A12', area:8800, arvores:365, culturas:[{ nome:'Abacate', fase:'fruto', kc:0.85, efic:90 }] }
+    ];
+    Object.assign(PLANTACAO, persistedState.plantacao || {});
+    let parcelas = Array.isArray(persistedState.parcelas) && persistedState.parcelas.length
+      ? persistedState.parcelas
+      : JSON.parse(JSON.stringify(DEFAULT_PARCELAS));
+
+    let activeTab = 'parcelas';
+    let chart = null;
+    let editingId = null;
+    let modalCulturas = [];
+    let meteo = { tmax: 28, tmin: 17, hr: 60, u2k: 14, doy: 180 };
+    let meteoWeek = JSON.parse(JSON.stringify(SEED_WEEK));
+    let historyRecords = loadHistory();
+    let ipmaStatus = 'Dados iniciais carregados. Usa “Atualizar IPMA” para buscar dados actuais de Porches/Lagoa.';
+
+    const fmt = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1 });
+    const fmt0 = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 0 });
+
+    function loadHistory() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || 'null');
+        if (Array.isArray(saved)) return saved;
+        if (Array.isArray(persistedState.historyRecords)) return persistedState.historyRecords;
+        return [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveHistory() {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(historyRecords));
+      saveEtState();
+    }
+
+    function loadEtState() {
+      try {
+        return JSON.parse(localStorage.getItem(ET_STATE_KEY) || '{}') || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveEtState() {
+      const state = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        plantacao: {
+          fatorRega: PLANTACAO.fatorRega,
+          estrategia: PLANTACAO.estrategia,
+          diametroCopa: PLANTACAO.diametroCopa,
+          fcManual: PLANTACAO.fcManual
+        },
+        parcelas,
+        historyRecords
+      };
+      localStorage.setItem(ET_STATE_KEY, JSON.stringify(state));
+    }
+
+    function dateToIso(d) {
+      return d.toISOString().slice(0, 10);
+    }
+
+    function parseIsoDate(iso) {
+      const [y,m,d] = iso.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d));
+    }
+
+    function dayOfYear(iso) {
+      const d = parseIsoDate(iso);
+      const start = new Date(Date.UTC(d.getUTCFullYear(), 0, 0));
+      return Math.floor((d - start) / 86400000);
+    }
+
+    function shortDateLabel(iso) {
+      const d = parseIsoDate(iso);
+      const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      return `${dias[d.getUTCDay()]} ${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+    }
+
+    function todayIso() {
+      return dateToIso(new Date());
+    }
+
+    function windClassToKmh(classWindSpeed) {
+      const n = Number(classWindSpeed);
+      if (n === 1) return 6;
+      if (n === 2) return 14;
+      if (n === 3) return 24;
+      if (n === 4) return 34;
+      return 14;
+    }
+
+    function estimateHr(tmax, tmin) {
+      const amp = Math.max(1, tmax - tmin);
+      return Math.max(40, Math.min(75, Math.round(76 - amp * 1.7)));
+    }
+
+    function calcRs(doy) {
+      const dr = 1 + 0.033 * Math.cos(2 * Math.PI * doy / 365);
+      const delta = 0.409 * Math.sin(2 * Math.PI * doy / 365 - 1.39);
+      const ws = Math.acos(-Math.tan(LAT_RAD) * Math.tan(delta));
+      const Ra = (24*60/Math.PI)*0.0820*dr*(
+        ws*Math.sin(LAT_RAD)*Math.sin(delta)
+        + Math.cos(LAT_RAD)*Math.cos(delta)*Math.sin(ws)
+      );
+      const Rs = (0.25 + 0.50 * 1.0) * Ra;
+      return { Ra, Rs };
+    }
+
+    function penman(tmax, tmin, hr, u2, rs, ra) {
+      const tmean = (tmax+tmin)/2;
+      const P = 101.3 * Math.pow((293-0.0065*ALTITUDE)/293, 5.26);
+      const gamma = 0.000665 * P;
+      const es = (0.6108*Math.exp(17.27*tmax/(tmax+237.3))
+                 + 0.6108*Math.exp(17.27*tmin/(tmin+237.3))) / 2;
+      const ea = es * hr / 100;
+      const delta = 4098*0.6108*Math.exp(17.27*tmean/(tmean+237.3))
+                    / Math.pow(tmean+237.3, 2);
+      const Rns = 0.77 * rs;
+      const sigma = 4.903e-9;
+      const Rso = (0.75 + 2e-5*ALTITUDE) * ra;
+      const Rnl = sigma
+        * ((Math.pow(tmax+273.16,4)+Math.pow(tmin+273.16,4))/2)
+        * (0.34 - 0.14*Math.sqrt(Math.max(ea,0.001)))
+        * (1.35 * Math.min(rs/Rso, 1.0) - 0.35);
+      const Rn = Rns - Math.max(0, Rnl);
+      const ETo = (0.408*delta*Rn + gamma*(900/(tmean+273))*u2*(es-ea))
+                  / (delta + gamma*(1+0.34*u2));
+      return Math.max(0, ETo);
+    }
+
+    function currentETo() {
+      const rad = calcRs(meteo.doy);
+      return penman(meteo.tmax, meteo.tmin, meteo.hr, meteo.u2k / 3.6, rad.Rs, rad.Ra);
+    }
+
+    function fracaoSoloMolhado() {
+      return Math.max(0.05, Math.min(1, PLANTACAO.larguraMolhada / PLANTACAO.compassoEntrelinha));
+    }
+
+    function keAjustado() {
+      return PLANTACAO.keBase * fracaoSoloMolhado();
+    }
+
+    function areaPorArvore() {
+      return PLANTACAO.compassoLinha * PLANTACAO.compassoEntrelinha;
+    }
+
+    function areaCopa() {
+      return Math.PI * Math.pow(PLANTACAO.diametroCopa / 2, 2);
+    }
+
+    function fcCalculado() {
+      return Math.max(0.05, Math.min(1, areaCopa() / areaPorArvore()));
+    }
+
+    function fcOperacional() {
+      return PLANTACAO.fcManual !== null ? PLANTACAO.fcManual : fcCalculado();
+    }
+
+    function kcAdj(c) {
+      const fc = fcOperacional();
+      return c.kc * fc + keAjustado() * (1 - fc);
+    }
+
+    function cultureCalc(p, c, eto = currentETo()) {
+      const areaHa = p.area / 10000;
+      const kca = kcAdj(c);
+      const etc = eto * kca;
+      const volHa = (etc * 10) / (c.efic / 100);
+      const volTotal = volHa * areaHa;
+      const volHaRec = volHa * PLANTACAO.fatorRega;
+      const volTotalRec = volTotal * PLANTACAO.fatorRega;
+      const litrosArvore = p.arvores > 0 ? (volTotal * 1000) / p.arvores : 0;
+      const litrosArvoreRec = litrosArvore * PLANTACAO.fatorRega;
+      return { areaHa, kca, etc, volHa, volTotal, volHaRec, volTotalRec, litrosArvore, litrosArvoreRec };
+    }
+
+    function parcelCalc(p, eto = currentETo()) {
+      if (!p.culturas.length) return { etc: 0, volHa: 0, volTotal: 0, volHaRec: 0, volTotalRec: 0, kca: 0, litrosArvore: 0, litrosArvoreRec: 0 };
+      const rows = p.culturas.map(c => cultureCalc(p, c, eto));
+      const volTotal = rows.reduce((a,r) => a + r.volTotal, 0);
+      const volTotalRec = rows.reduce((a,r) => a + r.volTotalRec, 0);
+      return {
+        etc: rows.reduce((a,r) => a + r.etc, 0),
+        volHa: rows.reduce((a,r) => a + r.volHa, 0),
+        volHaRec: rows.reduce((a,r) => a + r.volHaRec, 0),
+        volTotal,
+        volTotalRec,
+        kca: rows.reduce((a,r) => a + r.kca, 0) / rows.length,
+        litrosArvore: p.arvores > 0 ? (volTotal * 1000) / p.arvores : 0,
+        litrosArvoreRec: p.arvores > 0 ? (volTotalRec * 1000) / p.arvores : 0
+      };
+    }
+
+    function orchardVolumeForEto(eto) {
+      return parcelas.reduce((sum, p) => sum + parcelCalc(p, eto).volTotal, 0);
+    }
+
+    function orchardRecommendedVolumeForEto(eto) {
+      return parcelas.reduce((sum, p) => sum + parcelCalc(p, eto).volTotalRec, 0);
+    }
+
+    function weekEto(day) {
+      if (Number.isFinite(day.eto)) return day.eto;
+      const rad = calcRs(day.doy);
+      return penman(day.tmax, day.tmin, day.hr, day.u2k / 3.6, rad.Rs, rad.Ra);
+    }
+
+    function historyRecordFromEto(date, eto, source) {
+      return {
+        date,
+        label: shortDateLabel(date),
+        eto: Number(eto),
+        source,
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    function upsertHistory(records) {
+      const byDate = new Map(historyRecords.map(r => [r.date, r]));
+      records.forEach(r => {
+        const previous = byDate.get(r.date);
+        byDate.set(r.date, { ...previous, ...r });
+      });
+      historyRecords = Array.from(byDate.values()).sort((a,b) => a.date.localeCompare(b.date));
+      saveHistory();
+    }
+
+    function totals() {
+      const eto = currentETo();
+      return {
+        eto,
+        parcelas: parcelas.length,
+        area: parcelas.reduce((a,p) => a + p.area, 0),
+        arvores: parcelas.reduce((a,p) => a + p.arvores, 0),
+        volume: parcelas.reduce((a,p) => a + parcelCalc(p, eto).volTotal, 0),
+        volumeRec: parcelas.reduce((a,p) => a + parcelCalc(p, eto).volTotalRec, 0)
+      };
+    }
+
+    function weightedKc() {
+      const areaTotal = parcelas.reduce((a,p) => a + p.area, 0) || 1;
+      return parcelas.reduce((sum,p) => sum + parcelCalc(p).kca * p.area, 0) / areaTotal;
+    }
+
+    function renderKPI() {
+      const t = totals();
+      const litrosArvoreMed = t.arvores > 0 ? (t.volume * 1000) / t.arvores : 0;
+      const litrosArvoreRecMed = t.arvores > 0 ? (t.volumeRec * 1000) / t.arvores : 0;
+      document.getElementById('topMeta').innerHTML = `
+        <span>${t.parcelas} parcelas</span>
+        <span>${fmt.format(t.area / 10000)} ha</span>
+        <span>${fmt0.format(t.arvores)} árvores/lugares</span>
+        <button class="btn" style="min-height:28px;padding:4px 9px;border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff" onclick="updateIpmaData()">Atualizar IPMA</button>
+      `;
+      document.getElementById('kpis').innerHTML = `
+        <div class="kpi"><div class="label">Parcelas activas</div><div class="value">${t.parcelas}</div><div class="sub">em gestão</div></div>
+        <div class="kpi"><div class="label">Área total</div><div class="value">${fmt.format(t.area / 10000)}</div><div class="sub">hectares</div></div>
+        <div class="kpi"><div class="label">Árvores / lugares</div><div class="value">${fmt0.format(t.arvores)}</div><div class="sub">inclui lugares sem árvore plantada</div></div>
+        <div class="kpi"><div class="label">ETo estimada</div><div class="value">${fmt.format(t.eto)}</div><div class="sub">mm/dia</div></div>
+        <div class="kpi"><div class="label">Rega recomendada</div><div class="value">${fmt0.format(t.volumeRec)}</div><div class="sub">${fmt.format(litrosArvoreRecMed)} L/árvore-lugar/dia · 100%: ${fmt0.format(t.volume)} m³</div></div>
+      `;
+    }
+
+    function renderParcelas() {
+      document.getElementById('tabContent').innerHTML = `
+        ${sourceBar()}
+        <div class="section-head">
+          <div>
+            <h2>Parcelas</h2>
+            <p class="muted small">Gestão operacional das parcelas, culturas e necessidades de rega.</p>
+          </div>
+          <button class="btn primary" onclick="openModal()">Nova parcela</button>
+        </div>
+        <div class="grid">
+          ${parcelas.map(parcelCard).join('')}
+        </div>
+      `;
+    }
+
+    function sourceBar() {
+      return `
+        <div class="source-bar">
+          <div>
+            <strong>Localização: Porches, Lagoa, Algarve</strong>
+            <div class="status-line">Solo ${PLANTACAO.solo}; compasso ${PLANTACAO.compassoLinha}x${PLANTACAO.compassoEntrelinha} m; copa ${fmt.format(PLANTACAO.diametroCopa)} m; fc ${fmt.format(fcOperacional())}; Ke ajustado ${fmt.format(keAjustado())}; recomendação ${Math.round(PLANTACAO.fatorRega * 100)}% ETc</div>
+            <div class="status-line" id="ipmaStatus">${ipmaStatus}</div>
+          </div>
+          <div class="source-actions">
+            <button class="btn primary" onclick="updateIpmaData()">Atualizar IPMA</button>
+            <button class="btn" onclick="seedCurrentWeekHistory()">Registar semana actual</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function parcelCard(p) {
+      const c = parcelCalc(p);
+      const waterBadge = c.litrosArvoreRec > 70 ? '<span class="badge amber">aplicar em ciclos</span>' : '<span class="badge green">rega localizada</span>';
+      return `
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <div class="code">${p.id}</div>
+              <div class="muted small">${fmt0.format(p.area)} m² · ${fmt.format(p.area / 10000)} ha</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat"><b>${fmt0.format(p.arvores)}</b><span>árvores/lugares</span></div>
+            <div class="stat"><b>${fmt0.format(meteo.tmax)}° / ${fmt0.format(meteo.tmin)}°</b><span>máx / mín</span></div>
+          </div>
+          <div class="cultures">
+            ${p.culturas.map(x => `<span class="badge green">${x.nome} · ${KC_FASES[x.fase]?.label || x.fase}</span>`).join('') || '<span class="badge red">sem cultura</span>'}
+          </div>
+          <div class="et-box">
+            <div><strong>${fmt.format(c.etc)}</strong><span>ETc mm/dia</span></div>
+            <div><strong>${fmt.format(c.volHa)}</strong><span>m³/ha/dia</span></div>
+            <div><strong>${fmt.format(c.volTotal)}</strong><span>m³/dia 100% ETc</span></div>
+            <div><strong>${fmt.format(c.volTotalRec)}</strong><span>m³/dia recomendado</span></div>
+            <div><strong>${fmt.format(c.litrosArvoreRec)}</strong><span>L/árvore-lugar/dia recomendado</span></div>
+            <div><strong>${fmt.format(c.kca)}</strong><span>Kc ajustado · fc ${fmt.format(fcOperacional())}</span></div>
+            <div>${waterBadge}<span style="display:block;margin-top:4px">solo argiloso</span></div>
+          </div>
+          <div class="card-actions">
+            <button class="btn" onclick="openModal('${p.id}')">Editar</button>
+            <button class="btn danger" onclick="deleteParcel('${p.id}')">Apagar</button>
+          </div>
+          <button class="btn" onclick="openModal('${p.id}')">+ Adicionar cultura</button>
+        </article>
+      `;
+    }
+
+    function renderCalculo() {
+      const eto = currentETo();
+      const rows = parcelas.flatMap(p => p.culturas.map(c => ({ p, c, calc: cultureCalc(p, c, eto) })));
+      const totalVol = rows.reduce((a,r) => a + r.calc.volTotal, 0);
+      const totalVolRec = rows.reduce((a,r) => a + r.calc.volTotalRec, 0);
+      const meanEtc = rows.length ? rows.reduce((a,r) => a + r.calc.etc, 0) / rows.length : 0;
+      document.getElementById('tabContent').innerHTML = `
+        ${sourceBar()}
+        <div class="section-head">
+          <div>
+            <h2>Cálculo ET</h2>
+            <p class="muted small">Cálculo diário FAO Penman-Monteith com Kc ajustado à fracção de coberto.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="slider-grid">
+            ${slider('tmax', 'T máx', meteo.tmax, 10, 45, 1, '°C')}
+            ${slider('tmin', 'T mín', meteo.tmin, 0, 32, 1, '°C')}
+            ${slider('hr', 'HR', meteo.hr, 20, 100, 1, '%')}
+            ${slider('u2k', 'Vento', meteo.u2k, 0, 45, 1, 'km/h')}
+            <div class="slider">
+              <label for="fatorRega"><span>Rega recomendada</span><strong>${Math.round(PLANTACAO.fatorRega * 100)}%</strong></label>
+              <select id="fatorRega" onchange="setFatorRega(this.value)">
+                ${[0.6,0.7,0.75,0.8,0.9,1].map(v => `<option value="${v}" ${v === PLANTACAO.fatorRega ? 'selected' : ''}>${Math.round(v * 100)}% ETc</option>`).join('')}
+              </select>
+            </div>
+            <div class="slider">
+              <label for="diametroCopa"><span>Diâmetro copa</span><strong>${fmt.format(PLANTACAO.diametroCopa)} m</strong></label>
+              <input id="diametroCopa" type="number" min="1" max="7" step="0.1" value="${PLANTACAO.diametroCopa}" onchange="setDiametroCopa(this.value)">
+            </div>
+            <div class="slider">
+              <label for="fcManual"><span>fc coberto</span><strong>${fmt.format(fcOperacional())}</strong></label>
+              <input id="fcManual" type="number" min="0.05" max="1" step="0.01" value="${fmt.format(fcOperacional()).replace(',', '.')}" onchange="setFcManual(this.value)">
+            </div>
+          </div>
+          <p class="muted small" style="margin:12px 0 0">
+            Fórmulas: área por árvore/lugar = ${PLANTACAO.compassoLinha} × ${PLANTACAO.compassoEntrelinha} = ${fmt.format(areaPorArvore())} m²; área copa = π × (diâmetro/2)² = ${fmt.format(areaCopa())} m²; fc = área copa / área por árvore = ${fmt.format(fcCalculado())}. Se alterares “fc coberto”, esse valor manual passa a ser usado directamente.
+          </p>
+          <div class="banner">
+            <div><span>ETo calculada</span><strong>${fmt.format(eto)} mm/dia</strong></div>
+            <div><span>Kc médio ponderado</span><strong>${fmt.format(weightedKc())}</strong></div>
+            <div><span>Rega recomendada</span><strong>${fmt0.format(totalVolRec)} m³/dia</strong></div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Parcela</th><th>Cultura</th><th>Área (ha)</th><th>Kc adj</th><th>ETc (mm/d)</th><th>m³/dia 100%</th><th>m³/dia rec.</th><th>L/árvore-lugar rec.</th></tr>
+            </thead>
+            <tbody>
+              ${rows.map(r => `
+                <tr>
+                  <td><strong class="code">${r.p.id}</strong></td>
+                  <td>${r.c.nome}</td>
+                  <td>${fmt.format(r.calc.areaHa)}</td>
+                  <td>${fmt.format(r.calc.kca)}</td>
+                  <td>${fmt.format(r.calc.etc)}</td>
+                  <td>${fmt.format(r.calc.volTotal)}</td>
+                  <td>${fmt.format(r.calc.volTotalRec)}</td>
+                  <td>${fmt.format(r.calc.litrosArvoreRec)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr><td colspan="4">Total / média</td><td>${fmt.format(meanEtc)}</td><td>${fmt0.format(totalVol)}</td><td>${fmt0.format(totalVolRec)}</td><td>${fmt.format(totalVolRec * 1000 / Math.max(1, parcelas.reduce((a,p) => a + p.arvores, 0)))}</td></tr>
+            </tfoot>
+          </table>
+        </div>
+      `;
+      bindSliders();
+    }
+
+    function slider(key, label, value, min, max, step, unit) {
+      return `
+        <div class="slider">
+          <label for="s_${key}"><span>${label}</span><strong id="v_${key}">${value}${unit}</strong></label>
+          <input id="s_${key}" type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-key="${key}" data-unit="${unit}">
+        </div>
+      `;
+    }
+
+    function bindSliders() {
+      document.querySelectorAll('input[type="range"][data-key]').forEach(el => {
+        el.addEventListener('input', () => {
+          const key = el.dataset.key;
+          meteo[key] = Number(el.value);
+          document.getElementById(`v_${key}`).textContent = `${el.value}${el.dataset.unit}`;
+          renderAll();
+        });
+      });
+    }
+
+    function setFatorRega(value) {
+      PLANTACAO.fatorRega = Number(value);
+      PLANTACAO.estrategia = `${Math.round(PLANTACAO.fatorRega * 100)}% ETc`;
+      saveEtState();
+      renderAll();
+    }
+
+    function setDiametroCopa(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0) return;
+      PLANTACAO.diametroCopa = n;
+      PLANTACAO.fcManual = null;
+      saveEtState();
+      renderAll();
+    }
+
+    function setFcManual(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return;
+      PLANTACAO.fcManual = Math.max(0.05, Math.min(1, n));
+      saveEtState();
+      renderAll();
+    }
+
+    function renderSemanal() {
+      const rows = parcelas.flatMap(p => p.culturas.map(c => {
+        const days = meteoWeek.map(d => {
+          const eto = weekEto(d);
+          return cultureCalc(p, c, eto);
+        });
+        return {
+          p, c,
+          etcMean: days.reduce((a,d) => a + d.etc, 0) / days.length,
+          etcWeek: days.reduce((a,d) => a + d.etc, 0),
+          volHaWeek: days.reduce((a,d) => a + d.volHa, 0),
+          volWeek: days.reduce((a,d) => a + d.volTotal, 0),
+          volWeekRec: days.reduce((a,d) => a + d.volTotalRec, 0)
+        };
+      }));
+      const first = meteoWeek[0]?.date || '';
+      const last = meteoWeek[meteoWeek.length - 1]?.date || '';
+      document.getElementById('tabContent').innerHTML = `
+        ${sourceBar()}
+        <div class="section-head">
+          <div>
+            <h2>Resumo semanal IPMA Lagoa · ${first} a ${last}</h2>
+            <p class="muted small">Previsão IPMA Lagoa quando disponível; Portimão fica apenas como fallback. ETo oficial Lagoa é usada para dias presentes no histórico.</p>
+          </div>
+        </div>
+        <div class="chart-panel">
+          <div class="chart-box"><canvas id="weekChart"></canvas></div>
+          <div class="legend">${parcelas.map((p,i) => `<span class="legend-item"><span class="swatch" style="background:${WEEK_COLORS[i % WEEK_COLORS.length]}"></span>${p.id}</span>`).join('')}</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Parcela</th><th>Cultura</th><th>Área (ha)</th><th>ETc média (mm/d)</th><th>ETc semana (mm)</th><th>m³ semana 100%</th><th>m³ semana rec.</th></tr>
+            </thead>
+            <tbody>
+              ${rows.map(r => `
+                <tr>
+                  <td><strong class="code">${r.p.id}</strong></td>
+                  <td>${r.c.nome}</td>
+                  <td>${fmt.format(r.p.area / 10000)}</td>
+                  <td>${fmt.format(r.etcMean)}</td>
+                  <td>${fmt.format(r.etcWeek)}</td>
+                  <td>${fmt0.format(r.volWeek)}</td>
+                  <td>${fmt0.format(r.volWeekRec)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr><td colspan="4">Totais</td><td>${fmt.format(rows.reduce((a,r) => a + r.etcWeek, 0))}</td><td>${fmt0.format(rows.reduce((a,r) => a + r.volWeek, 0))}</td><td>${fmt0.format(rows.reduce((a,r) => a + r.volWeekRec, 0))}</td></tr>
+            </tfoot>
+          </table>
+        </div>
+      `;
+      renderChart();
+    }
+
+    function renderChart() {
+      if (chart) chart.destroy();
+      const ctx = document.getElementById('weekChart');
+      const datasets = parcelas.map((p, i) => ({
+        label: p.id,
+        data: meteoWeek.map(d => {
+          const eto = weekEto(d);
+          return parcelCalc(p, eto).volTotalRec;
+        }),
+        backgroundColor: WEEK_COLORS[i % WEEK_COLORS.length],
+        borderWidth: 0,
+        stack: 'stack'
+      }));
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: meteoWeek.map(d => d.label), datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt.format(c.raw)} m³/dia recomendado` } }
+          },
+          scales: {
+            x: { stacked: true, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, title: { display: true, text: 'm³/dia' } }
+          }
+        }
+      });
+    }
+
+    function renderHistorico() {
+      const fallbackStart = historyRecords[0]?.date || todayIso();
+      const fallbackEnd = historyRecords[historyRecords.length - 1]?.date || todayIso();
+      const start = document.getElementById('histStart')?.value || fallbackStart;
+      const end = document.getElementById('histEnd')?.value || fallbackEnd;
+      const rows = historyRecords.filter(r => r.date >= start && r.date <= end);
+      const totalEto = rows.reduce((a,r) => a + Number(r.eto || 0), 0);
+      const totalVol = rows.reduce((a,r) => a + orchardVolumeForEto(Number(r.eto || 0)), 0);
+      const totalVolRec = rows.reduce((a,r) => a + orchardRecommendedVolumeForEto(Number(r.eto || 0)), 0);
+      const meanEto = rows.length ? totalEto / rows.length : 0;
+      const meanKc = weightedKc();
+      const totalEtc = totalEto * meanKc;
+      const totalArvores = parcelas.reduce((a,p) => a + p.arvores, 0);
+      const litrosArvorePeriodo = totalArvores > 0 ? (totalVol * 1000) / totalArvores : 0;
+      const litrosArvorePeriodoRec = totalArvores > 0 ? (totalVolRec * 1000) / totalArvores : 0;
+
+      document.getElementById('tabContent').innerHTML = `
+        ${sourceBar()}
+        <div class="section-head">
+          <div>
+            <h2>Histórico</h2>
+            <p class="muted small">Valores registados localmente quando actualizas os dados. Podes somar qualquer intervalo.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="history-filters">
+            <div class="field">
+              <label for="histStart">Data inicial</label>
+              <input id="histStart" type="date" value="${start}">
+            </div>
+            <div class="field">
+              <label for="histEnd">Data final</label>
+              <input id="histEnd" type="date" value="${end}">
+            </div>
+            <button class="btn primary" onclick="renderHistorico()">Aplicar intervalo</button>
+            <button class="btn" onclick="updateIpmaData()">Atualizar IPMA</button>
+          </div>
+          <div class="banner">
+            <div><span>Dias no intervalo</span><strong>${rows.length}</strong></div>
+            <div><span>ETo acumulada</span><strong>${fmt.format(totalEto)} mm</strong></div>
+            <div><span>Volume recomendado</span><strong>${fmt0.format(totalVolRec)} m³</strong></div>
+            <div><span>Água por árvore-lugar rec.</span><strong>${fmt.format(litrosArvorePeriodoRec)} L</strong></div>
+          </div>
+          <p class="muted small" style="margin:12px 0 0">ETo média: ${fmt.format(meanEto)} mm/dia · ETc estimada acumulada com Kc médio actual: ${fmt.format(totalEtc)} mm · 100% ETc: ${fmt0.format(totalVol)} m³ / ${fmt.format(litrosArvorePeriodo)} L por árvore-lugar; árvores-lugar incluem pontos de rega sem árvore plantada.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Data</th><th>Fonte</th><th>ETo (mm)</th><th>Kc médio</th><th>ETc média (mm)</th><th>m³/dia 100%</th><th>m³/dia rec.</th><th>L/árvore-lugar rec.</th></tr>
+            </thead>
+            <tbody>
+              ${rows.length ? rows.map(r => {
+                const eto = Number(r.eto || 0);
+                return `
+                  <tr>
+                    <td><strong>${r.date}</strong></td>
+                    <td>${r.source || 'Registo local'}</td>
+                    <td>${fmt.format(eto)}</td>
+                    <td>${fmt.format(meanKc)}</td>
+                    <td>${fmt.format(eto * meanKc)}</td>
+                    <td>${fmt0.format(orchardVolumeForEto(eto))}</td>
+                    <td>${fmt0.format(orchardRecommendedVolumeForEto(eto))}</td>
+                    <td>${fmt.format(totalArvores > 0 ? orchardRecommendedVolumeForEto(eto) * 1000 / totalArvores : 0)}</td>
+                  </tr>
+                `;
+              }).join('') : '<tr><td colspan="8">Sem dados registados neste intervalo. Usa “Atualizar IPMA” ou “Registar semana actual”.</td></tr>'}
+            </tbody>
+            <tfoot>
+              <tr><td colspan="2">Total / média</td><td>${fmt.format(totalEto)}</td><td>${fmt.format(meanKc)}</td><td>${fmt.format(totalEtc)}</td><td>${fmt0.format(totalVol)}</td><td>${fmt0.format(totalVolRec)}</td><td>${fmt.format(litrosArvorePeriodoRec)}</td></tr>
+            </tfoot>
+          </table>
+        </div>
+      `;
+    }
+
+    function setTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      renderAll();
+    }
+
+    function renderActiveTab() {
+      if (chart && activeTab !== 'semanal') {
+        chart.destroy();
+        chart = null;
+      }
+      if (activeTab === 'parcelas') renderParcelas();
+      if (activeTab === 'calculo') renderCalculo();
+      if (activeTab === 'semanal') renderSemanal();
+      if (activeTab === 'historico') renderHistorico();
+    }
+
+    function renderAll() {
+      renderKPI();
+      renderActiveTab();
+    }
+
+    async function updateIpmaData() {
+      setIpmaStatus('A actualizar dados IPMA...');
+      const weekRecords = [];
+      let forecastOk = false;
+      let etoOk = false;
+      let forecastSource = null;
+      try {
+        const fetched = await fetchFirstForecast();
+        const forecast = fetched.forecast;
+        forecastSource = fetched.source;
+        const days = Array.isArray(forecast.data) ? forecast.data.slice(0, 7) : [];
+        if (days.length) {
+          meteoWeek = days.map(d => {
+            const date = d.forecastDate;
+            const tmax = Number(d.tMax);
+            const tmin = Number(d.tMin);
+            const u2k = windClassToKmh(d.classWindSpeed);
+            return {
+              date,
+              label: shortDateLabel(date),
+              tmax,
+              tmin,
+              hr: estimateHr(tmax, tmin),
+              u2k,
+              doy: dayOfYear(date),
+              source: `IPMA ${forecastSource.label} + FAO-56`
+            };
+          });
+          meteo = { ...meteo, tmax: meteoWeek[0].tmax, tmin: meteoWeek[0].tmin, hr: meteoWeek[0].hr, u2k: meteoWeek[0].u2k, doy: meteoWeek[0].doy };
+          meteoWeek.forEach(d => weekRecords.push(historyRecordFromEto(d.date, weekEto(d), `IPMA ${forecastSource.label} + FAO-56`)));
+          forecastOk = true;
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+
+      let officialEtoRows = [];
+      try {
+        const etoRows = await fetchLagoaEtoRows();
+        if (etoRows.length) {
+          officialEtoRows = etoRows;
+          meteoWeek = meteoWeek.map(d => {
+            const official = etoRows.find(r => r.date === d.date);
+            return official ? { ...d, eto: official.eto, source: 'IPMA ETo Lagoa' } : d;
+          });
+          etoOk = true;
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+
+      if (weekRecords.length) upsertHistory(weekRecords);
+      if (officialEtoRows.length) upsertHistory(officialEtoRows.map(r => historyRecordFromEto(r.date, r.eto, 'IPMA ETo Lagoa')));
+      const parts = [];
+      if (forecastOk) parts.push(`previsão IPMA ${forecastSource.label} actualizada`);
+      if (etoOk) parts.push('ETo oficial Lagoa registada');
+      if (!parts.length) {
+        seedCurrentWeekHistory(false);
+        ipmaStatus = 'Não foi possível obter dados IPMA agora. Mantive a semana actual e registei os valores calculados localmente.';
+      } else {
+        ipmaStatus = `Actualização concluída: ${parts.join(' e ')}. Histórico preservado.`;
+      }
+      renderAll();
+    }
+
+    function setIpmaStatus(text) {
+      ipmaStatus = text;
+      const el = document.getElementById('ipmaStatus');
+      if (el) el.textContent = text;
+    }
+
+    async function fetchFirstForecast() {
+      let lastError = null;
+      for (const source of FORECAST_SOURCES) {
+        try {
+          const forecast = await fetch(source.url, { cache: 'no-store' }).then(r => {
+            if (!r.ok) throw new Error(`Previsão IPMA ${source.label} indisponível (${r.status})`);
+            return r.json();
+          });
+          if (Array.isArray(forecast.data) && forecast.data.length) {
+            return { forecast, source };
+          }
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      throw lastError || new Error('Previsão IPMA indisponível');
+    }
+
+    async function fetchLagoaEtoRows() {
+      let lastError = null;
+      for (const url of IPMA_ET0_URLS) {
+        try {
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) throw new Error(`${url} ${res.status}`);
+          const text = await res.text();
+          const rows = parseCsv(text);
+          const mapped = rows.map(normalizeEtoRow).filter(Boolean)
+            .filter(r => r.dico === LAGOA_DICO || /lagoa/i.test(r.name || ''));
+          if (mapped.length) return mapped;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      if (lastError) throw lastError;
+      return [];
+    }
+
+    function parseCsv(text) {
+      const lines = text.trim().split(/\r?\n/).filter(Boolean);
+      if (lines.length < 2) return [];
+      const sep = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(sep).map(h => h.trim());
+      return lines.slice(1).map(line => {
+        const cells = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+        return Object.fromEntries(headers.map((h,i) => [h, cells[i] ?? '']));
+      });
+    }
+
+    function normalizeEtoRow(row) {
+      const keys = Object.keys(row);
+      const get = names => {
+        const key = keys.find(k => names.includes(k.toLowerCase()));
+        return key ? row[key] : '';
+      };
+      const date = get(['data','date','dia','forecastdate','time']);
+      const dico = String(get(['dico','idconcelho','concelho_id','dicofre']) || '').padStart(4, '0');
+      const name = get(['concelho','local','name','nome']);
+      const rawEto = String(get(['eto','et0','eto_mm','et0_mm','valor','value','evapotranspiracao']) || '').replace(',', '.');
+      const eto = Number(rawEto);
+      if (!date || !Number.isFinite(eto)) return null;
+      return { date: date.slice(0, 10), dico, name, eto };
+    }
+
+    function seedCurrentWeekHistory(shouldRender = true) {
+      const rows = meteoWeek.map(d => historyRecordFromEto(d.date, weekEto(d), d.source || 'FAO-56 local'));
+      upsertHistory(rows);
+      ipmaStatus = `${rows.length} dias registados no histórico local.`;
+      if (shouldRender) renderAll();
+    }
+
+    function openModal(id = null) {
+      editingId = id;
+      const p = id ? parcelas.find(x => x.id === id) : null;
+      modalCulturas = p ? JSON.parse(JSON.stringify(p.culturas)) : [];
+      document.getElementById('modalTitle').textContent = p ? `Editar ${p.id}` : 'Nova parcela';
+      document.getElementById('fId').value = p?.id || '';
+      document.getElementById('fId').disabled = Boolean(p);
+      document.getElementById('fArea').value = p?.area || '';
+      document.getElementById('fArvores').value = p?.arvores || '';
+      document.getElementById('modalError').classList.remove('show');
+      resetCultureForm();
+      renderCultureTags();
+      document.getElementById('modalBackdrop').classList.add('open');
+      document.getElementById('fId').focus();
+    }
+
+    function closeModal() {
+      document.getElementById('modalBackdrop').classList.remove('open');
+      editingId = null;
+      modalCulturas = [];
+    }
+
+    function resetCultureForm() {
+      const fase = document.getElementById('cFase');
+      fase.innerHTML = Object.entries(KC_FASES).map(([key,val]) => `<option value="${key}">${val.label}</option>`).join('');
+      fase.value = 'fruto';
+      document.getElementById('cNome').value = 'Abacate';
+      document.getElementById('cKc').value = KC_FASES.fruto.kc;
+      document.getElementById('cEfic').value = 90;
+    }
+
+    function renderCultureTags() {
+      const el = document.getElementById('cultureTags');
+      el.innerHTML = modalCulturas.length
+        ? modalCulturas.map((c,i) => `<span class="tag">${c.nome} · ${KC_FASES[c.fase]?.label || c.fase} · Kc ${fmt.format(c.kc)}<button type="button" onclick="removeModalCulture(${i})" aria-label="Remover ${c.nome}">×</button></span>`).join('')
+        : '<span class="muted small">Sem culturas adicionadas.</span>';
+    }
+
+    function addModalCulture() {
+      const c = {
+        nome: document.getElementById('cNome').value,
+        fase: document.getElementById('cFase').value,
+        kc: Number(document.getElementById('cKc').value),
+        efic: Number(document.getElementById('cEfic').value)
+      };
+      if (!c.nome || c.kc <= 0 || c.efic <= 0 || c.efic > 100) {
+        showError('Confirma os valores da cultura antes de adicionar.');
+        return;
+      }
+      modalCulturas.push(c);
+      renderCultureTags();
+      document.getElementById('modalError').classList.remove('show');
+    }
+
+    function removeModalCulture(index) {
+      modalCulturas.splice(index, 1);
+      renderCultureTags();
+    }
+
+    function saveParcel() {
+      const id = document.getElementById('fId').value.trim().toUpperCase();
+      const area = Number(document.getElementById('fArea').value);
+      const arvores = Number(document.getElementById('fArvores').value);
+      if (!id) return showError('O código da parcela é obrigatório.');
+      if (!area || area <= 0) return showError('A área deve ser superior a zero.');
+      if (!editingId && parcelas.some(p => p.id === id)) return showError('Já existe uma parcela com esse código.');
+      if (!modalCulturas.length) return showError('Adiciona pelo menos uma cultura.');
+
+      const payload = {
+        id, area,
+        arvores: Math.max(0, arvores || 0),
+        culturas: JSON.parse(JSON.stringify(modalCulturas))
+      };
+
+      if (editingId) {
+        const idx = parcelas.findIndex(p => p.id === editingId);
+        parcelas[idx] = { ...payload, id: editingId };
+      } else {
+        parcelas.push(payload);
+      }
+      saveEtState();
+      closeModal();
+      renderAll();
+    }
+
+    function deleteParcel(id) {
+      if (!confirm(`Apagar a parcela ${id}?`)) return;
+      parcelas = parcelas.filter(p => p.id !== id);
+      saveEtState();
+      renderAll();
+    }
+
+    window.exportarDados = function() {
+      saveEtState();
+      const blob = new Blob([JSON.stringify(loadEtState(), null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `et-pomar-${todayIso()}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+
+    window.importarDados = function(event) {
+      const file = event && event.target && event.target.files ? event.target.files[0] : null;
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() {
+        try {
+          const data = JSON.parse(String(reader.result || '{}'));
+          if (!Array.isArray(data.parcelas)) throw new Error('Ficheiro sem lista de parcelas.');
+          parcelas = data.parcelas;
+          if (data.plantacao && typeof data.plantacao === 'object') Object.assign(PLANTACAO, data.plantacao);
+          if (Array.isArray(data.historyRecords)) {
+            historyRecords = data.historyRecords;
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(historyRecords));
+          }
+          saveEtState();
+          renderAll();
+          alert('Dados ET Pomar importados.');
+        } catch (err) {
+          alert('Não foi possível importar este ficheiro ET Pomar: ' + err.message);
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    function showError(msg) {
+      const el = document.getElementById('modalError');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
+    document.getElementById('fId').addEventListener('input', e => e.target.value = e.target.value.toUpperCase());
+    document.getElementById('cFase').addEventListener('change', e => {
+      document.getElementById('cKc').value = KC_FASES[e.target.value].kc;
+    });
+    document.getElementById('modalBackdrop').addEventListener('click', e => {
+      if (e.target.id === 'modalBackdrop') closeModal();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    resetCultureForm();
+    renderAll();
+  </script>
+</body>
+</html>
