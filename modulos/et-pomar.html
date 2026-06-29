@@ -1019,6 +1019,7 @@
     }
 
     function renderParcelas() {
+      const resumo = orchardCommonSummary();
       document.getElementById('tabContent').innerHTML = `
         ${sourceBar()}
         <div class="section-head">
@@ -1028,6 +1029,15 @@
           </div>
           <button class="btn primary" onclick="openModal()">Nova parcela</button>
         </div>
+        <div class="panel">
+          <div class="banner">
+            <div><span>Cultura / fase</span><strong>${resumo.culturas}</strong></div>
+            <div><span>Temperatura</span><strong>${fmt0.format(meteo.tmax)}° / ${fmt0.format(meteo.tmin)}°</strong></div>
+            <div><span>ETc média</span><strong>${fmt.format(resumo.etc)} mm/dia</strong></div>
+            <div><span>m³/ha/dia médio</span><strong>${fmt.format(resumo.volHa)}</strong></div>
+            <div><span>Kc ajustado médio</span><strong>${fmt.format(resumo.kc)}</strong></div>
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -1035,14 +1045,9 @@
                 <th>Parcela</th>
                 <th>Área</th>
                 <th>Árvores</th>
-                <th>Cultura / fase</th>
-                <th>Temperatura</th>
-                <th>ETc</th>
-                <th>m³/ha/dia</th>
                 <th>m³ 100% ETc</th>
                 <th>m³ recomendado</th>
                 <th>L/árvore</th>
-                <th>Kc ajustado</th>
                 <th>Rega</th>
                 <th>Ações</th>
               </tr>
@@ -1053,6 +1058,19 @@
           </table>
         </div>
       `;
+    }
+
+    function orchardCommonSummary() {
+      const rows = parcelas.map(p => parcelCalc(p));
+      const count = rows.length || 1;
+      const areaTotal = parcelas.reduce((a,p) => a + p.area, 0) || 1;
+      const culturas = [...new Set(parcelas.flatMap(p => p.culturas.map(c => `${c.nome} · ${KC_FASES[c.fase]?.label || c.fase}`)))];
+      return {
+        culturas: culturas.length ? culturas.join(', ') : 'Sem cultura',
+        etc: rows.reduce((a,r) => a + r.etc, 0) / count,
+        volHa: rows.reduce((a,r) => a + r.volHa, 0) / count,
+        kc: parcelas.reduce((sum,p) => sum + parcelCalc(p).kca * p.area, 0) / areaTotal
+      };
     }
 
     function sourceBar() {
@@ -1112,20 +1130,14 @@
       const c = parcelCalc(p);
       const waterText = c.litrosArvoreRec > 70 ? 'Aplicar em ciclos' : 'Rega localizada';
       const waterClass = c.litrosArvoreRec > 70 ? 'amber' : 'green';
-      const culturas = p.culturas.map(x => `${x.nome} · ${KC_FASES[x.fase]?.label || x.fase}`).join('<br>') || 'Sem cultura';
       return `
         <tr>
           <td><strong class="code">${p.id}</strong></td>
           <td>${fmt0.format(p.area)} m²<br><span class="muted small">${fmt.format(p.area / 10000)} ha</span></td>
           <td>${fmt0.format(p.arvores)}</td>
-          <td>${culturas}</td>
-          <td>${fmt0.format(meteo.tmax)}° / ${fmt0.format(meteo.tmin)}°</td>
-          <td><strong>${fmt.format(c.etc)}</strong><br><span class="muted small">mm/dia</span></td>
-          <td><strong>${fmt.format(c.volHa)}</strong></td>
           <td><strong>${fmt.format(c.volTotal)}</strong></td>
           <td><strong>${fmt.format(c.volTotalRec)}</strong></td>
           <td><strong>${fmt.format(c.litrosArvoreRec)}</strong></td>
-          <td>${fmt.format(c.kca)}<br><span class="muted small">fc ${fmt.format(fcOperacional())}</span></td>
           <td><span class="badge ${waterClass}">${waterText}</span><br><span class="muted small">solo argiloso</span></td>
           <td>
             <div class="toolbar">
