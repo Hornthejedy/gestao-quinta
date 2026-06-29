@@ -1028,8 +1028,29 @@
           </div>
           <button class="btn primary" onclick="openModal()">Nova parcela</button>
         </div>
-        <div class="grid">
-          ${parcelas.map(parcelCard).join('')}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Parcela</th>
+                <th>Área</th>
+                <th>Árvores</th>
+                <th>Cultura / fase</th>
+                <th>Temperatura</th>
+                <th>ETc</th>
+                <th>m³/ha/dia</th>
+                <th>m³ 100% ETc</th>
+                <th>m³ recomendado</th>
+                <th>L/árvore</th>
+                <th>Kc ajustado</th>
+                <th>Rega</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${parcelas.map(parcelRow).join('')}
+            </tbody>
+          </table>
         </div>
       `;
     }
@@ -1084,6 +1105,36 @@
           </div>
           <button class="btn" onclick="openModal('${p.id}')">+ Adicionar cultura</button>
         </article>
+      `;
+    }
+
+    function parcelRow(p) {
+      const c = parcelCalc(p);
+      const waterText = c.litrosArvoreRec > 70 ? 'Aplicar em ciclos' : 'Rega localizada';
+      const waterClass = c.litrosArvoreRec > 70 ? 'amber' : 'green';
+      const culturas = p.culturas.map(x => `${x.nome} · ${KC_FASES[x.fase]?.label || x.fase}`).join('<br>') || 'Sem cultura';
+      return `
+        <tr>
+          <td><strong class="code">${p.id}</strong></td>
+          <td>${fmt0.format(p.area)} m²<br><span class="muted small">${fmt.format(p.area / 10000)} ha</span></td>
+          <td>${fmt0.format(p.arvores)}</td>
+          <td>${culturas}</td>
+          <td>${fmt0.format(meteo.tmax)}° / ${fmt0.format(meteo.tmin)}°</td>
+          <td><strong>${fmt.format(c.etc)}</strong><br><span class="muted small">mm/dia</span></td>
+          <td><strong>${fmt.format(c.volHa)}</strong></td>
+          <td><strong>${fmt.format(c.volTotal)}</strong></td>
+          <td><strong>${fmt.format(c.volTotalRec)}</strong></td>
+          <td><strong>${fmt.format(c.litrosArvoreRec)}</strong></td>
+          <td>${fmt.format(c.kca)}<br><span class="muted small">fc ${fmt.format(fcOperacional())}</span></td>
+          <td><span class="badge ${waterClass}">${waterText}</span><br><span class="muted small">solo argiloso</span></td>
+          <td>
+            <div class="toolbar">
+              <button class="btn" onclick="openModal('${p.id}')">Editar</button>
+              <button class="btn danger" onclick="deleteParcel('${p.id}')">Apagar</button>
+              <button class="btn" onclick="openModal('${p.id}')">+ Cultura</button>
+            </div>
+          </td>
+        </tr>
       `;
     }
 
