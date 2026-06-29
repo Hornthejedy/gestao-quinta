@@ -732,6 +732,9 @@
     let historyRecords = loadHistory();
     let ipmaStatus = 'Dados iniciais carregados. Usa “Atualizar IPMA” para buscar dados actuais de Porches/Lagoa.';
 
+    let ipmaMeta = persistedState.ipmaMeta || null;
+    ipmaStatus = persistedState.ipmaStatus || ipmaStatus;
+
     const fmt = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1 });
     const fmt0 = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 0 });
 
@@ -770,7 +773,9 @@
           fcManual: PLANTACAO.fcManual
         },
         parcelas,
-        historyRecords
+        historyRecords,
+        ipmaStatus,
+        ipmaMeta
       };
       localStorage.setItem(ET_STATE_KEY, JSON.stringify(state));
     }
@@ -798,6 +803,37 @@
 
     function todayIso() {
       return dateToIso(new Date());
+    }
+
+    function formatDatePt(iso) {
+      if (!iso) return '—';
+      const d = parseIsoDate(String(iso).slice(0, 10));
+      return d.toLocaleDateString('pt-PT');
+    }
+
+    function formatDateTimePt(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '—';
+      return d.toLocaleString('pt-PT', {
+        timeZone: 'Europe/Lisbon',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function currentIpmaMetaHtml() {
+      const first = ipmaMeta?.dataInicio || meteoWeek[0]?.date || '';
+      const last = ipmaMeta?.dataFim || meteoWeek[meteoWeek.length - 1]?.date || '';
+      const updated = ipmaMeta?.ultimaSincronizacao || '';
+      const source = ipmaMeta?.fonte || '';
+      return `
+        <div class="status-line"><strong>Dados IPMA:</strong> ${formatDatePt(first)} a ${formatDatePt(last)}${source ? ' · ' + source : ''}</div>
+        <div class="status-line"><strong>Última sincronização IPMA:</strong> ${formatDateTimePt(updated)}</div>
+      `;
     }
 
     function windClassToKmh(classWindSpeed) {
@@ -1004,6 +1040,7 @@
           <div>
             <strong>Localização: Porches, Lagoa, Algarve</strong>
             <div class="status-line">Solo ${PLANTACAO.solo}; compasso ${PLANTACAO.compassoLinha}x${PLANTACAO.compassoEntrelinha} m; copa ${fmt.format(PLANTACAO.diametroCopa)} m; fc ${fmt.format(fcOperacional())}; Ke ajustado ${fmt.format(keAjustado())}; recomendação ${Math.round(PLANTACAO.fatorRega * 100)}% ETc</div>
+            ${currentIpmaMetaHtml()}
             <div class="status-line" id="ipmaStatus">${ipmaStatus}</div>
           </div>
           <div class="source-actions">
@@ -1413,6 +1450,13 @@
       } else {
         ipmaStatus = `Actualização concluída: ${parts.join(' e ')}. Histórico preservado.`;
       }
+      ipmaMeta = {
+        dataInicio: meteoWeek[0]?.date || '',
+        dataFim: meteoWeek[meteoWeek.length - 1]?.date || '',
+        ultimaSincronizacao: new Date().toISOString(),
+        fonte: parts.length ? parts.join(' + ') : 'Valores calculados localmente'
+      };
+      saveEtState();
       renderAll();
     }
 
@@ -1420,6 +1464,7 @@
       ipmaStatus = text;
       const el = document.getElementById('ipmaStatus');
       if (el) el.textContent = text;
+      saveEtState();
     }
 
     async function fetchFirstForecast() {
@@ -1488,7 +1533,14 @@
     function seedCurrentWeekHistory(shouldRender = true) {
       const rows = meteoWeek.map(d => historyRecordFromEto(d.date, weekEto(d), d.source || 'FAO-56 local'));
       upsertHistory(rows);
+      ipmaMeta = {
+        dataInicio: meteoWeek[0]?.date || '',
+        dataFim: meteoWeek[meteoWeek.length - 1]?.date || '',
+        ultimaSincronizacao: new Date().toISOString(),
+        fonte: 'Semana registada localmente'
+      };
       ipmaStatus = `${rows.length} dias registados no histórico local.`;
+      saveEtState();
       if (shouldRender) renderAll();
     }
 
