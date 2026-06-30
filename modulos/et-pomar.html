@@ -727,8 +727,10 @@
     let chart = null;
     let editingId = null;
     let modalCulturas = [];
-    let meteo = { tmax: 28, tmin: 17, hr: 60, u2k: 14, doy: 180 };
-    let meteoWeek = JSON.parse(JSON.stringify(SEED_WEEK));
+    let meteo = persistedState.meteo || { tmax: 28, tmin: 17, hr: 60, u2k: 14, doy: 180 };
+    let meteoWeek = Array.isArray(persistedState.meteoWeek) && persistedState.meteoWeek.length
+      ? persistedState.meteoWeek
+      : JSON.parse(JSON.stringify(SEED_WEEK));
     let historyRecords = loadHistory();
     let ipmaStatus = 'Dados iniciais carregados. Usa “Atualizar IPMA” para buscar dados actuais de Porches/Lagoa.';
 
@@ -774,6 +776,8 @@
         },
         parcelas,
         historyRecords,
+        meteo,
+        meteoWeek,
         ipmaStatus,
         ipmaMeta
       };
@@ -1719,6 +1723,10 @@
           if (!Array.isArray(data.parcelas)) throw new Error('Ficheiro sem lista de parcelas.');
           parcelas = data.parcelas;
           if (data.plantacao && typeof data.plantacao === 'object') Object.assign(PLANTACAO, data.plantacao);
+          if (data.meteo && typeof data.meteo === 'object') meteo = data.meteo;
+          if (Array.isArray(data.meteoWeek) && data.meteoWeek.length) meteoWeek = data.meteoWeek;
+          if (data.ipmaMeta && typeof data.ipmaMeta === 'object') ipmaMeta = data.ipmaMeta;
+          if (data.ipmaStatus) ipmaStatus = data.ipmaStatus;
           if (Array.isArray(data.historyRecords)) {
             historyRecords = data.historyRecords;
             localStorage.setItem(HISTORY_KEY, JSON.stringify(historyRecords));
