@@ -31,6 +31,11 @@ npm start
 
 Com o servico aberto, o botao `Guardar configuracao` na aba `Vegga` tenta enviar o valor calculado da parcela `A05/S5` para o programa `19 - Testes`.
 
+## Arranque automatico no Windows
+
+O ficheiro `iniciar-servico-veggariego.vbs` inicia o servico em segundo plano.
+Para arrancar automaticamente com o Windows, cria um atalho para esse ficheiro na pasta de Arranque do utilizador.
+
 ## Teste manual
 
 ```powershell
