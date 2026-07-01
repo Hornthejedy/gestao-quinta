@@ -1412,10 +1412,12 @@
       const parcel = parcelas.find(p => p.id === 'A05');
       const config = veggaConfigFor('A05');
       const value = parcel ? parcelCalc(parcel).volTotalRec : 0;
+      const valueToSend = Math.ceil(value);
       const canSend = isVeggaTestesS5Config(config);
       return `
         <div class="status-line" style="margin-top:8px">
-          Valor A05/S5 para enviar: <strong>${fmt.format(value)} ${config.unit || 'm3'}</strong>.
+          Valor A05/S5 calculado: <strong>${fmt.format(value)} ${config.unit || 'm3'}</strong>.
+          Valor enviado para Vegga: <strong>${fmt0.format(valueToSend)} ${config.unit || 'm3'}</strong>.
           Estado: ${canSend ? 'pronto para enviar para Programa 19 - Testes / SP1' : 'configuracao A05/S5 nao corresponde ao script disponivel'}.
         </div>
       `;
@@ -1436,7 +1438,7 @@
       if (!parcel || !isVeggaTestesS5Config(config)) {
         return { skipped: true, reason: 'A05/S5 nao esta ativo ou nao corresponde ao Programa 19 - Testes / SP1.' };
       }
-      const value = Math.round(parcelCalc(parcel).volTotalRec);
+      const value = Math.ceil(parcelCalc(parcel).volTotalRec);
       const payload = { value, unit: config.unit || 'm3' };
       const response = await fetch('http://127.0.0.1:8787/save-riego', {
         method: 'POST',
