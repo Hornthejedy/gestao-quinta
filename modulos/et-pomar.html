@@ -1461,7 +1461,10 @@
           alert(`Configuracao guardada e A05/S5 enviado para Vegga: ${fmt.format(result.value)} ${result.unit}.`);
         }
       } catch (error) {
-        alert('Configuracao guardada, mas o envio para Vegga falhou. Abre o servico local em integracoes/vegga-riego e volta a tentar. Detalhe: ' + error.message);
+        const fetchHint = error && error.message === 'Failed to fetch'
+          ? ' O servico local Vegga Riego nao esta aberto. Abre o ficheiro integracoes/vegga-riego/abrir-servico-veggariego.bat no computador e volta a tentar.'
+          : '';
+        alert('Configuracao guardada, mas o envio para Vegga falhou.' + fetchHint + ' Detalhe: ' + error.message);
       }
       renderVegga();
     }
