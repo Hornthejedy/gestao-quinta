@@ -793,7 +793,7 @@
         A02: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP2', sectors: 'S2', unit: 'm3', active: true },
         A03: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP3', sectors: 'S3', unit: 'm3', active: true },
         A04: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP4', sectors: 'S4', unit: 'm3', active: true },
-        A05: { programNumber: '', programName: '', subprogram: '', sectors: 'S5', unit: 'm3', active: false },
+        A05: { programNumber: '19', programName: 'Testes', subprogram: 'SP1', sectors: 'S5', unit: 'm3', active: true },
         A07: { programNumber: '', programName: '', subprogram: '', sectors: 'S7', unit: 'm3', active: false },
         A08: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP1', sectors: 'S8', unit: 'm3', active: true },
         A09: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP5', sectors: 'S9', unit: 'm3', active: true },
@@ -814,7 +814,13 @@
 
     function normalizeVeggaConfig(source) {
       const byParcel = new Map((Array.isArray(source) ? source : []).map(item => [item.parcelId || item.id, item]));
-      return parcelas.map(p => ({ ...defaultVeggaConfig(p.id), ...(byParcel.get(p.id) || {}), parcelId: p.id }));
+      return parcelas.map(p => {
+        const saved = byParcel.get(p.id) || {};
+        if (p.id === 'A05' && !saved.programNumber && !saved.programName && !saved.subprogram) {
+          return defaultVeggaConfig(p.id);
+        }
+        return { ...defaultVeggaConfig(p.id), ...saved, parcelId: p.id };
+      });
     }
 
     function veggaConfigFor(parcelId) {
@@ -1325,7 +1331,7 @@
         <div class="section-head">
           <div>
             <h2>Configuracao Vegga</h2>
-            <p class="muted small">Define apenas a correspondencia entre parcelas da app e programa/subprograma/setor no Vegga. Esta pagina ainda nao sincroniza valores.</p>
+            <p class="muted small">Define apenas a correspondencia entre parcelas da app e programa/subprograma/setor no Vegga. A integracao automatica esta limitada ao A05/S5 no programa 19 - Testes.</p>
           </div>
           <div class="source-actions">
             <button class="btn" onclick="setVeggaAllActive(true)">Todos ativos</button>
@@ -1335,7 +1341,8 @@
           </div>
         </div>
         <div class="panel">
-          <p class="muted small" style="margin:0">Regra atual: o numero da parcela corresponde ao setor Vegga. Ex.: A01 = S1, A08 = S8. A05 e A07 ficam inativos por defeito.</p>
+          <p class="muted small" style="margin:0">Regra atual: o numero da parcela corresponde ao setor Vegga. Ex.: A01 = S1, A08 = S8. O envio automatico so usa A05 = S5, programa 19, Testes, SP1.</p>
+          ${veggaBridgeSummary()}
         </div>
         <div class="table-wrap">
           <table>
@@ -1401,10 +1408,61 @@
       renderVegga();
     }
 
-    function saveVeggaConfig() {
+    function veggaBridgeSummary() {
+      const parcel = parcelas.find(p => p.id === 'A05');
+      const config = veggaConfigFor('A05');
+      const value = parcel ? parcelCalc(parcel).volTotalRec : 0;
+      const canSend = isVeggaTestesS5Config(config);
+      return `
+        <div class="status-line" style="margin-top:8px">
+          Valor A05/S5 para enviar: <strong>${fmt.format(value)} ${config.unit || 'm3'}</strong>.
+          Estado: ${canSend ? 'pronto para enviar para Programa 19 - Testes / SP1' : 'configuracao A05/S5 nao corresponde ao script disponivel'}.
+        </div>
+      `;
+    }
+
+    function isVeggaTestesS5Config(config) {
+      return !!config
+        && config.active
+        && String(config.programNumber || '').trim() === '19'
+        && String(config.programName || '').trim().toLowerCase() === 'testes'
+        && String(config.subprogram || '').trim().toUpperCase() === 'SP1'
+        && String(config.sectors || '').trim().toUpperCase() === 'S5';
+    }
+
+    async function sendVeggaTestesS5() {
+      const parcel = parcelas.find(p => p.id === 'A05');
+      const config = veggaConfigFor('A05');
+      if (!parcel || !isVeggaTestesS5Config(config)) {
+        return { skipped: true, reason: 'A05/S5 nao esta ativo ou nao corresponde ao Programa 19 - Testes / SP1.' };
+      }
+      const value = Number(parcelCalc(parcel).volTotalRec.toFixed(1));
+      const payload = { value, unit: config.unit || 'm3' };
+      const response = await fetch('http://127.0.0.1:8787/save-riego', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || 'Nao foi possivel guardar no Vegga.');
+      }
+      return { ...result, value, unit: payload.unit };
+    }
+
+    async function saveVeggaConfig() {
       veggaConfig = normalizeVeggaConfig(veggaConfig);
       saveEtState();
-      alert('Configuracao Vegga guardada.');
+      try {
+        const result = await sendVeggaTestesS5();
+        if (result.skipped) {
+          alert('Configuracao Vegga guardada. Envio para Vegga ignorado: ' + result.reason);
+        } else {
+          alert(`Configuracao guardada e A05/S5 enviado para Vegga: ${fmt.format(result.value)} ${result.unit}.`);
+        }
+      } catch (error) {
+        alert('Configuracao guardada, mas o envio para Vegga falhou. Abre o servico local em integracoes/vegga-riego e volta a tentar. Detalhe: ' + error.message);
+      }
       renderVegga();
     }
 
