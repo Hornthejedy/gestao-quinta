@@ -579,6 +579,7 @@
     <nav class="tabs" aria-label="Secções">
       <button class="tab-btn active" data-tab="parcelas">Parcelas</button>
       <button class="tab-btn" data-tab="calculo">Cálculo ET</button>
+      <button class="tab-btn" data-tab="vegga">Vegga</button>
       <button class="tab-btn" data-tab="semanal">Resumo semanal</button>
       <button class="tab-btn" data-tab="historico">Histórico</button>
     </nav>
@@ -727,6 +728,7 @@
     let chart = null;
     let editingId = null;
     let modalCulturas = [];
+    let veggaConfig = normalizeVeggaConfig(persistedState.veggaConfig);
     let meteo = persistedState.meteo || { tmax: 28, tmin: 17, hr: 60, u2k: 14, doy: 180 };
     let meteoWeek = Array.isArray(persistedState.meteoWeek) && persistedState.meteoWeek.length
       ? persistedState.meteoWeek
@@ -775,6 +777,7 @@
           fcManual: PLANTACAO.fcManual
         },
         parcelas,
+        veggaConfig: normalizeVeggaConfig(veggaConfig),
         historyRecords,
         meteo,
         meteoWeek,
@@ -782,6 +785,41 @@
         ipmaMeta
       };
       localStorage.setItem(ET_STATE_KEY, JSON.stringify(state));
+    }
+
+    function defaultVeggaConfig(parcelId) {
+      const defaults = {
+        A01: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP1', sectors: 'S1', unit: 'm3', active: true },
+        A02: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP2', sectors: 'S2', unit: 'm3', active: true },
+        A03: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP3', sectors: 'S3', unit: 'm3', active: true },
+        A04: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP4', sectors: 'S4', unit: 'm3', active: true },
+        A05: { programNumber: '', programName: '', subprogram: '', sectors: 'S5', unit: 'm3', active: false },
+        A07: { programNumber: '', programName: '', subprogram: '', sectors: 'S7', unit: 'm3', active: false },
+        A08: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP1', sectors: 'S8', unit: 'm3', active: true },
+        A09: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP5', sectors: 'S9', unit: 'm3', active: true },
+        A12: { programNumber: '1', programName: 'Abacate 1/2', subprogram: 'SP6', sectors: 'S12', unit: 'm3', active: true }
+      };
+      const sector = String(parcelId || '').replace(/^\D+/, '');
+      return {
+        parcelId,
+        programNumber: '',
+        programName: '',
+        subprogram: '',
+        sectors: sector ? 'S' + Number(sector) : '',
+        unit: 'm3',
+        active: false,
+        ...(defaults[parcelId] || {})
+      };
+    }
+
+    function normalizeVeggaConfig(source) {
+      const byParcel = new Map((Array.isArray(source) ? source : []).map(item => [item.parcelId || item.id, item]));
+      return parcelas.map(p => ({ ...defaultVeggaConfig(p.id), ...(byParcel.get(p.id) || {}), parcelId: p.id }));
+    }
+
+    function veggaConfigFor(parcelId) {
+      veggaConfig = normalizeVeggaConfig(veggaConfig);
+      return veggaConfig.find(item => item.parcelId === parcelId) || defaultVeggaConfig(parcelId);
     }
 
     function dateToIso(d) {
@@ -827,6 +865,16 @@
         hour: '2-digit',
         minute: '2-digit'
       });
+    }
+
+    function escapeAttr(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[ch]));
     }
 
     function currentIpmaMetaHtml() {
@@ -1270,6 +1318,96 @@
       renderAll();
     }
 
+    function renderVegga() {
+      veggaConfig = normalizeVeggaConfig(veggaConfig);
+      document.getElementById('tabContent').innerHTML = `
+        ${sourceBar()}
+        <div class="section-head">
+          <div>
+            <h2>Configuracao Vegga</h2>
+            <p class="muted small">Define apenas a correspondencia entre parcelas da app e programa/subprograma/setor no Vegga. Esta pagina ainda nao sincroniza valores.</p>
+          </div>
+          <div class="source-actions">
+            <button class="btn" onclick="setVeggaAllActive(true)">Todos ativos</button>
+            <button class="btn" onclick="setVeggaAllActive(false)">Limpar</button>
+            <button class="btn" onclick="resetVeggaDefaults()">Repor padrao</button>
+            <button class="btn primary" onclick="saveVeggaConfig()">Guardar configuracao</button>
+          </div>
+        </div>
+        <div class="panel">
+          <p class="muted small" style="margin:0">Regra atual: o numero da parcela corresponde ao setor Vegga. Ex.: A01 = S1, A08 = S8. A05 e A07 ficam inativos por defeito.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ativo</th>
+                <th>Parcela</th>
+                <th>Setor app</th>
+                <th>Programa</th>
+                <th>Nome programa</th>
+                <th>SP</th>
+                <th>Setor Vegga</th>
+                <th>Unidade</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${veggaConfig.map(veggaConfigRow).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function veggaConfigRow(item) {
+      const configured = item.active && item.programNumber && item.programName && item.subprogram && item.sectors;
+      const estado = configured ? '<span class="badge green">Configurado</span>' : (item.active ? '<span class="badge amber">Incompleto</span>' : '<span class="badge">Inativo</span>');
+      return `
+        <tr>
+          <td><input type="checkbox" ${item.active ? 'checked' : ''} onchange="setVeggaField('${item.parcelId}','active',this.checked)"></td>
+          <td><strong class="code">${item.parcelId}</strong></td>
+          <td>${item.sectors || 'S' + Number(String(item.parcelId).replace(/^\\D+/, ''))}</td>
+          <td><input value="${escapeAttr(item.programNumber)}" onchange="setVeggaField('${item.parcelId}','programNumber',this.value)" placeholder="ex: 1" style="min-width:70px"></td>
+          <td><input value="${escapeAttr(item.programName)}" onchange="setVeggaField('${item.parcelId}','programName',this.value)" placeholder="ex: Abacate 1/2"></td>
+          <td><input value="${escapeAttr(item.subprogram)}" onchange="setVeggaField('${item.parcelId}','subprogram',this.value)" placeholder="ex: SP1" style="min-width:90px"></td>
+          <td><input value="${escapeAttr(item.sectors)}" onchange="setVeggaField('${item.parcelId}','sectors',this.value)" placeholder="ex: S1" style="min-width:90px"></td>
+          <td>
+            <select onchange="setVeggaField('${item.parcelId}','unit',this.value)">
+              <option value="m3" ${item.unit === 'm3' ? 'selected' : ''}>m3</option>
+              <option value="hh:mm" ${item.unit === 'hh:mm' ? 'selected' : ''}>hh:mm</option>
+            </select>
+          </td>
+          <td>${estado}</td>
+        </tr>
+      `;
+    }
+
+    function setVeggaField(parcelId, field, value) {
+      veggaConfig = normalizeVeggaConfig(veggaConfig).map(item => item.parcelId === parcelId ? { ...item, [field]: field === 'active' ? !!value : String(value || '').trim() } : item);
+      saveEtState();
+    }
+
+    function setVeggaAllActive(active) {
+      veggaConfig = normalizeVeggaConfig(veggaConfig).map(item => ({ ...item, active: !!active }));
+      saveEtState();
+      renderVegga();
+    }
+
+    function resetVeggaDefaults() {
+      if (!confirm('Repor a configuracao padrao do Vegga?')) return;
+      veggaConfig = parcelas.map(p => defaultVeggaConfig(p.id));
+      saveEtState();
+      renderVegga();
+    }
+
+    function saveVeggaConfig() {
+      veggaConfig = normalizeVeggaConfig(veggaConfig);
+      saveEtState();
+      alert('Configuracao Vegga guardada.');
+      renderVegga();
+    }
+
     function renderSemanal() {
       const rows = parcelas.flatMap(p => p.culturas.map(c => {
         const days = meteoWeek.map(d => {
@@ -1446,6 +1584,7 @@
       }
       if (activeTab === 'parcelas') renderParcelas();
       if (activeTab === 'calculo') renderCalculo();
+      if (activeTab === 'vegga') renderVegga();
       if (activeTab === 'semanal') renderSemanal();
       if (activeTab === 'historico') renderHistorico();
     }
@@ -1722,6 +1861,7 @@
           const data = JSON.parse(String(reader.result || '{}'));
           if (!Array.isArray(data.parcelas)) throw new Error('Ficheiro sem lista de parcelas.');
           parcelas = data.parcelas;
+          if (Array.isArray(data.veggaConfig)) veggaConfig = normalizeVeggaConfig(data.veggaConfig);
           if (data.plantacao && typeof data.plantacao === 'object') Object.assign(PLANTACAO, data.plantacao);
           if (data.meteo && typeof data.meteo === 'object') meteo = data.meteo;
           if (Array.isArray(data.meteoWeek) && data.meteoWeek.length) meteoWeek = data.meteoWeek;
