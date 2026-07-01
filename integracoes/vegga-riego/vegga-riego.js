@@ -105,6 +105,7 @@ async function selectRiegoUnit(page, unit) {
 
 async function setRiegoAndSave(page, value, unit) {
   await selectRiegoUnit(page, unit);
+  const displayValue = String(value).replace(",", ".");
 
   const riegoInput = page
     .locator("vegga-input")
@@ -113,15 +114,59 @@ async function setRiegoAndSave(page, value, unit) {
     .locator("input");
 
   await riegoInput.waitFor({ state: "visible", timeout: 60000 });
-  await riegoInput.fill(String(value));
+  await riegoInput.click();
+  await riegoInput.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
+  await riegoInput.fill(displayValue);
+  await riegoInput.evaluate((input) => {
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    input.dispatchEvent(new Event("blur", { bubbles: true }));
+  });
 
   await page.getByText("Aceptar", { exact: true }).click();
   await page.waitForFunction(() => !document.body.innerText.includes("Sub-programa 1"));
 
-  const saveButton = page.getByText("Guardar", { exact: true }).last();
+  const saveButton = page.getByRole("button", { name: "Guardar" }).last();
   await saveButton.waitFor({ state: "visible", timeout: 60000 });
-  await saveButton.click();
-  await page.waitForTimeout(5000);
+  await page.waitForFunction(() => {
+    const buttons = [...document.querySelectorAll("button")];
+    const save = buttons.reverse().find(btn => (btn.textContent || "").trim() === "Guardar");
+    if (!save) return false;
+    const disabled = save.disabled
+      || save.hasAttribute("disabled")
+      || save.getAttribute("aria-disabled") === "true"
+      || save.className.includes("disabled");
+    return !disabled;
+  }, null, { timeout: 15000 }).catch(() => {});
+  await saveButton.click({ force: true });
+  await page.waitForTimeout(8000);
+}
+
+async function verifySavedValue(page, config) {
+  const value = config.value;
+  const unit = config.unit || "m3";
+  const expectedValue = Number(value).toLocaleString("en-US", {
+    minimumFractionDigits: Number.isInteger(Number(value)) ? 0 : 1,
+    maximumFractionDigits: 1
+  });
+  const unitPattern = String(unit).toLowerCase().includes("h") ? /hh:mm/i : /m[³3]/i;
+  if (!/\/programs\/detail\//.test(page.url())) {
+    await openProgram(page, config);
+  }
+  await page.getByText("Edición", { exact: true }).first().click();
+  await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
+  await page.waitForFunction(() => document.body.innerText.includes("SUB-PROGRAMAS"));
+  const editPanel = page.locator("vegga-overlay-content").filter({ hasText: "SUB-PROGRAMAS" }).first();
+  await editPanel.waitFor({ state: "visible", timeout: 30000 });
+  await editPanel.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  const sp1Row = editPanel.locator("vegga-data-grid-row2").filter({ hasText: /^SP1\b/i }).first();
+  await sp1Row.waitFor({ state: "visible", timeout: 30000 });
+  const rowText = (await sp1Row.innerText()).replace(/\s+/g, " ");
+  if (!rowText.includes("S5") || !rowText.includes(expectedValue) || !unitPattern.test(rowText)) {
+    throw new Error(`Valor nao confirmado no Vegga. Linha SP1: ${rowText}`);
+  }
 }
 
 export async function saveTestesSp1Riego(options) {
@@ -149,6 +194,7 @@ export async function saveTestesSp1Riego(options) {
     await openProgram(page, config);
     await openSp1Editor(page);
     await setRiegoAndSave(page, config.value, config.unit || "m3");
+    await verifySavedValue(page, config);
 
     const screenshotPath = path.join(config.artifactsDir, "vegga-riego-saved.png");
     await page.screenshot({ path: screenshotPath, fullPage: true });

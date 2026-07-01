@@ -1436,7 +1436,7 @@
       if (!parcel || !isVeggaTestesS5Config(config)) {
         return { skipped: true, reason: 'A05/S5 nao esta ativo ou nao corresponde ao Programa 19 - Testes / SP1.' };
       }
-      const value = Number(parcelCalc(parcel).volTotalRec.toFixed(1));
+      const value = Math.round(parcelCalc(parcel).volTotalRec);
       const payload = { value, unit: config.unit || 'm3' };
       const response = await fetch('http://127.0.0.1:8787/save-riego', {
         method: 'POST',
