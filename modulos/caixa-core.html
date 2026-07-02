@@ -496,10 +496,10 @@ tbody tr:hover .del-btn { opacity:1; }
 .pdf-saldo-inicial span:first-child { font-size:7.5pt; font-weight:600; color:#2d5a3d; text-transform:uppercase; }
 .pdf-saldo-inicial span:last-child { font-family:'Playfair Display',serif; font-size:11pt; color:#1a2e4a; white-space:nowrap; }
 .pdf-table { width:190mm; border-collapse:collapse; margin-top:4px; font-size:7.5pt; table-layout:fixed; }
-.pdf-table col.c-doc  { width:22mm; }
+.pdf-table col.c-doc  { width:30mm; }
 .pdf-table col.c-data { width:20mm; }
-.pdf-table col.c-nome { width:32mm; }
-.pdf-table col.c-obs  { width:66mm; }
+.pdf-table col.c-nome { width:30mm; }
+.pdf-table col.c-obs  { width:60mm; }
 .pdf-table col.c-rec  { width:25mm; }
 .pdf-table col.c-pag  { width:25mm; }
 .pdf-table thead tr { background:#1a2e4a; color:white; }
@@ -509,6 +509,7 @@ tbody tr:hover .del-btn { opacity:1; }
 .pdf-table tbody tr { border-bottom:.5pt solid #e5e0d8; }
 .pdf-table td { padding:4px 6px; vertical-align:middle; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pdf-table td.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pdf-table td.doc-cell { white-space:normal; word-break:break-word; overflow:visible; text-overflow:clip; }
 .pdf-table td.obs-cell { white-space:normal; word-break:break-word; line-height:1.25; }
 .pdf-table td.rec { color:#2d5a3d; font-weight:600; }
 .pdf-table td.pag { color:#c0392b; }
@@ -1504,7 +1505,7 @@ function exportPDF() {
   let rows = '';
   entries.forEach((e, i) => {
     rows += `<tr>
-      <td style="color:#666">${e.doc || '—'}</td>
+      <td class="doc-cell" style="color:#666">${e.doc || '—'}</td>
       <td>${e.data || ''}</td>
       <td><strong>${e.nome || ''}</strong></td>
       <td class="obs-cell">${e.obs || ''}</td>
