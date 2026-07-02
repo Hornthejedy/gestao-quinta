@@ -971,6 +971,21 @@ function escapeHtmlText(value) {
   }[ch]));
 }
 
+function sanitizePdfFilenamePart(value) {
+  return String(value || '')
+    .normalize('NFC')
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildCaixaPdfFilename(co, m) {
+  const empresa = sanitizePdfFilenamePart(co?.name || 'Empresa');
+  const mes = sanitizePdfFilenamePart(m?.mes || 'Mes');
+  const ano = sanitizePdfFilenamePart(m?.ano || new Date().getFullYear());
+  return `Folha de Caixa_${empresa}_${mes}_${ano}`;
+}
+
 function getCaixaResponsavelNome() {
   const input = document.getElementById('caixaResponsavelInput');
   const fromInput = input ? input.value.trim() : '';
@@ -1500,6 +1515,7 @@ function exportPDF() {
   const { rec, pag, saldo } = calcMonth(m);
   const today = new Date().toLocaleDateString('pt-PT');
   const caixaResponsavel = escapeHtmlText(getCaixaResponsavelNome()) || '________________';
+  const pdfFilename = buildCaixaPdfFilename(co, m);
  
   const entries = getVisibleEntries(m);
   let rows = '';
@@ -1572,6 +1588,15 @@ function exportPDF() {
   printDoc.style.left = '-100000px';
   printDoc.style.top = '0';
   printDoc.style.opacity = '0';
+  const oldTitle = document.title;
+  const oldParentTitle = (() => {
+    try { return window.parent && window.parent.document ? window.parent.document.title : null; }
+    catch (_) { return null; }
+  })();
+  document.title = pdfFilename;
+  try {
+    if (window.parent && window.parent.document) window.parent.document.title = pdfFilename;
+  } catch (_) {}
   window.print();
   setTimeout(() => {
     printDoc.style.display = 'none';
@@ -1579,6 +1604,10 @@ function exportPDF() {
     printDoc.style.left = '';
     printDoc.style.top = '';
     printDoc.style.opacity = '';
+    document.title = oldTitle;
+    try {
+      if (oldParentTitle !== null && window.parent && window.parent.document) window.parent.document.title = oldParentTitle;
+    } catch (_) {}
   }, 300);
 }
  
