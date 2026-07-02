@@ -5883,6 +5883,106 @@ window.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 
+<script id="patch-v46-alertas-sem-duplicados">
+(function(){
+  'use strict';
+  function texto(v){
+    return String(v == null ? '' : v)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+  function dataAlerta(a){
+    return a?.dataPrevista || a?.data || (String(a?.msg || '').match(/\d{4}-\d{2}-\d{2}/)?.[0] || '');
+  }
+  function chaveAlerta(a){
+    const msg = String(a?.msg || '')
+      .replace(/[–—]/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return [
+      texto(a?.area || ''),
+      texto(a?.titulo || ''),
+      texto(msg),
+      texto(dataAlerta(a)),
+      texto(a?.tipoAtivo || ''),
+      texto(a?.ativoId || ''),
+      texto(a?.acao || '')
+    ].join('|');
+  }
+  function unicoAlertas(lista){
+    const vistos = new Set();
+    return (lista || []).filter(function(a){
+      const key = chaveAlerta(a);
+      if (!key.replace(/\|/g, '')) return true;
+      if (vistos.has(key)) return false;
+      vistos.add(key);
+      return true;
+    });
+  }
+  function chaveSanitario(al){
+    return [
+      texto(al?.animalId || ''),
+      texto(al?.tipo || ''),
+      texto(al?.dataPrevista || ''),
+      texto(al?.notas || ''),
+      texto(al?.origem || '')
+    ].join('|');
+  }
+  function cancelarDuplicadosSanitarios(){
+    if (!window.app || !Array.isArray(app.alertasAnimais)) return false;
+    const vistos = new Map();
+    let mudou = false;
+    app.alertasAnimais.forEach(function(al){
+      if ((al.estado || 'Pendente') !== 'Pendente') return;
+      if (al.origem !== 'Registo sanitário') return;
+      const key = chaveSanitario(al);
+      const antigo = vistos.get(key);
+      if (!antigo) {
+        vistos.set(key, al);
+        return;
+      }
+      const manterAntigo = String(antigo.criadoEm || antigo.id || '') <= String(al.criadoEm || al.id || '');
+      const duplicado = manterAntigo ? al : antigo;
+      if (duplicado.estado !== 'Cancelado') {
+        duplicado.estado = 'Cancelado';
+        duplicado.canceladoPor = 'duplicado automático';
+        mudou = true;
+      }
+      if (!manterAntigo) vistos.set(key, al);
+    });
+    return mudou;
+  }
+
+  const alertasGeraisAnteriorV46 = window.alertasGerais;
+  if (typeof alertasGeraisAnteriorV46 === 'function') {
+    window.alertasGerais = alertasGerais = function(){
+      return unicoAlertas(alertasGeraisAnteriorV46.apply(this, arguments));
+    };
+  }
+
+  const guardarSanitarioAnteriorV46 = window.guardarSanitarioAnimal;
+  if (typeof guardarSanitarioAnteriorV46 === 'function') {
+    window.guardarSanitarioAnimal = guardarSanitarioAnimal = function(){
+      const resultado = guardarSanitarioAnteriorV46.apply(this, arguments);
+      if (cancelarDuplicadosSanitarios() && typeof guardarDados === 'function') guardarDados();
+      if (typeof renderAlertas === 'function') renderAlertas();
+      return resultado;
+    };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){
+      if (cancelarDuplicadosSanitarios() && typeof guardarDados === 'function') guardarDados();
+    });
+  } else if (cancelarDuplicadosSanitarios() && typeof guardarDados === 'function') {
+    guardarDados();
+  }
+})();
+</script>
+
 <script id="activador-modulo-v42">
 (function(){
   'use strict';

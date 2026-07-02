@@ -4,7 +4,7 @@
   const moduloFrameId = 'moduloFrame';
   const moduloPadrao = 'alertas';
   const modulos = {
-    alertas: 'modulos/alertas.html?v=20260624-seguros-1',
+    alertas: 'modulos/alertas.html?v=20260702-alertas-duplicados-1',
     dashboard: 'modulos/dashboard.html',
     culturas: 'modulos/culturas.html',
     fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260616-so3-3',
