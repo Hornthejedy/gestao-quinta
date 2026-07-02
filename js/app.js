@@ -11,7 +11,7 @@
     etPomar: 'modulos/et-pomar.html?v=20260701-vegga-ceil-1',
     stocks: 'modulos/stocks.html',
     stocksQuinta: 'modulos/stocks-quinta.html',
-    caixa: 'modulos/caixa.html?v=20260702-caixa-assinatura-1',
+    caixa: 'modulos/caixa.html?v=20260702-caixa-nome-pdf-1',
     produtosAutorizados: 'modulos/produtos-autorizados.html',
     fitossanidade: 'modulos/fitossanidade.html',
     operacoes: 'modulos/operacoes.html',

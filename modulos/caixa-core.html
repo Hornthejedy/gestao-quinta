@@ -75,8 +75,25 @@ body { font-family:'DM Sans',sans-serif; background:var(--ivory); color:var(--te
 .co-desc { font-size:13px; color:var(--gray); font-weight:300; line-height:1.4; }
 .co-months { margin-top:12px; font-size:12px; color:var(--green); font-weight:500; }
  
+.selector-caixa-nome {
+  margin-top:22px; max-width:620px; width:100%;
+  background:rgba(255,255,255,.72); border:1px solid var(--border);
+  border-radius:14px; padding:14px 16px;
+}
+.selector-caixa-nome label {
+  display:block; font-size:12px; font-weight:700; color:var(--navy);
+  margin-bottom:6px; letter-spacing:.2px;
+}
+.selector-caixa-nome input {
+  width:100%; border:1.5px solid var(--border2); border-radius:10px;
+  padding:11px 12px; font-family:'DM Sans',sans-serif; font-size:15px;
+  background:var(--white); color:var(--text); outline:none;
+}
+.selector-caixa-nome input:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(45,90,61,.08); }
+.selector-caixa-nome small { display:block; margin-top:6px; color:var(--gray); font-size:12px; }
+
 .selector-actions { margin-top:36px; display:flex; gap:12px; align-items:center; }
- 
+
 .btn-enter {
   padding:14px 40px; background:var(--green); color:var(--white);
   border:none; border-radius:12px; font-family:'Playfair Display',serif;
@@ -625,6 +642,12 @@ tbody tr:hover .del-btn { opacity:1; }
       <div class="co-months" id="co-months-ps">— meses guardados</div>
     </div>
   </div>
+
+  <div class="selector-caixa-nome">
+    <label for="caixaResponsavelInput">Nome de quem fez o caixa</label>
+    <input id="caixaResponsavelInput" type="text" placeholder="Escrever nome para aparecer no PDF" oninput="saveCaixaResponsavelNome()">
+    <small>Este nome aparece em "Caixa — Feito por" quando exportas o PDF.</small>
+  </div>
  
   <div class="selector-actions">
     <button class="btn-enter" id="btnEnter" onclick="enterApp()">Entrar →</button>
@@ -935,6 +958,34 @@ function getData(co) {
 const fmt  = v => (v != null ? v.toLocaleString('pt-PT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €' : '—');
 const fmtN = v => (v != null ? v.toFixed(2) : '0.00');
 const r2   = v => Math.round(v * 100) / 100;
+const CAIXA_RESPONSAVEL_KEY = 'caixa_responsavel_pdf_v1';
+
+function escapeHtmlText(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function getCaixaResponsavelNome() {
+  const input = document.getElementById('caixaResponsavelInput');
+  const fromInput = input ? input.value.trim() : '';
+  if (fromInput) return fromInput;
+  try { return (localStorage.getItem(CAIXA_RESPONSAVEL_KEY) || '').trim(); }
+  catch (_) { return ''; }
+}
+
+function saveCaixaResponsavelNome() {
+  const input = document.getElementById('caixaResponsavelInput');
+  const nome = input ? input.value.trim() : getCaixaResponsavelNome();
+  try {
+    if (nome) localStorage.setItem(CAIXA_RESPONSAVEL_KEY, nome);
+    else localStorage.removeItem(CAIXA_RESPONSAVEL_KEY);
+  } catch (_) {}
+}
  
 function calcMonth(m) {
   let rec = 0, pag = 0;
@@ -973,6 +1024,11 @@ function initSelector() {
     const n = Object.keys(data).length;
     document.getElementById(`co-months-${co}`).textContent = `${n} meses guardados`;
   }
+  const input = document.getElementById('caixaResponsavelInput');
+  if (input) {
+    try { input.value = localStorage.getItem(CAIXA_RESPONSAVEL_KEY) || ''; }
+    catch (_) { input.value = ''; }
+  }
 }
  
 let selectedCoCard = null;
@@ -986,6 +1042,7 @@ function selectCo(key, el) {
  
 function enterApp() {
   if (!selectedCoCard) return;
+  saveCaixaResponsavelNome();
   activeCo = selectedCoCard;
   showScreen('screen-app');
   initApp();
@@ -1441,6 +1498,7 @@ function exportPDF() {
   const co   = CO_CONFIG[activeCo];
   const { rec, pag, saldo } = calcMonth(m);
   const today = new Date().toLocaleDateString('pt-PT');
+  const caixaResponsavel = escapeHtmlText(getCaixaResponsavelNome()) || '________________';
  
   const entries = getVisibleEntries(m);
   let rows = '';
@@ -1499,7 +1557,7 @@ function exportPDF() {
       <div class="ptc"><div class="pl">Saldo Final</div><div class="pv" style="color:${salCol}">${fmt(saldo)}</div></div>
     </div>
     <div class="pdf-sigs">
-      <div class="ps"><div class="psl">Caixa — Feito por<br>Carlos Justino · ${today}</div></div>
+      <div class="ps"><div class="psl">Caixa — Feito por<br>${caixaResponsavel} · ${today}</div></div>
       <div class="ps"><div class="psl">Tesouraria / Conferido<br>____ / ____ / ${m.ano}</div></div>
       <div class="ps"><div class="psl">Direção Financeira<br>____ / ____ / ${m.ano}</div></div>
     </div>
@@ -1953,6 +2011,7 @@ const _origEnterApp = enterApp;
 function enterApp() {
   if (!selectedCoCard) return;
   activeCo = selectedCoCard;
+  saveCaixaResponsavelNome();
   // Ensure suppliers are seeded from existing data
   getSuppliers(activeCo);
   showScreen('screen-app');
