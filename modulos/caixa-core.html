@@ -1102,10 +1102,64 @@ function propagateFromKey(co, fromKey) {
 }
  
 let sortCol = null, sortDir = 1;
+
+function sortStateKey() {
+  return activeCo && activeKey ? `caixa_sort_${activeCo}_${activeKey}` : '';
+}
+
+function loadSortState() {
+  sortCol = null;
+  sortDir = 1;
+  const key = sortStateKey();
+  if (!key) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || 'null');
+    if (saved && Number.isInteger(saved.col) && (saved.dir === 1 || saved.dir === -1)) {
+      sortCol = saved.col;
+      sortDir = saved.dir;
+    }
+  } catch (_) {}
+}
+
+function saveSortState() {
+  const key = sortStateKey();
+  if (!key) return;
+  try {
+    if (sortCol === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify({ col: sortCol, dir: sortDir }));
+  } catch (_) {}
+}
+
+function entrySortValue(e, col) {
+  if (col === 0) return (e.doc || '').toLowerCase();
+  if (col === 1) {
+    const p = (e.data || '').split('/');
+    return p.length === 3 ? `${p[2]}${p[1]}${p[0]}` : '';
+  }
+  if (col === 2) return (e.nome || '').toLowerCase();
+  if (col === 3) return (e.obs || '').toLowerCase();
+  if (col === 4) return e.rec || 0;
+  if (col === 5) return e.pag || 0;
+  return 0;
+}
+
+function getVisibleEntries(m) {
+  const entries = (m?.entries || []).map((entry, idx) => ({ entry, idx }));
+  if (sortCol === null) return entries.map(item => item.entry);
+
+  entries.sort((a, b) => {
+    const va = entrySortValue(a.entry, sortCol);
+    const vb = entrySortValue(b.entry, sortCol);
+    if (va < vb) return -sortDir;
+    if (va > vb) return sortDir;
+    return a.idx - b.idx;
+  });
+  return entries.map(item => item.entry);
+}
  
 function selectMonth(key) {
   activeKey = key;
-  sortCol = null; sortDir = 1;
+  loadSortState();
   document.querySelectorAll('.month-item').forEach(el => {
     el.classList.toggle('active', el.dataset.key === key);
     // expand the group that contains the active key
@@ -1145,28 +1199,7 @@ function renderMonth() {
     return;
   }
  
-  // Apply sort
-  let entries = [...m.entries];
-  if (sortCol !== null) {
-    const getVal = (e) => {
-      if (sortCol === 0) return (e.doc || '').toLowerCase();
-      if (sortCol === 1) { // date dd/mm/yyyy → sort as yyyymmdd
-        const p = (e.data || '').split('/');
-        return p.length === 3 ? `${p[2]}${p[1]}${p[0]}` : '';
-      }
-      if (sortCol === 2) return (e.nome || '').toLowerCase();
-      if (sortCol === 3) return (e.obs  || '').toLowerCase();
-      if (sortCol === 4) return e.rec || 0;
-      if (sortCol === 5) return e.pag || 0;
-      return 0;
-    };
-    entries.sort((a,b) => {
-      const va = getVal(a), vb = getVal(b);
-      if (va < vb) return -sortDir;
-      if (va > vb) return  sortDir;
-      return 0;
-    });
-  }
+  const entries = getVisibleEntries(m);
  
   const runSaldos = calcRunSaldo(entries, m.saldo_inicial);
  
@@ -1205,6 +1238,7 @@ function renderMonth() {
 function doSort(col) {
   if (sortCol === col) sortDir = -sortDir;
   else { sortCol = col; sortDir = 1; }
+  saveSortState();
   renderMonth();
 }
  
@@ -1408,8 +1442,9 @@ function exportPDF() {
   const { rec, pag, saldo } = calcMonth(m);
   const today = new Date().toLocaleDateString('pt-PT');
  
+  const entries = getVisibleEntries(m);
   let rows = '';
-  m.entries.forEach((e, i) => {
+  entries.forEach((e, i) => {
     rows += `<tr>
       <td style="color:#666">${e.doc || '—'}</td>
       <td>${e.data || ''}</td>
