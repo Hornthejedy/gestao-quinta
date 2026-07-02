@@ -1588,27 +1588,31 @@ function exportPDF() {
   printDoc.style.left = '-100000px';
   printDoc.style.top = '0';
   printDoc.style.opacity = '0';
-  const oldTitle = document.title;
-  const oldParentTitle = (() => {
-    try { return window.parent && window.parent.document ? window.parent.document.title : null; }
-    catch (_) { return null; }
-  })();
-  document.title = pdfFilename;
-  try {
-    if (window.parent && window.parent.document) window.parent.document.title = pdfFilename;
-  } catch (_) {}
-  window.print();
-  setTimeout(() => {
+  const titleTargets = [];
+  [window, window.parent, window.top].forEach(w => {
+    try {
+      if (w && w.document && !titleTargets.some(t => t.doc === w.document)) {
+        titleTargets.push({ doc: w.document, title: w.document.title });
+        w.document.title = pdfFilename;
+      }
+    } catch (_) {}
+  });
+
+  const cleanupPrint = () => {
     printDoc.style.display = 'none';
     printDoc.style.position = '';
     printDoc.style.left = '';
     printDoc.style.top = '';
     printDoc.style.opacity = '';
-    document.title = oldTitle;
-    try {
-      if (oldParentTitle !== null && window.parent && window.parent.document) window.parent.document.title = oldParentTitle;
-    } catch (_) {}
-  }, 300);
+    titleTargets.forEach(t => { try { t.doc.title = t.title; } catch (_) {} });
+    window.removeEventListener('afterprint', cleanupPrint);
+  };
+
+  window.addEventListener('afterprint', cleanupPrint);
+  setTimeout(() => {
+    window.print();
+    setTimeout(cleanupPrint, 5000);
+  }, 120);
 }
  
 // ═══════════════════════════════════════════════════════
