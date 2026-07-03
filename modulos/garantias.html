@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão da Quinta — Garantias</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#263238}.container{max-width:100%;padding:18px}.section-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}.section-title{font-size:28px;font-weight:900;color:#153126;margin:0}.muted{color:#667;font-size:14px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.btn-primary{padding:11px 16px;background:#2f7d46;color:#fff;border:0;border-radius:8px;font-weight:800;cursor:pointer}.btn-secondary{padding:10px 15px;background:#fff;color:#06451f;border:1px solid #ccd8cc;border-radius:8px;font-weight:800;cursor:pointer}.btn-sm{padding:7px 10px;background:#f2f2f2;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-weight:700}.btn-delete{background:#ffebee;border-color:#ffcdd2;color:#b71c1c}.alert{padding:12px 14px;border-radius:10px;background:#eef7ff;border:1px solid #cfe6ff;color:#204b6b;margin-bottom:14px}.alert.warn{background:#fff8e1;border-color:#ffe082;color:#7a5200}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0}.stat{background:#fff;border:1px solid #ddd;border-radius:12px;padding:15px}.stat strong{display:block;font-size:26px;color:#2f7d46}.stat span{color:#667}.filter-box{background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:2fr repeat(4, minmax(140px,1fr)) auto;gap:10px;align-items:end}.form-group label{display:block;font-weight:800;font-size:13px;margin-bottom:5px;color:#58635c}.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px;border:1px solid #d8ddd8;border-radius:8px;background:#fff;font:inherit}.form-group textarea{min-height:90px;resize:vertical}.table-wrap{overflow:auto;background:#fff;border:1px solid #ddd;border-radius:12px}table{border-collapse:collapse;width:100%;min-width:1120px}th,td{padding:11px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}th{background:#f7f8f5;color:#4c554f;font-size:13px;text-transform:uppercase;letter-spacing:.02em;cursor:pointer;user-select:none}.right{text-align:right}.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef6ee;color:#285f36;font-size:12px;font-weight:800}.badge.warn{background:#fff4e0;color:#8a5600}.badge.error{background:#ffebee;color:#a60000}.badge.info{background:#e8f1ff;color:#245487}.thumb{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid #ddd;background:#fafafa}.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:1000;align-items:flex-start;justify-content:center;padding:18px;overflow:auto}.modal-overlay.active{display:flex}.modal{background:#fff;border-radius:14px;padding:20px;max-width:980px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.22)}.modal-header{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:14px;font-size:22px;font-weight:900}.close-btn{border:0;background:none;font-size:30px;color:#777;cursor:pointer}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}.preview-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.preview-row img{width:86px;height:86px;object-fit:cover;border:1px solid #ddd;border-radius:10px}.empty{background:#fff;border:1px dashed #bbb;border-radius:12px;padding:24px;text-align:center;color:#667}.nowrap{white-space:nowrap}@media(max-width:900px){.container{padding:10px}.filter-box,.form-row,.form-row-3{grid-template-columns:1fr}.section-title{font-size:24px}table{min-width:960px}}@media print{.toolbar,.filter-box,.btn-sm,.btn-primary,.btn-secondary,.modal-overlay{display:none!important}body{background:#fff}.container{padding:0}.table-wrap{border:0}th{background:#f0f0f0!important}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h1 class="section-title">🧾 Garantias</h1>
+        <div class="muted">Registo de equipamentos, materiais e máquinas compradas com garantia.</div>
+      </div>
+      <div class="toolbar">
+        <button class="btn-secondary" onclick="imprimirGarantias()">Imprimir / PDF</button>
+        <button class="btn-secondary" onclick="exportarDados()">Exportar dados</button>
+        <button class="btn-primary" onclick="abrirGarantia()">+ Adicionar garantia</button>
+      </div>
+    </div>
+
+    <div class="alert">Os alertas aparecem automaticamente quando uma garantia estiver a 30 dias do fim. A 7 dias passa a urgente.</div>
+    <div id="resumoGarantias"></div>
+
+    <div class="filter-box">
+      <div class="form-group"><label>Pesquisa</label><input id="filtroPesquisa" placeholder="Produto, fornecedor, fatura, série, notas..." oninput="renderGarantias()"></div>
+      <div class="form-group"><label>Categoria</label><select id="filtroCategoria" onchange="renderGarantias()"></select></div>
+      <div class="form-group"><label>Estado</label><select id="filtroEstado" onchange="renderGarantias()"><option value="">Todos</option><option value="ativa">Em garantia</option><option value="a_terminar">A terminar</option><option value="expirada">Expirada</option><option value="acionada">Acionada</option><option value="substituido">Substituído</option><option value="abatido">Abatido</option></select></div>
+      <div class="form-group"><label>Fornecedor</label><select id="filtroFornecedor" onchange="renderGarantias()"></select></div>
+      <div class="form-group"><label>Ano da fatura</label><select id="filtroAno" onchange="renderGarantias()"></select></div>
+      <button class="btn-secondary" onclick="limparFiltros()">Limpar</button>
+    </div>
+
+    <div id="listaGarantias"></div>
+  </div>
+
+  <div class="modal-overlay" id="modalGarantia">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="modalTitulo">Adicionar garantia</span>
+        <button class="close-btn" onclick="fecharGarantia()">×</button>
+      </div>
+      <input type="hidden" id="garantiaId">
+      <div class="form-row">
+        <div class="form-group"><label>Descrição do produto *</label><input id="garantiaDescricao" placeholder="ex: Roçadora Stihl, bomba, computador..."></div>
+        <div class="form-group"><label>Categoria</label><select id="garantiaCategoria"></select></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Marca / modelo</label><input id="garantiaModelo"></div>
+        <div class="form-group"><label>N.º de série</label><input id="garantiaSerie"></div>
+        <div class="form-group"><label>Localização</label><input id="garantiaLocalizacao" placeholder="ex: oficina, armazém, casa da bomba"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Fornecedor</label><input id="garantiaFornecedor"></div>
+        <div class="form-group"><label>Contacto do fornecedor</label><input id="garantiaContacto" placeholder="telefone ou email"></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Data da fatura *</label><input type="date" id="garantiaDataFatura"></div>
+        <div class="form-group"><label>N.º da fatura</label><input id="garantiaNumeroFatura"></div>
+        <div class="form-group"><label>Preço de compra (€)</label><input type="number" min="0" step="0.01" id="garantiaPreco"></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Fim da garantia *</label><input type="date" id="garantiaFim"></div>
+        <div class="form-group"><label>Estado</label><select id="garantiaEstado"><option value="ativa">Em garantia</option><option value="acionada">Acionada</option><option value="substituido">Substituído</option><option value="abatido">Abatido</option></select></div>
+        <div class="form-group"><label>Data de acionamento</label><input type="date" id="garantiaDataAcionamento"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Fotografia do equipamento/material</label><input type="file" accept="image/*" id="garantiaFoto"></div>
+        <div class="form-group"><label>Documento/anexo da fatura</label><input type="file" accept="image/*,.pdf" id="garantiaDocumento"></div>
+      </div>
+      <div class="preview-row" id="previewAnexos"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Resultado da reclamação</label><input id="garantiaResultado" placeholder="reparado, substituído, recusado, em análise..."></div>
+        <div class="form-group"><label>Notas</label><textarea id="garantiaNotas"></textarea></div>
+      </div>
+      <div class="toolbar">
+        <button class="btn-primary" onclick="guardarGarantia()">Guardar garantia</button>
+        <button class="btn-secondary" onclick="fecharGarantia()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      'use strict';
+      const STORAGE_KEY = 'gestao_quinta_v2';
+      const categorias = ['Máquina','Ferramenta','Equipamento de rega','Informática','Eletrodoméstico','Viatura','Trator/Máquina','Material agrícola','Outro'];
+      let app = {};
+      let sort = {campo:'fimGarantia', dir:'asc'};
+      let anexosEmEdicao = {};
+
+      function hoje(){ return new Date().toISOString().slice(0,10); }
+      function id(){ return 'gar_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+      function h(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+      function n(v){ const x = Number(String(v ?? '').replace(',', '.')); return Number.isFinite(x) ? x : 0; }
+      function eur(v){ return n(v).toLocaleString('pt-PT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €'; }
+      function fmtData(v){ return v || '—'; }
+      function diasAte(data){ if(!data) return null; return Math.ceil((new Date(data + 'T00:00:00') - new Date(hoje() + 'T00:00:00')) / 86400000); }
+      function load(){
+        try { app = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; } catch(_e) { app = {}; }
+        if (!Array.isArray(app.garantias)) app.garantias = [];
+      }
+      function save(){
+        app.garantias = app.garantias || [];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(app));
+      }
+      function estadoCalculado(g){
+        if (['acionada','substituido','abatido'].includes(g.estado)) return g.estado;
+        const d = diasAte(g.fimGarantia);
+        if (d === null) return 'ativa';
+        if (d < 0) return 'expirada';
+        if (d <= 30) return 'a_terminar';
+        return 'ativa';
+      }
+      function estadoLabel(e){
+        return {ativa:'Em garantia',a_terminar:'A terminar',expirada:'Expirada',acionada:'Acionada',substituido:'Substituído',abatido:'Abatido'}[e] || e || '—';
+      }
+      function estadoBadge(g){
+        const e = estadoCalculado(g);
+        const cls = e === 'expirada' ? 'error' : e === 'a_terminar' ? 'warn' : e === 'acionada' ? 'info' : '';
+        return '<span class="badge ' + cls + '">' + h(estadoLabel(e)) + '</span>';
+      }
+      function preencherSelects(){
+        const catOptions = '<option value="">Todas</option>' + categorias.map(c => '<option value="'+h(c)+'">'+h(c)+'</option>').join('');
+        document.getElementById('filtroCategoria').innerHTML = catOptions;
+        document.getElementById('garantiaCategoria').innerHTML = categorias.map(c => '<option value="'+h(c)+'">'+h(c)+'</option>').join('');
+      }
+      function atualizarFiltrosDinamicos(){
+        const fornecedorAtual = document.getElementById('filtroFornecedor').value;
+        const anoAtual = document.getElementById('filtroAno').value;
+        const fornecedores = [...new Set((app.garantias||[]).map(g => g.fornecedor).filter(Boolean))].sort();
+        const anos = [...new Set((app.garantias||[]).map(g => String(g.dataFatura || '').slice(0,4)).filter(Boolean))].sort().reverse();
+        document.getElementById('filtroFornecedor').innerHTML = '<option value="">Todos</option>' + fornecedores.map(f => '<option value="'+h(f)+'">'+h(f)+'</option>').join('');
+        document.getElementById('filtroAno').innerHTML = '<option value="">Todos</option>' + anos.map(a => '<option value="'+h(a)+'">'+h(a)+'</option>').join('');
+        document.getElementById('filtroFornecedor').value = fornecedores.includes(fornecedorAtual) ? fornecedorAtual : '';
+        document.getElementById('filtroAno').value = anos.includes(anoAtual) ? anoAtual : '';
+      }
+      function garantiasFiltradas(){
+        const q = document.getElementById('filtroPesquisa').value.trim().toLowerCase();
+        const cat = document.getElementById('filtroCategoria').value;
+        const est = document.getElementById('filtroEstado').value;
+        const forn = document.getElementById('filtroFornecedor').value;
+        const ano = document.getElementById('filtroAno').value;
+        return (app.garantias || []).filter(g => {
+          const texto = [g.descricao,g.categoria,g.modelo,g.numeroSerie,g.fornecedor,g.contacto,g.numeroFatura,g.localizacao,g.notas,g.resultado].join(' ').toLowerCase();
+          if (q && !texto.includes(q)) return false;
+          if (cat && g.categoria !== cat) return false;
+          if (est && estadoCalculado(g) !== est) return false;
+          if (forn && g.fornecedor !== forn) return false;
+          if (ano && String(g.dataFatura || '').slice(0,4) !== ano) return false;
+          return true;
+        }).sort((a,b) => {
+          const av = sort.campo === 'preco' ? n(a[sort.campo]) : String(a[sort.campo] || '');
+          const bv = sort.campo === 'preco' ? n(b[sort.campo]) : String(b[sort.campo] || '');
+          const r = av > bv ? 1 : av < bv ? -1 : 0;
+          return sort.dir === 'asc' ? r : -r;
+        });
+      }
+      function renderResumo(){
+        const lista = app.garantias || [];
+        const total = lista.length;
+        const ativas = lista.filter(g => estadoCalculado(g) === 'ativa').length;
+        const terminar = lista.filter(g => estadoCalculado(g) === 'a_terminar').length;
+        const expiradas = lista.filter(g => estadoCalculado(g) === 'expirada').length;
+        const valor = lista.reduce((t,g) => t + n(g.preco), 0);
+        document.getElementById('resumoGarantias').innerHTML = '<div class="stats"><div class="stat"><strong>'+total+'</strong><span>Total de garantias</span></div><div class="stat"><strong>'+ativas+'</strong><span>Em garantia</span></div><div class="stat"><strong>'+terminar+'</strong><span>A terminar em 30 dias</span></div><div class="stat"><strong>'+expiradas+'</strong><span>Expiradas</span></div><div class="stat"><strong>'+eur(valor)+'</strong><span>Valor registado</span></div></div>';
+      }
+      function sortHeader(campo, label){
+        const mark = sort.campo === campo ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+        return '<th onclick="ordenarPor(\''+campo+'\')">'+label+mark+'</th>';
+      }
+      window.renderGarantias = function(){
+        load();
+        atualizarFiltrosDinamicos();
+        renderResumo();
+        const lista = garantiasFiltradas();
+        if (!lista.length) {
+          document.getElementById('listaGarantias').innerHTML = '<div class="empty">Sem garantias para os filtros atuais.</div>';
+          return;
+        }
+        document.getElementById('listaGarantias').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+          '<th>Foto</th>' + sortHeader('descricao','Produto') + sortHeader('categoria','Categoria') + sortHeader('fornecedor','Fornecedor') + sortHeader('numeroFatura','Fatura') + sortHeader('dataFatura','Data fatura') + sortHeader('fimGarantia','Fim garantia') + '<th>Estado</th>' + sortHeader('preco','Preço') + '<th>Anexos</th><th>Ações</th></tr></thead><tbody>' +
+          lista.map(g => '<tr><td>' + (g.fotoDataUrl ? '<img class="thumb" src="'+h(g.fotoDataUrl)+'" alt="Foto">' : '—') + '</td><td><strong>'+h(g.descricao)+'</strong><div class="muted">'+h(g.modelo || '')+(g.numeroSerie ? ' · Série: '+h(g.numeroSerie) : '')+'</div><div class="muted">'+h(g.localizacao || '')+'</div></td><td>'+h(g.categoria || '—')+'</td><td>'+h(g.fornecedor || '—')+'<div class="muted">'+h(g.contacto || '')+'</div></td><td>'+h(g.numeroFatura || '—')+'</td><td class="nowrap">'+fmtData(h(g.dataFatura))+'</td><td class="nowrap"><strong>'+fmtData(h(g.fimGarantia))+'</strong><div class="muted">'+textoPrazo(g)+'</div></td><td>'+estadoBadge(g)+'</td><td class="right nowrap">'+eur(g.preco)+'</td><td>'+linksAnexos(g)+'</td><td class="nowrap"><button class="btn-sm" onclick="abrirGarantia(\''+h(g.id)+'\')">Editar</button> <button class="btn-sm btn-delete" onclick="apagarGarantia(\''+h(g.id)+'\')">Apagar</button></td></tr>').join('') +
+          '</tbody></table></div>';
+      };
+      function textoPrazo(g){
+        const d = diasAte(g.fimGarantia);
+        if (d === null) return '';
+        if (d < 0) return 'terminou há ' + Math.abs(d) + ' dia(s)';
+        if (d === 0) return 'termina hoje';
+        return 'faltam ' + d + ' dia(s)';
+      }
+      function linksAnexos(g){
+        const out = [];
+        if (g.fotoDataUrl) out.push('<a href="'+h(g.fotoDataUrl)+'" download="'+h(g.fotoNome || 'foto-garantia')+'">Foto</a>');
+        if (g.documentoDataUrl) out.push('<a href="'+h(g.documentoDataUrl)+'" download="'+h(g.documentoNome || 'documento-garantia')+'">Documento</a>');
+        return out.length ? out.join('<br>') : '—';
+      }
+      window.ordenarPor = function(campo){
+        if (sort.campo === campo) sort.dir = sort.dir === 'asc' ? 'desc' : 'asc';
+        else sort = {campo, dir:'asc'};
+        renderGarantias();
+      };
+      window.limparFiltros = function(){
+        ['filtroPesquisa','filtroCategoria','filtroEstado','filtroFornecedor','filtroAno'].forEach(id => document.getElementById(id).value = '');
+        renderGarantias();
+      };
+      function setVal(idCampo, valor){ document.getElementById(idCampo).value = valor || ''; }
+      function getVal(idCampo){ return document.getElementById(idCampo).value.trim(); }
+      window.abrirGarantia = function(idGarantia){
+        load();
+        const g = idGarantia ? app.garantias.find(x => x.id === idGarantia) : null;
+        anexosEmEdicao = g ? {fotoNome:g.fotoNome||'', fotoDataUrl:g.fotoDataUrl||'', documentoNome:g.documentoNome||'', documentoDataUrl:g.documentoDataUrl||''} : {};
+        document.getElementById('modalTitulo').textContent = g ? 'Editar garantia' : 'Adicionar garantia';
+        setVal('garantiaId', g?.id);
+        setVal('garantiaDescricao', g?.descricao);
+        setVal('garantiaCategoria', g?.categoria || categorias[0]);
+        setVal('garantiaModelo', g?.modelo);
+        setVal('garantiaSerie', g?.numeroSerie);
+        setVal('garantiaLocalizacao', g?.localizacao);
+        setVal('garantiaFornecedor', g?.fornecedor);
+        setVal('garantiaContacto', g?.contacto);
+        setVal('garantiaDataFatura', g?.dataFatura);
+        setVal('garantiaNumeroFatura', g?.numeroFatura);
+        setVal('garantiaPreco', g?.preco);
+        setVal('garantiaFim', g?.fimGarantia);
+        setVal('garantiaEstado', g?.estado || 'ativa');
+        setVal('garantiaDataAcionamento', g?.dataAcionamento);
+        setVal('garantiaResultado', g?.resultado);
+        setVal('garantiaNotas', g?.notas);
+        document.getElementById('garantiaFoto').value = '';
+        document.getElementById('garantiaDocumento').value = '';
+        renderPreview();
+        document.getElementById('modalGarantia').classList.add('active');
+      };
+      window.fecharGarantia = function(){ document.getElementById('modalGarantia').classList.remove('active'); };
+      function renderPreview(){
+        const bits = [];
+        if (anexosEmEdicao.fotoDataUrl) bits.push('<img src="'+h(anexosEmEdicao.fotoDataUrl)+'" alt="Foto"><button class="btn-sm btn-delete" onclick="removerAnexoGarantia(\'foto\')">Remover foto</button>');
+        if (anexosEmEdicao.documentoDataUrl) bits.push('<span class="badge info">Documento: '+h(anexosEmEdicao.documentoNome || 'anexo')+'</span><button class="btn-sm btn-delete" onclick="removerAnexoGarantia(\'documento\')">Remover documento</button>');
+        document.getElementById('previewAnexos').innerHTML = bits.join(' ');
+      }
+      window.removerAnexoGarantia = function(tipo){
+        if (tipo === 'foto') { anexosEmEdicao.fotoNome = ''; anexosEmEdicao.fotoDataUrl = ''; }
+        if (tipo === 'documento') { anexosEmEdicao.documentoNome = ''; anexosEmEdicao.documentoDataUrl = ''; }
+        renderPreview();
+      };
+      function lerFicheiro(file){
+        return new Promise((resolve, reject) => {
+          if (!file) return resolve(null);
+          if (file.size > 1800000) return reject(new Error('O ficheiro "' + file.name + '" é demasiado grande. Usa ficheiros até cerca de 1,8 MB.'));
+          const r = new FileReader();
+          r.onload = () => resolve({nome:file.name, dataUrl:String(r.result || '')});
+          r.onerror = () => reject(new Error('Não foi possível ler o ficheiro.'));
+          r.readAsDataURL(file);
+        });
+      }
+      window.guardarGarantia = async function(){
+        load();
+        const descricao = getVal('garantiaDescricao');
+        const dataFatura = getVal('garantiaDataFatura');
+        const fimGarantia = getVal('garantiaFim');
+        if (!descricao) return alert('Indica a descrição do produto.');
+        if (!dataFatura) return alert('Indica a data da fatura.');
+        if (!fimGarantia) return alert('Indica a data final da garantia.');
+        try {
+          const foto = await lerFicheiro(document.getElementById('garantiaFoto').files[0]);
+          const documento = await lerFicheiro(document.getElementById('garantiaDocumento').files[0]);
+          if (foto) { anexosEmEdicao.fotoNome = foto.nome; anexosEmEdicao.fotoDataUrl = foto.dataUrl; }
+          if (documento) { anexosEmEdicao.documentoNome = documento.nome; anexosEmEdicao.documentoDataUrl = documento.dataUrl; }
+        } catch(e) { return alert(e.message || 'Erro ao guardar anexos.'); }
+        const dados = {
+          descricao,
+          categoria:getVal('garantiaCategoria'),
+          modelo:getVal('garantiaModelo'),
+          numeroSerie:getVal('garantiaSerie'),
+          localizacao:getVal('garantiaLocalizacao'),
+          fornecedor:getVal('garantiaFornecedor'),
+          contacto:getVal('garantiaContacto'),
+          dataFatura,
+          numeroFatura:getVal('garantiaNumeroFatura'),
+          preco:n(getVal('garantiaPreco')),
+          fimGarantia,
+          estado:getVal('garantiaEstado') || 'ativa',
+          dataAcionamento:getVal('garantiaDataAcionamento'),
+          resultado:getVal('garantiaResultado'),
+          notas:getVal('garantiaNotas'),
+          fotoNome:anexosEmEdicao.fotoNome || '',
+          fotoDataUrl:anexosEmEdicao.fotoDataUrl || '',
+          documentoNome:anexosEmEdicao.documentoNome || '',
+          documentoDataUrl:anexosEmEdicao.documentoDataUrl || '',
+          atualizadoEm:new Date().toISOString()
+        };
+        const editId = getVal('garantiaId');
+        if (editId) {
+          const idx = app.garantias.findIndex(g => g.id === editId);
+          if (idx >= 0) app.garantias[idx] = Object.assign({}, app.garantias[idx], dados);
+        } else {
+          app.garantias.push(Object.assign({id:id(), criadoEm:new Date().toISOString()}, dados));
+        }
+        save();
+        fecharGarantia();
+        renderGarantias();
+      };
+      window.apagarGarantia = function(idGarantia){
+        if (!confirm('Apagar esta garantia?')) return;
+        load();
+        app.garantias = (app.garantias || []).filter(g => g.id !== idGarantia);
+        save();
+        renderGarantias();
+      };
+      window.exportarDados = function(){
+        load();
+        const blob = new Blob([JSON.stringify({formato:'garantias_v1', exportadoEm:new Date().toISOString(), garantias:app.garantias || []}, null, 2)], {type:'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'garantias_' + hoje() + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      };
+      window.imprimirGarantias = function(){ window.print(); };
+      window.executarPesquisaGlobal = function(termo){
+        document.getElementById('filtroPesquisa').value = termo || '';
+        renderGarantias();
+      };
+      window.addEventListener('storage', function(e){ if (e.key === STORAGE_KEY) renderGarantias(); });
+      preencherSelects();
+      renderGarantias();
+    })();
+  </script>
+</body>
+</html>

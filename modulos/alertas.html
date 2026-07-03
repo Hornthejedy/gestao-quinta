@@ -5983,6 +5983,50 @@ window.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 
+<script id="patch-v47-alertas-garantias">
+(function(){
+  'use strict';
+  function dataHojeV47(){
+    return typeof hoje === 'function' ? hoje() : new Date().toISOString().slice(0,10);
+  }
+  function diasAteV47(data){
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data || ''))) return null;
+    return Math.ceil((new Date(String(data) + 'T00:00:00') - new Date(dataHojeV47() + 'T00:00:00')) / 86400000);
+  }
+  function garantiasV47(){
+    if (window.app && Array.isArray(app.garantias)) return app.garantias;
+    try {
+      const dados = JSON.parse(localStorage.getItem('gestao_quinta_v2') || '{}') || {};
+      return Array.isArray(dados.garantias) ? dados.garantias : [];
+    } catch(_e) {
+      return [];
+    }
+  }
+  function estadoManualIgnoraAlertaV47(g){
+    return ['substituido','abatido'].includes(String(g?.estado || '').toLowerCase());
+  }
+  const alertasGeraisAnteriorV47 = window.alertasGerais;
+  window.alertasGerais = alertasGerais = function(){
+    const out = typeof alertasGeraisAnteriorV47 === 'function' ? alertasGeraisAnteriorV47.apply(this, arguments) : [];
+    garantiasV47().forEach(function(g){
+      if (estadoManualIgnoraAlertaV47(g)) return;
+      const dias = diasAteV47(g.fimGarantia);
+      if (dias === null || dias > 30) return;
+      const nivel = dias < 0 ? 'vencido' : dias <= 7 ? 'urgente' : 'proximo';
+      const quando = dias < 0 ? 'terminou há ' + Math.abs(dias) + ' dia(s)' : dias === 0 ? 'termina hoje' : 'termina dentro de ' + dias + ' dia(s)';
+      out.push({
+        nivel,
+        area: 'Garantias',
+        titulo: 'Garantia · ' + (g.descricao || 'Produto sem descrição'),
+        msg: 'A garantia ' + quando + ', em ' + (g.fimGarantia || 'data não definida') + '. Fornecedor: ' + (g.fornecedor || '—') + '. Fatura: ' + (g.numeroFatura || '—') + '.',
+        data: g.fimGarantia || ''
+      });
+    });
+    return out;
+  };
+})();
+</script>
+
 <script id="activador-modulo-v42">
 (function(){
   'use strict';
