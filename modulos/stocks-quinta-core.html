@@ -161,12 +161,13 @@
       border-bottom: 1px solid var(--line);
     }
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; min-width: 1180px; border-collapse: collapse; table-layout: fixed; }
+    table { width: 100%; min-width: 1280px; border-collapse: collapse; table-layout: fixed; }
     .product-col { width: 260px; }
     .unit-col { width: 82px; }
     .status-col { width: 690px; }
     .forecast-col { width: 150px; }
     .minimum-col { width: 105px; }
+    .actions-col { width: 95px; }
     .notes-col { width: auto; }
     th, td {
       padding: 9px 10px;
@@ -769,6 +770,7 @@
                   <col class="minimum-col">
                   <col class="status-col">
                   <col class="notes-col">
+                  <col class="actions-col">
                 </colgroup>
                 <thead>
                   <tr>
@@ -778,10 +780,11 @@
                     <th>Mínimo</th>
                     <th>Estado</th>
                     <th>Observações</th>
+                    <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${categoryRows.map(rowHtml).join("") || `<tr><td colspan="6">Sem produtos visíveis nesta categoria.</td></tr>`}
+                  ${categoryRows.map(rowHtml).join("") || `<tr><td colspan="7">Sem produtos visíveis nesta categoria.</td></tr>`}
                 </tbody>
               </table>
             </div>
@@ -804,6 +807,7 @@
             </div>
           </td>
           <td><textarea class="inline-notes row-notes" data-id="${row.id}" placeholder="Observações" ${locked ? "disabled" : ""}>${escapeHtml(row.notes || "")}</textarea></td>
+          <td><button class="small" type="button" data-action="edit-product" data-id="${row.id}" ${locked ? "disabled" : ""}>Editar</button></td>
         </tr>
       `;
     }
@@ -856,14 +860,44 @@
       $("#modal").showModal();
     }
 
+    function openEditModal(id) {
+      const row = state.rows.find(item => item.id === id);
+      if (!row) return;
+      $("#modalTitle").textContent = "Editar produto";
+      $("#recordId").value = row.id;
+      const form = $("#recordForm");
+      renderCategoryControls();
+      form.category.value = row.category;
+      form.product.value = row.product || "";
+      form.unit.value = row.unit || "";
+      form.newCategory.value = "";
+      $("#modal").showModal();
+    }
+
     function saveRecord(event) {
       event.preventDefault();
       const form = $("#recordForm");
       const data = Object.fromEntries(new FormData(form).entries());
       const newCategory = String(data.newCategory || "").trim();
       const category = newCategory || data.category;
+      const id = $("#recordId").value;
       delete data.newCategory;
       if (newCategory && !state.categories.includes(newCategory)) state.categories.push(newCategory);
+      if (id) {
+        const row = state.rows.find(item => item.id === id);
+        if (!row) return;
+        Object.assign(row, {
+          category,
+          product: String(data.product || "").trim(),
+          unit: String(data.unit || "").trim(),
+          date: state.date || today()
+        });
+        save();
+        $("#modal").close();
+        render();
+        toast("Produto atualizado.");
+        return;
+      }
       state.rows.push({
         id: uid(),
         order: state.rows.length + 1,
@@ -1372,6 +1406,10 @@
       const button = event.target.closest("[data-action]");
       if (button && button.dataset.action === "status") {
         applyStatus(button.dataset.id, button.dataset.status);
+        return;
+      }
+      if (button && button.dataset.action === "edit-product") {
+        openEditModal(button.dataset.id);
         return;
       }
       const open = event.target.closest("[data-week-open]");
