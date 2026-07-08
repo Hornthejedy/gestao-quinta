@@ -226,6 +226,7 @@
     .badge.green { color: var(--green); background: var(--green-l); border-color: var(--green-b); }
     .badge.amber { color: var(--amber); background: var(--amber-l); border-color: #f7cf7a; }
     .badge.red { color: var(--red); background: var(--red-l); border-color: #f7b4b4; }
+    .badge.neutral { color: var(--text2); background: var(--surface2); border-color: var(--border); }
 
     .stats {
       display: grid;
@@ -270,6 +271,69 @@
     }
 
     .panel { padding: 16px; margin-bottom: 14px; }
+
+    .compact-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .compact-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .compact-card span {
+      display: block;
+      color: var(--text2);
+      font-size: .78rem;
+      font-weight: 750;
+      text-transform: uppercase;
+    }
+
+    .compact-card strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 1.45rem;
+    }
+
+    .tension-card {
+      display: grid;
+      grid-template-columns: 1.1fr 1.4fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .tension-form {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .tension-form .wide { grid-column: 1 / -1; }
+
+    .tension-note {
+      border-left: 4px solid var(--green);
+      background: var(--green-l);
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--text2);
+      font-size: .9rem;
+    }
+
+    .thumb {
+      display: inline-block;
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      vertical-align: middle;
+    }
 
     .slider-grid {
       display: grid;
@@ -542,7 +606,7 @@
       .topbar-inner { align-items: flex-start; flex-direction: column; }
       .meta { justify-content: flex-start; }
       main { padding: 14px 10px; }
-      .kpis, .grid, .slider-grid, .banner, .form-grid, .form-grid.three {
+      .kpis, .grid, .slider-grid, .banner, .form-grid, .form-grid.three, .compact-grid, .tension-card, .tension-form {
         grid-template-columns: 1fr;
       }
       .section-head { align-items: stretch; flex-direction: column; }
@@ -580,6 +644,7 @@
       <button class="tab-btn active" data-tab="parcelas">Parcelas</button>
       <button class="tab-btn" data-tab="calculo">Cálculo ET</button>
       <button class="tab-btn" data-tab="vegga">Vegga</button>
+      <button class="tab-btn" data-tab="tensiometros">Tensiómetros</button>
       <button class="tab-btn" data-tab="semanal">Resumo semanal</button>
       <button class="tab-btn" data-tab="historico">Histórico</button>
     </nav>
@@ -729,6 +794,7 @@
     let editingId = null;
     let modalCulturas = [];
     let veggaConfig = normalizeVeggaConfig(persistedState.veggaConfig);
+    let tensiometerReadings = normalizeTensiometerReadings(persistedState.tensiometerReadings);
     let meteo = persistedState.meteo || { tmax: 28, tmin: 17, hr: 60, u2k: 14, doy: 180 };
     let meteoWeek = Array.isArray(persistedState.meteoWeek) && persistedState.meteoWeek.length
       ? persistedState.meteoWeek
@@ -778,6 +844,7 @@
         },
         parcelas,
         veggaConfig: normalizeVeggaConfig(veggaConfig),
+        tensiometerReadings,
         historyRecords,
         meteo,
         meteoWeek,
@@ -826,6 +893,46 @@
     function veggaConfigFor(parcelId) {
       veggaConfig = normalizeVeggaConfig(veggaConfig);
       return veggaConfig.find(item => item.parcelId === parcelId) || defaultVeggaConfig(parcelId);
+    }
+
+    function normalizeTensiometerReadings(source) {
+      return (Array.isArray(source) ? source : []).map(item => ({
+        id: item.id || `tens-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        date: item.date || todayIso(),
+        time: item.time || '08:00',
+        parcelId: item.parcelId || '',
+        depthCm: Number(item.depthCm || 30),
+        distanceCm: Number(item.distanceCm || 80),
+        position: item.position || 'Entre dois tubos gotejadores',
+        cbar: Math.max(0, Number(item.cbar || 0)),
+        notes: item.notes || '',
+        photo: item.photo || '',
+        createdAt: item.createdAt || new Date().toISOString()
+      })).filter(item => item.parcelId && Number.isFinite(item.cbar));
+    }
+
+    function tensionInfo(cbar) {
+      const value = Number(cbar || 0);
+      if (value <= 20) return { label: 'Húmido', className: 'green', factor: 1, detail: 'Solo húmido; não aumenta a rega.' };
+      if (value <= 40) return { label: 'Adequado', className: 'green', factor: 1, detail: 'Humidade adequada; seguir ET.' };
+      if (value <= 60) return { label: 'Atenção', className: 'amber', factor: 1.10, detail: 'Tensão a subir; reforço moderado.' };
+      if (value <= 75) return { label: 'Seco', className: 'red', factor: 1.25, detail: 'Solo seco; reforçar a parcela.' };
+      return { label: 'Muito seco', className: 'red', factor: 1.40, detail: 'Muito seco ou distribuição irregular; verificar rega e sensor.' };
+    }
+
+    function latestTension(parcelId) {
+      return [...tensiometerReadings]
+        .filter(item => item.parcelId === parcelId)
+        .sort((a, b) => `${b.date}T${b.time || '00:00'}`.localeCompare(`${a.date}T${a.time || '00:00'}`))[0] || null;
+    }
+
+    function correctedParcelCalc(p, eto = currentETo()) {
+      const calc = parcelCalc(p, eto);
+      const reading = latestTension(p.id);
+      const info = reading ? tensionInfo(reading.cbar) : { label: 'Sem leitura', className: 'neutral', factor: 1, detail: 'Sem correção por tensiómetro.' };
+      const volTotalCorr = calc.volTotalRec * info.factor;
+      const litrosArvoreCorr = p.arvores > 0 ? (volTotalCorr * 1000) / p.arvores : 0;
+      return { ...calc, tensionReading: reading, tensionInfo: info, volTotalCorr, litrosArvoreCorr };
     }
 
     function dateToIso(d) {
@@ -1105,6 +1212,8 @@
                 <th>Árvores</th>
                 <th>m³ 100% ETc</th>
                 <th>m³ recomendado</th>
+                <th>Tensiómetro</th>
+                <th>m³ corrigido</th>
                 <th>L/árvore</th>
                 <th>Rega</th>
                 <th>Ações</th>
@@ -1185,9 +1294,16 @@
     }
 
     function parcelRow(p) {
-      const c = parcelCalc(p);
+      const c = correctedParcelCalc(p);
       const waterText = c.litrosArvoreRec > 70 ? 'Aplicar em ciclos' : 'Rega localizada';
       const waterClass = c.litrosArvoreRec > 70 ? 'amber' : 'green';
+      const reading = c.tensionReading;
+      const readingText = reading
+        ? `${fmt.format(reading.cbar)} cbar · ${c.tensionInfo.label}`
+        : 'Sem leitura';
+      const correctionText = c.tensionInfo.factor > 1
+        ? `${fmt.format(c.volTotalRec)} → ${fmt.format(c.volTotalCorr)}`
+        : fmt.format(c.volTotalCorr);
       return `
         <tr>
           <td><strong class="code">${p.id}</strong></td>
@@ -1195,7 +1311,9 @@
           <td>${fmt0.format(p.arvores)}</td>
           <td><strong>${fmt.format(c.volTotal)}</strong></td>
           <td><strong>${fmt.format(c.volTotalRec)}</strong></td>
-          <td><strong>${fmt.format(c.litrosArvoreRec)}</strong></td>
+          <td><span class="badge ${c.tensionInfo.className}">${readingText}</span><br><span class="muted small">x${fmt.format(c.tensionInfo.factor)}</span></td>
+          <td><strong>${correctionText}</strong></td>
+          <td><strong>${fmt.format(c.litrosArvoreCorr)}</strong></td>
           <td><span class="badge ${waterClass}">${waterText}</span><br><span class="muted small">solo argiloso</span></td>
           <td>
             <div class="toolbar">
@@ -1471,6 +1589,197 @@
       renderVegga();
     }
 
+    function renderTensiometros() {
+      const latest = parcelas.map(p => ({ parcel: p, calc: correctedParcelCalc(p), reading: latestTension(p.id) }));
+      const dryCount = latest.filter(x => x.reading && Number(x.reading.cbar) > 60).length;
+      const noReading = latest.filter(x => !x.reading).length;
+      const correctedTotal = latest.reduce((sum, x) => sum + x.calc.volTotalCorr, 0);
+      const etTotal = latest.reduce((sum, x) => sum + x.calc.volTotalRec, 0);
+      document.getElementById('tabContent').innerHTML = `
+        ${sourceBar()}
+        <div class="section-head">
+          <div>
+            <h2>Tensiómetros</h2>
+            <p class="muted small">Correção individual da rega por parcela com base na humidade real do solo.</p>
+          </div>
+        </div>
+
+        <div class="compact-grid">
+          <div class="compact-card"><span>Parcelas com leitura alta</span><strong>${dryCount}</strong></div>
+          <div class="compact-card"><span>Parcelas sem leitura</span><strong>${noReading}</strong></div>
+          <div class="compact-card"><span>Rega por ET</span><strong>${fmt.format(etTotal)} m³</strong></div>
+          <div class="compact-card"><span>Rega corrigida</span><strong>${fmt.format(correctedTotal)} m³</strong></div>
+        </div>
+
+        <div class="panel tension-card">
+          <form onsubmit="saveTensiometerReading(event)">
+            <h3>Nova leitura</h3>
+            <p class="muted small">Regista a leitura observada no tensiómetro da parcela.</p>
+            <div class="tension-form">
+              <div class="field">
+                <label>Data</label>
+                <input id="tensDate" type="date" value="${todayIso()}" required>
+              </div>
+              <div class="field">
+                <label>Hora</label>
+                <input id="tensTime" type="time" value="${new Date().toTimeString().slice(0,5)}" required>
+              </div>
+              <div class="field">
+                <label>Parcela</label>
+                <select id="tensParcel" required>
+                  ${parcelas.map(p => `<option value="${escapeAttr(p.id)}">${escapeAttr(p.id)}</option>`).join('')}
+                </select>
+              </div>
+              <div class="field">
+                <label>Leitura cbar/kPa</label>
+                <input id="tensCbar" type="number" min="0" max="120" step="1" placeholder="ex: 72" required>
+              </div>
+              <div class="field">
+                <label>Profundidade cm</label>
+                <input id="tensDepth" type="number" min="1" step="1" value="30">
+              </div>
+              <div class="field">
+                <label>Distância ao tronco cm</label>
+                <input id="tensDistance" type="number" min="1" step="1" value="80">
+              </div>
+              <div class="field wide">
+                <label>Posição</label>
+                <input id="tensPosition" type="text" value="Entre dois tubos gotejadores">
+              </div>
+              <div class="field wide">
+                <label>Fotografia opcional</label>
+                <input id="tensPhoto" type="file" accept="image/*">
+              </div>
+              <div class="field wide">
+                <label>Observações</label>
+                <input id="tensNotes" type="text" placeholder="ex: antes da rega, solo seco à superfície">
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <button class="btn primary" type="submit">Guardar leitura</button>
+            </div>
+          </form>
+          <div class="tension-note">
+            <strong>Regra aplicada</strong><br>
+            Até 40 cbar: sem correção. 40-60: x1,10. 60-75: x1,25. Acima de 75: x1,40 e alerta visual. A ET continua a ser a base; o tensiómetro ajusta apenas a parcela correspondente.
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Parcela</th>
+                <th>Última leitura</th>
+                <th>Estado</th>
+                <th>Correção</th>
+                <th>ET m³</th>
+                <th>Corrigido m³</th>
+                <th>Localização sensor</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${latest.map(({ parcel, calc, reading }) => `
+                <tr>
+                  <td><strong class="code">${escapeAttr(parcel.id)}</strong></td>
+                  <td>${reading ? `${escapeAttr(formatDatePt(reading.date))} ${escapeAttr(reading.time || '')}<br><strong>${fmt.format(reading.cbar)} cbar</strong>` : '<span class="muted">Sem leitura</span>'}</td>
+                  <td><span class="badge ${calc.tensionInfo.className}">${escapeAttr(calc.tensionInfo.label)}</span><br><span class="muted small">${escapeAttr(calc.tensionInfo.detail)}</span></td>
+                  <td><strong>x${fmt.format(calc.tensionInfo.factor)}</strong></td>
+                  <td>${fmt.format(calc.volTotalRec)}</td>
+                  <td><strong>${fmt.format(calc.volTotalCorr)}</strong></td>
+                  <td>${reading ? `${fmt0.format(reading.depthCm)} cm · ${fmt0.format(reading.distanceCm)} cm tronco<br><span class="muted small">${escapeAttr(reading.position || '')}</span>` : '—'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section-head" style="margin-top:16px">
+          <div>
+            <h2>Histórico de leituras</h2>
+            <p class="muted small">As leituras mais recentes aparecem primeiro.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Parcela</th>
+                <th>Leitura</th>
+                <th>Estado</th>
+                <th>Observações</th>
+                <th>Foto</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${renderTensiometerHistoryRows()}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderTensiometerHistoryRows() {
+      const rows = [...tensiometerReadings].sort((a, b) => `${b.date}T${b.time || '00:00'}`.localeCompare(`${a.date}T${a.time || '00:00'}`));
+      if (!rows.length) return '<tr><td colspan="7" class="muted">Ainda não existem leituras guardadas.</td></tr>';
+      return rows.map(row => {
+        const info = tensionInfo(row.cbar);
+        return `
+          <tr>
+            <td>${escapeAttr(formatDatePt(row.date))}<br><span class="muted small">${escapeAttr(row.time || '')}</span></td>
+            <td><strong>${escapeAttr(row.parcelId)}</strong></td>
+            <td><strong>${fmt.format(row.cbar)} cbar</strong></td>
+            <td><span class="badge ${info.className}">${escapeAttr(info.label)}</span></td>
+            <td>${escapeAttr(row.notes || '')}</td>
+            <td>${row.photo ? `<img class="thumb" src="${row.photo}" alt="Foto tensiómetro">` : '—'}</td>
+            <td><button class="btn danger" onclick="deleteTensiometerReading('${escapeAttr(row.id)}')">Apagar</button></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise(resolve => {
+        if (!file) return resolve('');
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function saveTensiometerReading(event) {
+      event.preventDefault();
+      const file = document.getElementById('tensPhoto').files?.[0] || null;
+      const photo = await fileToDataUrl(file);
+      const reading = {
+        id: `tens-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        date: document.getElementById('tensDate').value || todayIso(),
+        time: document.getElementById('tensTime').value || '08:00',
+        parcelId: document.getElementById('tensParcel').value,
+        depthCm: Number(document.getElementById('tensDepth').value || 30),
+        distanceCm: Number(document.getElementById('tensDistance').value || 80),
+        position: document.getElementById('tensPosition').value || 'Entre dois tubos gotejadores',
+        cbar: Number(document.getElementById('tensCbar').value || 0),
+        notes: document.getElementById('tensNotes').value || '',
+        photo,
+        createdAt: new Date().toISOString()
+      };
+      tensiometerReadings.unshift(reading);
+      tensiometerReadings = normalizeTensiometerReadings(tensiometerReadings);
+      saveEtState();
+      renderAll();
+    }
+
+    function deleteTensiometerReading(id) {
+      if (!confirm('Apagar esta leitura do tensiómetro?')) return;
+      tensiometerReadings = tensiometerReadings.filter(item => item.id !== id);
+      saveEtState();
+      renderAll();
+    }
+
     function renderSemanal() {
       const rows = parcelas.flatMap(p => p.culturas.map(c => {
         const days = meteoWeek.map(d => {
@@ -1648,6 +1957,7 @@
       if (activeTab === 'parcelas') renderParcelas();
       if (activeTab === 'calculo') renderCalculo();
       if (activeTab === 'vegga') renderVegga();
+      if (activeTab === 'tensiometros') renderTensiometros();
       if (activeTab === 'semanal') renderSemanal();
       if (activeTab === 'historico') renderHistorico();
     }
@@ -1925,6 +2235,7 @@
           if (!Array.isArray(data.parcelas)) throw new Error('Ficheiro sem lista de parcelas.');
           parcelas = data.parcelas;
           if (Array.isArray(data.veggaConfig)) veggaConfig = normalizeVeggaConfig(data.veggaConfig);
+          if (Array.isArray(data.tensiometerReadings)) tensiometerReadings = normalizeTensiometerReadings(data.tensiometerReadings);
           if (data.plantacao && typeof data.plantacao === 'object') Object.assign(PLANTACAO, data.plantacao);
           if (data.meteo && typeof data.meteo === 'object') meteo = data.meteo;
           if (Array.isArray(data.meteoWeek) && data.meteoWeek.length) meteoWeek = data.meteoWeek;
