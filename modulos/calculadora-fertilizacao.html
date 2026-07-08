@@ -1061,6 +1061,7 @@
 
     var SO3_TO_S = 0.4006;
     const NEED_NUTRIENTS = ["N", "P2O5", "K2O", "MgO", "S"];
+    const STANDARD_NEED_TARGETS = { N: 250, P2O5: 120, K2O: 300, MgO: 50, S: 30 };
     let state = loadState();
     let activePage = "calculator";
     let lastCalculation = null;
@@ -1085,7 +1086,7 @@
     function defaultNeedTargets() {
       return Object.fromEntries(NEED_NUTRIENTS.map(nutrient => [
         nutrient,
-        Math.ceil(EXCEL_SEED.weeklyNeeds.reduce((sum, row) => sum + Number(row[nutrient] || 0), 0))
+        STANDARD_NEED_TARGETS[nutrient]
       ]));
     }
 
