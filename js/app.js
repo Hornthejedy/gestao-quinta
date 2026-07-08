@@ -7,7 +7,7 @@
     alertas: 'modulos/alertas.html?v=20260703-garantias-1',
     dashboard: 'modulos/dashboard.html',
     culturas: 'modulos/culturas.html',
-    fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260616-so3-3',
+    fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260708-objetivos-1',
     etPomar: 'modulos/et-pomar.html?v=20260708-vegga-valores-1',
     stocks: 'modulos/stocks.html',
     stocksQuinta: 'modulos/stocks-quinta.html',

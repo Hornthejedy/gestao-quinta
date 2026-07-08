@@ -333,6 +333,17 @@
       min-width: 190px;
     }
 
+    .need-targets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+      align-items: end;
+    }
+
+    .need-targets-grid label {
+      min-width: 0;
+    }
+
     .sector-filter {
       display: grid;
       gap: 0.75rem;
@@ -867,6 +878,16 @@
           <div class="check-list" id="needsSectorChecks"></div>
           <div id="needsSectorWarning" class="sector-selection-warning">Selecione pelo menos um setor para consultar as necessidades e as aplicações.</div>
         </div>
+        <div class="panel pad sector-filter">
+          <div class="sector-filter-head">
+            <div>
+              <h3>Objetivos anuais e percentagem a aplicar</h3>
+              <div class="sector-selection-summary">Valores em kg/ha. A percentagem ajusta o objetivo usado nos graficos e na tabela semanal.</div>
+            </div>
+            <button type="button" id="resetNeedTargets" class="secondary">Repor objetivos</button>
+          </div>
+          <div class="need-targets-grid" id="needTargetsControls"></div>
+        </div>
         <div class="panel pad">
           <div class="thermo-grid" id="globalNeedsChart"></div>
         </div>
@@ -1039,6 +1060,7 @@
     ];
 
     var SO3_TO_S = 0.4006;
+    const NEED_NUTRIENTS = ["N", "P2O5", "K2O", "MgO", "S"];
     let state = loadState();
     let activePage = "calculator";
     let lastCalculation = null;
@@ -1057,6 +1079,22 @@
 
     function clone(data) {
       return JSON.parse(JSON.stringify(data));
+    }
+
+    function defaultNeedTargets() {
+      return Object.fromEntries(NEED_NUTRIENTS.map(nutrient => [
+        nutrient,
+        EXCEL_SEED.weeklyNeeds.reduce((sum, row) => sum + Number(row[nutrient] || 0), 0)
+      ]));
+    }
+
+    function normalizeNeedTargets(source) {
+      const defaults = defaultNeedTargets();
+      const data = source && typeof source === "object" && !Array.isArray(source) ? source : {};
+      return Object.fromEntries(NEED_NUTRIENTS.map(nutrient => {
+        const value = Number(data[nutrient]);
+        return [nutrient, Number.isFinite(value) && value >= 0 ? value : defaults[nutrient]];
+      }));
     }
 
     function normaliseFertilizerNitrogen(fertilizer) {
@@ -1099,6 +1137,9 @@
       data.weeklyNeeds = Array.isArray(data.weeklyNeeds)
         ? data.weeklyNeeds
         : clone(EXCEL_SEED.weeklyNeeds);
+      data.needTargets = normalizeNeedTargets(data.needTargets);
+      const applyPercent = Number(data.needApplyPercent);
+      data.needApplyPercent = Number.isFinite(applyPercent) && applyPercent >= 0 ? applyPercent : 100;
       data.sectors = Array.isArray(data.sectors)
         ? data.sectors.map(sector => ({
             ...sector,
@@ -1142,6 +1183,8 @@
         return migrateState({
           needs: parsed.needs || clone(EXCEL_SEED.needs),
           weeklyNeeds: parsed.weeklyNeeds || clone(EXCEL_SEED.weeklyNeeds),
+          needTargets: parsed.needTargets,
+          needApplyPercent: parsed.needApplyPercent,
           sectors: parsed.sectors || clone(EXCEL_SEED.sectors),
           needsSectorIds: parsed.needsSectorIds,
           fertilizers: parsed.fertilizers || clone(EXCEL_SEED.fertilizers),
@@ -1227,6 +1270,63 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       renderMetrics();
       renderNeeds();
+    }
+
+    function adjustedWeeklyNeeds() {
+      const baseRows = state.weeklyNeeds && state.weeklyNeeds.length ? state.weeklyNeeds : EXCEL_SEED.weeklyNeeds;
+      const targets = normalizeNeedTargets(state.needTargets);
+      const factor = Math.max(0, Number(state.needApplyPercent || 0)) / 100;
+      const baseTotals = Object.fromEntries(NEED_NUTRIENTS.map(nutrient => [
+        nutrient,
+        baseRows.reduce((sum, row) => sum + Number(row[nutrient] || 0), 0)
+      ]));
+      return baseRows.map(row => {
+        const next = { ...row };
+        NEED_NUTRIENTS.forEach(nutrient => {
+          const baseTotal = baseTotals[nutrient];
+          const scale = baseTotal > 0 ? (Number(targets[nutrient] || 0) * factor) / baseTotal : 0;
+          next[nutrient] = Number(row[nutrient] || 0) * scale;
+        });
+        return next;
+      });
+    }
+
+    function renderNeedTargetControls() {
+      const container = $("needTargetsControls");
+      if (!container) return;
+      state.needTargets = normalizeNeedTargets(state.needTargets);
+      state.needApplyPercent = Math.max(0, Number(state.needApplyPercent ?? 100));
+      container.innerHTML = NEED_NUTRIENTS.map(nutrient => `
+        <label>${labelNutrient(nutrient)} objetivo anual
+          <input type="number" min="0" step="0.01" data-need-target="${nutrient}" value="${Number(state.needTargets[nutrient] || 0)}">
+        </label>`).join("") + `
+        <label>% a aplicar
+          <input type="number" min="0" step="1" id="needApplyPercent" value="${Number(state.needApplyPercent ?? 100)}">
+        </label>`;
+      container.querySelectorAll("[data-need-target]").forEach(input => {
+        input.addEventListener("change", () => updateNeedTarget(input.dataset.needTarget, input.value));
+      });
+      $("needApplyPercent").addEventListener("change", () => updateNeedApplyPercent($("needApplyPercent").value));
+    }
+
+    function updateNeedTarget(nutrient, value) {
+      state.needTargets = normalizeNeedTargets(state.needTargets);
+      const next = Math.max(0, Number(value || 0));
+      state.needTargets[nutrient] = Number.isFinite(next) ? next : 0;
+      saveState();
+    }
+
+    function updateNeedApplyPercent(value) {
+      const next = Math.max(0, Number(value || 0));
+      state.needApplyPercent = Number.isFinite(next) ? next : 100;
+      saveState();
+    }
+
+    function resetNeedTargets() {
+      state.needTargets = defaultNeedTargets();
+      state.needApplyPercent = 100;
+      saveState();
+      toast("Objetivos repostos.");
     }
 
     function renderNeedSectorControls() {
@@ -1609,13 +1709,14 @@
     }
 
     function renderNeeds() {
-      const weeklyNeeds = state.weeklyNeeds && state.weeklyNeeds.length ? state.weeklyNeeds : EXCEL_SEED.weeklyNeeds;
+      const weeklyNeeds = adjustedWeeklyNeeds();
       const selectedNutrient = $("needsNutrient") ? val("needsNutrient") : "all";
       const selectedMonth = $("needsMonth") ? val("needsMonth") : "";
       const sectorIds = selectedNeedSectorIds();
-      const allNutrients = ["N", "P2O5", "K2O", "MgO", "S"];
+      const allNutrients = NEED_NUTRIENTS;
       const nutrients = selectedNutrient === "all" ? allNutrients : [selectedNutrient];
       const months = [...new Map(weeklyNeeds.map(r => [r.month, r.monthIndex])).entries()].map(([month, monthIndex]) => ({ month, monthIndex }));
+      renderNeedTargetControls();
       renderNeedSectorControls();
       if ($("needsMonth")) {
         const previous = $("needsMonth").value;
@@ -1700,7 +1801,7 @@
       return {
         Janeiro: "Jan",
         Fevereiro: "Fev",
-        Março: "Mar",
+        "Março": "Mar",
         Abril: "Abr",
         Maio: "Mai",
         Junho: "Jun",
@@ -2076,6 +2177,7 @@
       bindSortableTable("consumptionSectorTable", "consumptionSector", renderConsumption);
       $("needsNutrient").addEventListener("change", renderNeeds);
       $("needsMonth").addEventListener("change", renderNeeds);
+      $("resetNeedTargets").addEventListener("click", resetNeedTargets);
       $("selectAllNeedsSectors").addEventListener("click", () => setNeedSectorSelection(state.sectors.map(sector => sector.id)));
       $("clearNeedsSectors").addEventListener("click", () => setNeedSectorSelection([]));
       $("clearFilters").addEventListener("click", () => { $("recordYear").value = ""; $("recordMonth").value = ""; drawRecordRows(); });
