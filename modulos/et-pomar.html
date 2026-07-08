@@ -875,6 +875,8 @@
         sectors: sector ? 'S' + Number(sector) : '',
         unit: 'm3',
         active: false,
+        useTensiometer: false,
+        manualValue: '',
         ...(defaults[parcelId] || {})
       };
     }
@@ -893,6 +895,22 @@
     function veggaConfigFor(parcelId) {
       veggaConfig = normalizeVeggaConfig(veggaConfig);
       return veggaConfig.find(item => item.parcelId === parcelId) || defaultVeggaConfig(parcelId);
+    }
+
+    function veggaValueForParcel(parcel, config = veggaConfigFor(parcel.id)) {
+      const base = parcelCalc(parcel).volTotalRec;
+      const corrected = correctedParcelCalc(parcel).volTotalCorr;
+      const rawManual = String(config.manualValue ?? '').replace(',', '.').trim();
+      const manual = rawManual === '' ? NaN : Number(rawManual);
+      const useManual = Number.isFinite(manual) && manual >= 0;
+      const selected = useManual ? manual : (config.useTensiometer ? corrected : base);
+      return {
+        base,
+        corrected,
+        selected,
+        send: Math.ceil(Math.max(0, selected)),
+        source: useManual ? 'Manual' : (config.useTensiometer ? 'Tensiometro' : 'ET')
+      };
     }
 
     function normalizeTensiometerReadings(source) {
@@ -1473,6 +1491,11 @@
                 <th>Nome programa</th>
                 <th>SP</th>
                 <th>Setor Vegga</th>
+                <th>ET m3</th>
+                <th>Tensiometro m3</th>
+                <th>Usar tens.</th>
+                <th>Manual m3</th>
+                <th>Valor a enviar</th>
                 <th>Unidade</th>
                 <th>Estado</th>
               </tr>
@@ -1488,6 +1511,9 @@
     function veggaConfigRow(item) {
       const configured = item.active && item.programNumber && item.programName && item.subprogram && item.sectors;
       const estado = configured ? '<span class="badge green">Configurado</span>' : (item.active ? '<span class="badge amber">Incompleto</span>' : '<span class="badge">Inativo</span>');
+      const parcel = parcelas.find(p => p.id === item.parcelId);
+      const values = parcel ? veggaValueForParcel(parcel, item) : { base: 0, corrected: 0, selected: 0, send: 0, source: 'ET' };
+      const tensionLabel = item.useTensiometer ? 'checked' : '';
       return `
         <tr>
           <td><input type="checkbox" ${item.active ? 'checked' : ''} onchange="setVeggaField('${item.parcelId}','active',this.checked)"></td>
@@ -1497,6 +1523,14 @@
           <td><input value="${escapeAttr(item.programName)}" onchange="setVeggaField('${item.parcelId}','programName',this.value)" placeholder="ex: Abacate 1/2"></td>
           <td><input value="${escapeAttr(item.subprogram)}" onchange="setVeggaField('${item.parcelId}','subprogram',this.value)" placeholder="ex: SP1" style="min-width:90px"></td>
           <td><input value="${escapeAttr(item.sectors)}" onchange="setVeggaField('${item.parcelId}','sectors',this.value)" placeholder="ex: S1" style="min-width:90px"></td>
+          <td><strong>${fmt.format(values.base)}</strong></td>
+          <td><strong>${fmt.format(values.corrected)}</strong></td>
+          <td><input type="checkbox" ${tensionLabel} onchange="setVeggaField('${item.parcelId}','useTensiometer',this.checked)"></td>
+          <td><input type="number" min="0" step="0.1" value="${escapeAttr(item.manualValue || '')}" onchange="setVeggaField('${item.parcelId}','manualValue',this.value)" placeholder="auto" style="min-width:90px"></td>
+          <td>
+            <strong>${fmt0.format(values.send)} ${escapeAttr(item.unit || 'm3')}</strong><br>
+            <span class="muted small">${values.source}</span>
+          </td>
           <td>
             <select onchange="setVeggaField('${item.parcelId}','unit',this.value)">
               <option value="m3" ${item.unit === 'm3' ? 'selected' : ''}>m3</option>
@@ -1509,8 +1543,13 @@
     }
 
     function setVeggaField(parcelId, field, value) {
-      veggaConfig = normalizeVeggaConfig(veggaConfig).map(item => item.parcelId === parcelId ? { ...item, [field]: field === 'active' ? !!value : String(value || '').trim() } : item);
+      veggaConfig = normalizeVeggaConfig(veggaConfig).map(item => {
+        if (item.parcelId !== parcelId) return item;
+        const nextValue = (field === 'active' || field === 'useTensiometer') ? !!value : String(value || '').trim();
+        return { ...item, [field]: nextValue };
+      });
       saveEtState();
+      if (['useTensiometer', 'manualValue', 'unit'].includes(field)) renderVegga();
     }
 
     function setVeggaAllActive(active) {
@@ -1529,13 +1568,12 @@
     function veggaBridgeSummary() {
       const parcel = parcelas.find(p => p.id === 'A05');
       const config = veggaConfigFor('A05');
-      const value = parcel ? parcelCalc(parcel).volTotalRec : 0;
-      const valueToSend = Math.ceil(value);
+      const values = parcel ? veggaValueForParcel(parcel, config) : { selected: 0, send: 0, source: 'ET' };
       const canSend = isVeggaTestesS5Config(config);
       return `
         <div class="status-line" style="margin-top:8px">
-          Valor A05/S5 calculado: <strong>${fmt.format(value)} ${config.unit || 'm3'}</strong>.
-          Valor enviado para Vegga: <strong>${fmt0.format(valueToSend)} ${config.unit || 'm3'}</strong>.
+          Valor A05/S5 escolhido: <strong>${fmt.format(values.selected)} ${config.unit || 'm3'}</strong> (${values.source}).
+          Valor enviado para Vegga: <strong>${fmt0.format(values.send)} ${config.unit || 'm3'}</strong>.
           Estado: ${canSend ? 'pronto para enviar para Programa 19 - Testes / SP1' : 'configuracao A05/S5 nao corresponde ao script disponivel'}.
         </div>
       `;
@@ -1556,7 +1594,8 @@
       if (!parcel || !isVeggaTestesS5Config(config)) {
         return { skipped: true, reason: 'A05/S5 nao esta ativo ou nao corresponde ao Programa 19 - Testes / SP1.' };
       }
-      const value = Math.ceil(parcelCalc(parcel).volTotalRec);
+      const values = veggaValueForParcel(parcel, config);
+      const value = values.send;
       const payload = { value, unit: config.unit || 'm3' };
       const response = await fetch('http://127.0.0.1:8787/save-riego', {
         method: 'POST',
@@ -1567,7 +1606,7 @@
       if (!response.ok || !result.ok) {
         throw new Error(result.error || 'Nao foi possivel guardar no Vegga.');
       }
-      return { ...result, value, unit: payload.unit };
+      return { ...result, value, unit: payload.unit, source: values.source };
     }
 
     async function saveVeggaConfig() {
@@ -1578,7 +1617,7 @@
         if (result.skipped) {
           alert('Configuracao Vegga guardada. Envio para Vegga ignorado: ' + result.reason);
         } else {
-          alert(`Configuracao guardada e A05/S5 enviado para Vegga: ${fmt.format(result.value)} ${result.unit}.`);
+          alert(`Configuracao guardada e A05/S5 enviado para Vegga: ${fmt.format(result.value)} ${result.unit} (${result.source}).`);
         }
       } catch (error) {
         const fetchHint = error && error.message === 'Failed to fetch'

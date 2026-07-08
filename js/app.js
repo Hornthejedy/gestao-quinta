@@ -8,7 +8,7 @@
     dashboard: 'modulos/dashboard.html',
     culturas: 'modulos/culturas.html',
     fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260616-so3-3',
-    etPomar: 'modulos/et-pomar.html?v=20260708-tensiometros-1',
+    etPomar: 'modulos/et-pomar.html?v=20260708-vegga-valores-1',
     stocks: 'modulos/stocks.html',
     stocksQuinta: 'modulos/stocks-quinta.html',
     caixa: 'modulos/caixa.html?v=20260702-caixa-nome-ficheiro-2',
