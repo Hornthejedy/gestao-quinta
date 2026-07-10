@@ -1221,7 +1221,8 @@
     }
 
     function blankPrintTable() {
-      const grouped = [...state.rows].sort((a, b) => a.category.localeCompare(b.category, "pt-PT") || a.product.localeCompare(b.product, "pt-PT"))
+      const printableRows = state.rows.filter(row => !["Não cultivado", "Fora de época"].includes(row.status));
+      const grouped = printableRows.sort((a, b) => a.category.localeCompare(b.category, "pt-PT") || a.product.localeCompare(b.product, "pt-PT"))
         .reduce((acc, row) => { (acc[row.category] ||= []).push(row); return acc; }, {});
       return Object.keys(grouped).map(category => `
         <h2>${escapeHtml(category)}</h2>

@@ -10,7 +10,7 @@
     fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260708-objetivos-3',
     etPomar: 'modulos/et-pomar.html?v=20260708-vegga-valores-1',
     stocks: 'modulos/stocks.html',
-    stocksQuinta: 'modulos/stocks-quinta.html',
+    stocksQuinta: 'modulos/stocks-quinta.html?v=20260710-blank-print-1',
     caixa: 'modulos/caixa.html?v=20260702-caixa-nome-ficheiro-2',
     produtosAutorizados: 'modulos/produtos-autorizados.html',
     fitossanidade: 'modulos/fitossanidade.html',
