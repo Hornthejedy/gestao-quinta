@@ -22,6 +22,13 @@
 .seat-btn{border:1px solid #ddd;border-radius:11px;padding:7px;min-height:54px;cursor:pointer;font-weight:800;background:#f4f4f4;text-align:center;transition:transform .08s,box-shadow .08s}
 .seat-btn:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.12)}
 .seat-btn.selected{outline:3px solid #111;box-shadow:0 0 0 4px rgba(0,0,0,.08)}
+.map-orientation-note{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#eef6ee;border:1px solid #cfe3d1;border-radius:10px;padding:9px 12px;margin:10px 0;color:#1f5c34;font-weight:800}
+.map-orientation-note small{font-weight:600;color:#53655a}
+.orchard-map-panel{overflow:auto;padding:18px 18px 28px}
+.orchard-map-panel .line-block{min-width:max-content;margin-left:calc(var(--line-offset,0) * 1px);transform:skewX(-10deg);transform-origin:left center;background:linear-gradient(90deg,#fafafa,#fff);border-left:4px solid #327846}
+.orchard-map-panel .line-title,.orchard-map-panel .abacateiro-grid{transform:skewX(10deg)}
+.orchard-map-panel .abacateiro-grid{display:flex;flex-wrap:nowrap;align-items:center;gap:7px}
+.orchard-map-panel .seat-btn{width:74px;flex:0 0 74px}
 .seat-btn.plantada{background:#e8f5e9;border-color:#9ccc9c;color:#175b2a}
 .seat-btn.replantada{background:#e3f2fd;border-color:#90caf9;color:#0d47a1}
 .seat-btn.arranque_programado{background:#fff8e1;border-color:#ffd54f;color:#7a5200}
@@ -1226,9 +1233,11 @@ function abrirMapaParcela(culturaId, idx){
   html += '<div class="filter-box"><div class="form-row"><div class="form-group"><label>Estado</label><select id="filtroMapaParcelaEstado" onchange="abrirMapaParcela(\''+culturaId+'\','+idx+')"><option value="">Todos</option>'+estados.map(e=>'<option value="'+e+'">'+estadoLugarLabel(e)+'</option>').join('')+'</select></div><div class="form-group"><label>Pesquisar</label><input id="filtroMapaParcelaPesquisa" placeholder="código, variedade, observações..." oninput="abrirMapaParcela(\''+culturaId+'\','+idx+')"></div></div></div>';
   html += '<div class="batch-bar"><strong>'+((window.parcelaLugaresSelecionados||[]).length)+' selecionado(s)</strong><button class="btn-sm" onclick="selecionarLugaresParcelaVisiveis()">Selecionar visíveis</button><button class="btn-sm" onclick="limparSelecaoLugaresParcela()">Limpar seleção</button><select id="acaoLoteParcelaEstado"><option value="">Alterar estado...</option>'+estados.map(e=>'<option value="'+e+'">'+estadoLugarLabel(e)+'</option>').join('')+'</select><button class="btn-primary" onclick="aplicarEstadoLugaresParcelaSelecionados()">Aplicar em lote</button><button class="btn-secondary" onclick="adicionarEventoLugaresParcelaSelecionados()">Evento em lote</button></div>';
   html += '<div class="seat-legend"><span class="seat-btn plantada">Plantada</span><span class="seat-btn replantada">Replantada</span><span class="seat-btn arranque_programado">Arranque programado</span><span class="seat-btn vazia">Vazia/arrancada</span><span class="seat-btn observacao">Observação</span><span class="seat-btn doente">Doente/morta</span></div>';
-  html += '<div class="abacateiro-panel">';
-  Object.keys(porLinha).sort((a,b)=>toNum(a.replace('L',''))-toNum(b.replace('L',''))).forEach(linha => {
-    html += '<div class="line-block"><div class="line-title"><span>'+linha+' · '+porLinha[linha].length+' lugares</span><button class="btn-sm" onclick="selecionarLinhaLugaresParcela(\''+linha+'\')">Selecionar linha</button></div><div class="abacateiro-grid">' + porLinha[linha].sort((a,b)=>toNum(a.posicao.replace('A',''))-toNum(b.posicao.replace('A',''))).map(l => '<button class="seat-btn '+estadoLugarClass(l.estado)+(window.parcelaLugaresSelecionados.includes(l.codigo)?' selected':'')+'" onclick="abrirOuSelecionarLugarParcela(event,\''+l.codigo+'\')" title="'+l.codigo+'"><div>'+escapeHtml(l.posicao)+'</div><small>'+estadoLugarLabel(l.estado)+'</small></button>').join('') + '</div></div>';
+  const linhasOrdenadasMapa = Object.keys(porLinha).sort((a,b)=>toNum(a.replace('L',''))-toNum(b.replace('L','')));
+  html += '<div class="map-orientation-note"><span>Vista orientada ao terreno</span><small>As linhas aparecem inclinadas e contínuas para seguir melhor o sentido visível no mapa aéreo. Desliza para a direita/esquerda quando a linha for longa.</small></div>';
+  html += '<div class="abacateiro-panel orchard-map-panel">';
+  linhasOrdenadasMapa.forEach((linha, linhaIdx) => {
+    html += '<div class="line-block" style="--line-offset:'+Math.min(linhaIdx*16,220)+'"><div class="line-title"><span>'+linha+' · '+porLinha[linha].length+' lugares</span><button class="btn-sm" onclick="selecionarLinhaLugaresParcela(\''+linha+'\')">Selecionar linha</button></div><div class="abacateiro-grid">' + porLinha[linha].sort((a,b)=>toNum(a.posicao.replace('A',''))-toNum(b.posicao.replace('A',''))).map(l => '<button class="seat-btn '+estadoLugarClass(l.estado)+(window.parcelaLugaresSelecionados.includes(l.codigo)?' selected':'')+'" onclick="abrirOuSelecionarLugarParcela(event,\''+l.codigo+'\')" title="'+l.codigo+'"><div>'+escapeHtml(l.posicao)+'</div><small>'+estadoLugarLabel(l.estado)+'</small></button>').join('') + '</div></div>';
   });
   html += '</div><div id="editorEstruturaMapaParcela"></div><div class="toolbar"><button class="btn-secondary" onclick="mostrarEditorEstruturaMapaParcela()">Editar estrutura de linhas</button><button class="btn-secondary" onclick="exportarMapaParcelaJSON()">Exportar mapa da parcela</button><button class="btn-secondary" onclick="imprimirSecao(\'culturas\')">Imprimir / PDF</button></div>';
   document.getElementById('mapaParcelaConteudo').innerHTML = html; abrirModal('modalMapaParcela');

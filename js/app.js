@@ -6,7 +6,7 @@
   const modulos = {
     alertas: 'modulos/alertas.html?v=20260703-garantias-1',
     dashboard: 'modulos/dashboard.html',
-    culturas: 'modulos/culturas.html',
+    culturas: 'modulos/culturas.html?v=20260715-mapa-parcelas-1',
     fertilizacao: 'modulos/calculadora-fertilizacao.html?v=20260708-objetivos-3',
     etPomar: 'modulos/et-pomar.html?v=20260708-vegga-valores-1',
     stocks: 'modulos/stocks.html',
