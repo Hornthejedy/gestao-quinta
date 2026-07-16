@@ -32,6 +32,10 @@
 #modalMapaParcela .modal{width:96vw;max-width:none;height:92vh;max-height:92vh;display:flex;flex-direction:column}
 #mapaParcelaConteudo{flex:1;min-height:0;overflow:auto}
 #mapaParcelaConteudo .orchard-map-panel{min-height:58vh}
+.parcel-photo-card{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:7px}
+.parcel-photo-thumb{width:150px;height:88px;object-fit:cover;border:1px solid #d6d6d6;border-radius:8px;background:#f5f5f5}
+.parcel-photo-viewer{max-width:100%;max-height:76vh;display:block;margin:0 auto;border-radius:10px;border:1px solid #ddd;background:#f5f5f5}
+#modalFotoParcela .modal{width:94vw;max-width:none;max-height:92vh}
 .seat-btn.plantada{background:#e8f5e9;border-color:#9ccc9c;color:#175b2a}
 .seat-btn.replantada{background:#e3f2fd;border-color:#90caf9;color:#0d47a1}
 .seat-btn.arranque_programado{background:#fff8e1;border-color:#ffd54f;color:#7a5200}
@@ -100,6 +104,16 @@ body.modo-modulo-v42 .content-section.active{display:block;}
       <button class="close-btn" onclick="fecharModal('modalMapaParcela')">×</button>
     </div>
     <div id="mapaParcelaConteudo"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalFotoParcela">
+  <div class="modal wide">
+    <div class="modal-header">
+      <span id="fotoParcelaTitulo">Fotografia da parcela</span>
+      <button class="close-btn" onclick="fecharModal('modalFotoParcela')">×</button>
+    </div>
+    <div class="alert">Usa esta fotografia para confirmar o sentido real das linhas no terreno e comparar com os lugares do mapa.</div>
+    <div id="fotoParcelaConteudo"></div>
   </div>
 </div>
 <div class="modal-overlay" id="modalLugarParcela">
@@ -330,6 +344,7 @@ function garantirEstruturasNovas() {
       if (p.arvores === undefined) p.arvores = 0; 
       if (p.observacoes === undefined) p.observacoes = p.obs || ''; 
       if (p.fotoNome === undefined) p.fotoNome = p.foto || ''; 
+      if (p.fotoData === undefined) p.fotoData = p.fotoDataUrl || '';
       if (!p.notasLinhas || typeof p.notasLinhas !== 'object') p.notasLinhas = {}; 
       if (!Array.isArray(p.lugares)) p.lugares = [];
       p.lugares.forEach(l => { 
@@ -1247,14 +1262,55 @@ function abrirMapaParcela(culturaId, idx){
 }
 
 function painelDadosParcelaMapa(culturaId, idx, p){
-  return '<div class="filter-box"><h3>Dados da parcela</h3><div class="form-row"><div class="form-group"><label>Comentário/nota da parcela</label><textarea id="mapaParcelaObs">'+escapeHtml(p.observacoes||'')+'</textarea></div><div class="form-group"><label>Fotografia da parcela (opcional)</label><input type="file" id="mapaParcelaFoto" accept="image/*"><input type="hidden" id="mapaParcelaFotoExistente" value="'+escapeHtml(p.fotoNome||'')+'"><p class="muted">Atual: '+escapeHtml(p.fotoNome||'—')+'</p></div></div><button class="btn-secondary" onclick="guardarDadosParcelaMapa(\''+culturaId+'\','+idx+')">Guardar dados da parcela</button></div>';
+  const fotoHtml = p.fotoData
+    ? '<div class="parcel-photo-card"><img class="parcel-photo-thumb" src="'+escapeHtml(p.fotoData)+'" alt="Fotografia da parcela"><button class="btn-secondary" onclick="abrirFotoParcelaMapa(\''+culturaId+'\','+idx+')">Abrir fotografia</button><span class="muted">'+escapeHtml(p.fotoNome||'Fotografia guardada')+'</span></div>'
+    : '<p class="muted">Atual: '+escapeHtml(p.fotoNome ? p.fotoNome + ' (só nome guardado; carrega novamente para abrir)' : '—')+'</p>';
+  return '<div class="filter-box"><h3>Dados da parcela</h3><div class="form-row"><div class="form-group"><label>Comentário/nota da parcela</label><textarea id="mapaParcelaObs">'+escapeHtml(p.observacoes||'')+'</textarea></div><div class="form-group"><label>Fotografia da parcela (opcional)</label><input type="file" id="mapaParcelaFoto" accept="image/*"><input type="hidden" id="mapaParcelaFotoExistente" value="'+escapeHtml(p.fotoNome||'')+'">'+fotoHtml+'</div></div><button class="btn-secondary" onclick="guardarDadosParcelaMapa(\''+culturaId+'\','+idx+')">Guardar dados da parcela</button></div>';
 }
-function guardarDadosParcelaMapa(culturaId, idx){
+async function guardarDadosParcelaMapa(culturaId, idx){
   const {p}=obterParcela(culturaId, idx); if(!p) return alert('Parcela não encontrada.');
   p.observacoes = document.getElementById('mapaParcelaObs')?.value.trim() || '';
-  const foto = document.getElementById('mapaParcelaFoto')?.files?.[0]?.name;
-  p.fotoNome = foto || document.getElementById('mapaParcelaFotoExistente')?.value || p.fotoNome || '';
+  const ficheiro = document.getElementById('mapaParcelaFoto')?.files?.[0];
+  if (ficheiro) {
+    p.fotoNome = ficheiro.name;
+    p.fotoData = await lerFotoParcelaCompactada(ficheiro);
+  } else {
+    p.fotoNome = document.getElementById('mapaParcelaFotoExistente')?.value || p.fotoNome || '';
+  }
   guardarDados(); toast('Dados da parcela atualizados.','ok'); abrirMapaParcela(culturaId, idx); renderCulturas();
+}
+function lerFotoParcelaCompactada(ficheiro){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Não foi possível ler a fotografia.'));
+    reader.onload = () => {
+      const original = String(reader.result || '');
+      if (!original.startsWith('data:image/')) return resolve(original);
+      const img = new Image();
+      img.onerror = () => resolve(original);
+      img.onload = () => {
+        const maxDim = 1800;
+        const scale = Math.min(1, maxDim / Math.max(img.width || maxDim, img.height || maxDim));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round((img.width || maxDim) * scale));
+        canvas.height = Math.max(1, Math.round((img.height || maxDim) * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.86));
+      };
+      img.src = original;
+    };
+    reader.readAsDataURL(ficheiro);
+  });
+}
+function abrirFotoParcelaMapa(culturaId, idx){
+  const {p}=obterParcela(culturaId, idx);
+  if(!p || !p.fotoData) return alert('Esta parcela ainda não tem fotografia abrível. Carrega a fotografia novamente e guarda os dados da parcela.');
+  const titulo = document.getElementById('fotoParcelaTitulo');
+  if(titulo) titulo.textContent = 'Fotografia da parcela — ' + (p.nome || 'Parcela');
+  const conteudo = document.getElementById('fotoParcelaConteudo');
+  if(conteudo) conteudo.innerHTML = '<img class="parcel-photo-viewer" src="'+escapeHtml(p.fotoData)+'" alt="Fotografia da parcela"><p class="muted" style="margin-top:8px;text-align:center">'+escapeHtml(p.fotoNome||'Fotografia da parcela')+'</p>';
+  abrirModal('modalFotoParcela');
 }
 function editarNotaLinhaParcela(linha){
   const {p}=contextoMapaParcela(); if(!p) return;
