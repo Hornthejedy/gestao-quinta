@@ -1,0 +1,32 @@
+services:
+  gestao-quinta:
+    image: nginx:alpine
+    container_name: gestao-quinta
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3012:80"
+    volumes:
+      - /home/carlos/homelab/apps/gestao-quinta:/usr/share/nginx/html:ro
+      - /home/carlos/homelab/apps/gestao-quinta/server/sync-api/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - gestao-quinta-sync-api
+    networks:
+      - homelab_network
+
+  gestao-quinta-sync-api:
+    build:
+      context: /home/carlos/homelab/apps/gestao-quinta/server/sync-api
+    container_name: gestao-quinta-sync-api
+    restart: unless-stopped
+    environment:
+      FARM_ID: quinta_principal
+      SYNC_SECRET: sync_bb7a7dbc1b5609455cb9f02b
+      DATA_DIR: /data
+    volumes:
+      - /home/carlos/homelab/data/gestao-quinta-sync:/data
+    networks:
+      - homelab_network
+
+networks:
+  homelab_network:
+    external: true

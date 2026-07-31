@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-PT">
 <head>
   <meta charset="utf-8">
@@ -852,6 +852,13 @@
         ipmaMeta
       };
       localStorage.setItem(ET_STATE_KEY, JSON.stringify(state));
+      try {
+        if (window.parent && typeof window.parent.supabasePush === 'function') {
+          window.parent.supabasePush({ silent: true }).catch(function(){});
+        } else if (typeof window.supabasePush === 'function') {
+          window.supabasePush({ silent: true }).catch(function(){});
+        }
+      } catch(_e) {}
     }
 
     function defaultVeggaConfig(parcelId) {

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
@@ -4207,8 +4207,8 @@ window.addEventListener('DOMContentLoaded', function () {
   // NOTA: anonKey deve ser a JWT key do Supabase (começa por eyJ...).
   // Vai a: Supabase > Project Settings > API > anon public
   var BUILTIN_SYNC_PREFS = {
-    url: 'https://pdraxmntuqojdvdfbxwm.supabase.co',
-    anonKey: '',
+    url: '/api',
+    anonKey: 'local-sync-api-no-supabase-key-required',
     farmId: 'quinta_principal',
     syncSecret: 'sync_bb7a7dbc1b5609455cb9f02b',
     autoSync: true,
@@ -4273,8 +4273,8 @@ window.addEventListener('DOMContentLoaded', function () {
   }
 
   function validatePrefs(prefs){
-    if (!prefs.url || !/^https:\/\/[^\s]+\.supabase\.co$/i.test(prefs.url))
-      return 'Indica a URL do projeto Supabase (ex: https://xxxxx.supabase.co).';
+    if (!prefs.url)
+      return 'Indica a URL da API local (ex: /api).';
     if (!prefs.anonKey || prefs.anonKey.length < 30)
       return 'Indica a anon public key do Supabase (comeca por eyJ...). Vai a Project Settings > API no painel Supabase.';
     if (!prefs.farmId)

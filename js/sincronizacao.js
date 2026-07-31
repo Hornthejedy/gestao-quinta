@@ -3,6 +3,13 @@
   const PREFS_KEY = 'gestao_quinta_supabase_sync_v28';
   const PENDING_KEY = 'gestao_quinta_sync_pending_v1';
   const BRIDGE_URL = 'modulos/alertas.html?v=20260623-sync-1';
+  const DEFAULT_PREFS = {
+    url: '/api',
+    anonKey: 'local-sync-api-no-supabase-key-required',
+    farmId: 'quinta_principal',
+    syncSecret: 'sync_bb7a7dbc1b5609455cb9f02b',
+    autoSync: true
+  };
   const WATCHED_KEYS = ['gestao_quinta_v2', 'fertilizacao_app_v1', 'gestao_quinta_combustivel_v1', 'gestao_quinta_et_pomar_v1', 'et_pomar_porches_lagoa_history_v1'];
   let baseline = '';
   let dirty = false;
@@ -18,8 +25,8 @@
   }
 
   function prefs(){
-    try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') || {}; }
-    catch(_e) { return {}; }
+    try { return Object.assign({}, DEFAULT_PREFS, JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') || {}); }
+    catch(_e) { return Object.assign({}, DEFAULT_PREFS); }
   }
 
   function configured(){

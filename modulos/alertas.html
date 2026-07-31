@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
@@ -4139,8 +4139,8 @@ window.addEventListener('DOMContentLoaded', function () {
   // NOTA: anonKey deve ser a JWT key do Supabase (começa por eyJ...).
   // Vai a: Supabase > Project Settings > API > anon public
   var BUILTIN_SYNC_PREFS = {
-    url: 'https://pdraxmntuqojdvdfbxwm.supabase.co',
-    anonKey: '',
+    url: '/api',
+    anonKey: 'local-sync-api-no-supabase-key-required',
     farmId: 'quinta_principal',
     syncSecret: 'sync_bb7a7dbc1b5609455cb9f02b',
     autoSync: true,
@@ -4205,8 +4205,8 @@ window.addEventListener('DOMContentLoaded', function () {
   }
 
   function validatePrefs(prefs){
-    if (!prefs.url || !/^https:\/\/[^\s]+\.supabase\.co$/i.test(prefs.url))
-      return 'Indica a URL do projeto Supabase (ex: https://xxxxx.supabase.co).';
+    if (!prefs.url)
+      return 'Indica a URL da API local (ex: /api).';
     if (!prefs.anonKey || prefs.anonKey.length < 30)
       return 'Indica a anon public key do Supabase (comeca por eyJ...). Vai a Project Settings > API no painel Supabase.';
     if (!prefs.farmId)
@@ -4266,22 +4266,34 @@ window.addEventListener('DOMContentLoaded', function () {
   function syncModularStates(target){
     if (!target || typeof target !== 'object') return;
     var states = target.dadosModulares && typeof target.dadosModulares === 'object' ? target.dadosModulares : {};
-    [['fertilizacao', 'fertilizacao_app_v1'], ['combustivel', 'gestao_quinta_combustivel_v1']].forEach(function(pair){
+    [['fertilizacao', 'fertilizacao_app_v1'], ['combustivel', 'gestao_quinta_combustivel_v1'], ['etPomar', 'gestao_quinta_et_pomar_v1']].forEach(function(pair){
       try {
         var raw = localStorage.getItem(pair[1]);
         if (raw) states[pair[0]] = JSON.parse(raw);
       } catch(_e) {}
     });
+    try {
+      var etHistoryRaw = localStorage.getItem('et_pomar_porches_lagoa_history_v1');
+      if (etHistoryRaw) {
+        states.etPomar = states.etPomar && typeof states.etPomar === 'object' ? states.etPomar : {};
+        states.etPomar.historyRecords = JSON.parse(etHistoryRaw);
+      }
+    } catch(_e) {}
     if (Object.keys(states).length) target.dadosModulares = states;
   }
 
   function persistModularStates(source){
     var states = source && source.dadosModulares;
     if (!states || typeof states !== 'object') return;
-    [['fertilizacao', 'fertilizacao_app_v1'], ['combustivel', 'gestao_quinta_combustivel_v1']].forEach(function(pair){
+    [['fertilizacao', 'fertilizacao_app_v1'], ['combustivel', 'gestao_quinta_combustivel_v1'], ['etPomar', 'gestao_quinta_et_pomar_v1']].forEach(function(pair){
       if (!Object.prototype.hasOwnProperty.call(states, pair[0])) return;
       try { localStorage.setItem(pair[1], JSON.stringify(states[pair[0]])); } catch(_e) {}
     });
+    try {
+      if (states.etPomar && Array.isArray(states.etPomar.historyRecords)) {
+        localStorage.setItem('et_pomar_porches_lagoa_history_v1', JSON.stringify(states.etPomar.historyRecords));
+      }
+    } catch(_e) {}
   }
 
   function currentPayload(){
